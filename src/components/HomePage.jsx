@@ -56,7 +56,7 @@ export default function HomePage() {
                 <h3 className='text-2xl font-bold'>Discover research</h3>
                 <p className='text-muted-foreground'>
                   Access over 100 million publication pages and stay up to date
-                  with what's happening in your field
+                  with what&apos;s happening in your field
                 </p>
               </div>
             </div>
@@ -106,8 +106,8 @@ export default function HomePage() {
             <h3 className='text-2xl font-bold'>Measure your impact</h3>
           </div>
           <p className='mb-4'>
-            Get in-depth stats on who's been reading your work and keep track of
-            your citations.
+            Get in-depth stats on who&apos;s been reading your work and keep
+            track of your citations.
           </p>
         </section>
 
@@ -150,8 +150,9 @@ export default function HomePage() {
               <div>
                 <h5 className='font-bold'>Marketing Solutions</h5>
                 <p className='text-sm text-muted-foreground'>
-                  Grow your brand's impact in the scientific community
+                  Grow your brand&apos;s impact in the scientific community
                 </p>
+
                 <Button variant='link' className='p-0'>
                   Find out more
                 </Button>
