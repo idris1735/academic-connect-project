@@ -1,8 +1,6 @@
 import localFont from 'next/font/local'
 import './globals.css'
-
-// src/app/layout.js
-import './globals.css'
+import Footer from '@/components/Footer' // Add this import
 
 export const metadata = {
   title: 'Academic Connect Project',
@@ -12,7 +10,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang='en'>
-      <body>{children}</body>
+      <body>
+        <div className='flex flex-col min-h-screen'>
+          <main className='flex-grow'>{children}</main>
+          <Footer />
+        </div>
+      </body>
     </html>
   )
 }
