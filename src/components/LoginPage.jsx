@@ -5,16 +5,23 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     // Handle login logic here
     console.log('Login submitted', { email, password, keepLoggedIn })
+    
+    // TODO: Add actual authentication logic here
+    
+    // For now, just redirect to feeds page
+    router.push('/feeds')
   }
 
   return (
