@@ -1,11 +1,23 @@
 'use client'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
+import { auth } from '@/app/firebase-config'
+// import { toast } from '@/components/ui/use-toast'
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+} from '@/components/ui/toast'
+
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,22 +25,98 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(false)
 
+  const [showToast, setShowToast] = useState(false);
+  const [toastDetails, setToastDetails] = useState({
+    title: "",
+    description: "",
+    variant: "default",
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log('Login submitted', { email, password, keepLoggedIn })
-    
-    // TODO: Add actual authentication logic here
-    
-    // For now, just redirect to feeds page
-    router.push('/feeds')
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      setToastDetails({
+        title: "Login successful",
+        description: "You have been logged in successfully.",
+        variant: "default",
+      });
+      setShowToast(true);
+      
+      // toast({
+      //   title: "Login successful",
+      //   description: "You have been logged in successfully.",
+      // })
+      router.push('/feeds')
+    } catch (error) {
+      if (error.code === "auth/invalid-credential") {
+        setToastDetails({
+          title: "Login failed",
+          description: "Please check your email and password and try again.",
+          variant: "destructive",
+        });
+        setShowToast(true);
+      }
+      else{
+        setToastDetails({
+          title: "Login unsuccessful",
+          description: "An error occured during login. Please try again.",
+          variant: "destructive",
+        });
+        setShowToast(true);
+        console.error('Login error:', error)
+      }
+    }
   }
 
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider()
+    try {
+      await signInWithPopup(auth, provider)
+      setToastDetails({
+        title: "Google Sign-In successful",
+        description: "You have been logged in with Google successfully.",
+        variant: "default",
+      });
+      setShowToast(true);
+      router.push('/feeds')
+    } catch (error) {
+      if (error.code === "auth/popup-closed-by-user") {
+        return ;
+      }
+      else {
+        setToastDetails({
+          title: "Login unsuccessful",
+          description: "This Google account is not registered with us.",
+          variant: "destructive",
+        });
+     
+      console.error('Google Sign-In error:', error)
+    }
+  }
+}
   return (
     <div className='min-h-screen bg-background flex flex-col'>
       <header className='bg-primary text-primary-foreground p-4'>
         <h1 className='text-2xl font-bold'>AcademicConnect</h1>
       </header>
+
+
+      <ToastProvider>
+
+      {showToast && (
+        <Toast
+          variant={toastDetails.variant}
+          onOpenChange={(open) => setShowToast(open)}
+        >
+          <ToastTitle>{toastDetails.title}</ToastTitle>
+          <ToastDescription>{toastDetails.description}</ToastDescription>
+          <ToastClose />
+        </Toast>
+      )}
+
+      <ToastViewport />
+    </ToastProvider>
 
       <main className='flex-grow container mx-auto px-4 py-8 flex items-center justify-center'>
         <div className='w-full max-w-md'>
@@ -88,6 +176,7 @@ export default function LoginPage() {
           <Button
             variant='outline'
             className='w-full mt-4 flex items-center justify-center space-x-2'
+            onClick={handleGoogleSignIn}
           >
             <svg className='w-5 h-5' viewBox='0 0 24 24'>
               <path

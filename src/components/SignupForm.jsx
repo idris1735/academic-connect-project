@@ -11,8 +11,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useRouter } from 'next/navigation'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { auth } from '@/app/firebase-config'
+// import { useToast } from "@/components/ui/use-toast"
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+} from '@/components/ui/toast'
+
 
 export default function SignupForm() {
+  const router = useRouter()
+  // const { toast } = useToast()
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     institution: '',
@@ -24,6 +39,13 @@ export default function SignupForm() {
     password: '',
     agreeTerms: false,
   })
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastDetails, setToastDetails] = useState({
+    title: "",
+    description: "",
+    variant: "default",
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -40,11 +62,53 @@ export default function SignupForm() {
 
   const handleContinue = (e) => {
     e.preventDefault()
-    setStep((prevStep) => prevStep + 1)
+    if (step === 1) {
+      setStep(2)
+    } else {
+      handleSignup()
+    }
   }
 
   const handleSkip = () => {
-    setStep((prevStep) => prevStep + 1)
+    setStep(2)
+  }
+
+  const handleSignup = async () => {
+    if (!formData.agreeTerms) {
+      // toast({
+      //   title: "Terms not accepted",
+      //   description: "Please agree to the Terms of Service and Privacy Policy.",
+      //   variant: "destructive",
+      // })
+      console.log("terms not accepted")
+      return
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
+      const user = userCredential.user
+
+      await updateProfile(user, {
+        displayName: `${formData.firstName} ${formData.lastName}`,
+      })
+      setToastDetails({
+        title: "Sign up successful",
+        description: "Your account has been created successfully.",
+        variant: "default",
+      });
+      setShowToast(true);
+      console.log("Sign up successful")
+
+      router.push('/feeds')
+    } catch (error) {
+      setToastDetails({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setShowToast(true);
+      console.error('Sign up error:', error)
+    }
   }
 
   return (
@@ -52,6 +116,21 @@ export default function SignupForm() {
       <header className='bg-primary text-primary-foreground p-4'>
         <h1 className='text-2xl font-bold'>AcademicConnect</h1>
       </header>
+      <ToastProvider>
+
+      {showToast && (
+        <Toast
+          variant={toastDetails.variant}
+          onOpenChange={(open) => setShowToast(open)}
+        >
+          <ToastTitle>{toastDetails.title}</ToastTitle>
+          <ToastDescription>{toastDetails.description}</ToastDescription>
+          <ToastClose />
+        </Toast>
+      )}
+
+      <ToastViewport />
+    </ToastProvider>
 
       <main className='container mx-auto px-4 py-8'>
         <h2 className='text-2xl font-bold text-center mb-2'>
@@ -178,7 +257,7 @@ export default function SignupForm() {
           )}
 
           <Button type='submit' className='w-full'>
-            Continue
+            {step === 1 ? 'Continue' : 'Sign Up'}
           </Button>
           {step === 1 && (
             <Button
