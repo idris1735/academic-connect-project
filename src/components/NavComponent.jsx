@@ -1,101 +1,84 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Home, MessageSquare, Search, Briefcase, Users2, Grid, Menu } from "lucide-react"
-import Link from "next/link"
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Home, Users, Bell, MessageSquare, User, Menu, X } from 'lucide-react'
 
 export default function NavComponent() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    // Implement search functionality here
-    console.log('Searching for:', searchQuery)
-  }
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
+  const navItems = [
+    { icon: Home, label: 'Home', href: '/feeds' },
+    { icon: Users, label: 'Network', href: '/network' },
+    { icon: MessageSquare, label: 'Messages', href: '/messages' },
+    { icon: Bell, label: 'Notifications', href: '/notifications' },
+    { icon: User, label: 'Profile', href: '/profile' },
+  ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="#" className="text-2xl font-bold text-[#6366F1]">
-              AcademicConnect
+    <nav className="bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link href="/" className="flex-shrink-0">
+              <span className="text-2xl font-bold text-blue-600">AcademicConnect</span>
             </Link>
-            <div className="hidden md:block">
-              <form onSubmit={handleSearch}>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                  <input
-                    className="w-[300px] rounded-full border border-gray-300 bg-gray-100 py-2 pl-10 pr-4 focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
-                    placeholder="Search"
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </form>
-            </div>
           </div>
-          <nav className="hidden md:flex items-center gap-4">
-            <NavLink href="#" icon={<Home className="h-6 w-6" />} text="Home" active />
-            <NavLink href="#" icon={<Users2 className="h-6 w-6" />} text="Network" />
-            <NavLink href="#" icon={<Briefcase className="h-6 w-6" />} text="Jobs" />
-            <NavLink href="#" icon={<MessageSquare className="h-6 w-6" />} text="Messages" />
-            <NavLink href="#" icon={<Bell className="h-6 w-6" />} text="Notifications" />
-            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium">
-              AC
-            </div>
-            <button className="p-2 hover:bg-gray-100 rounded-full">
-              <Grid className="h-6 w-6" />
+          <div className="hidden md:flex items-center space-x-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center px-3 py-2 text-sm font-medium rounded-md ${
+                  pathname === item.href
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="h-6 w-6 mb-1" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              aria-expanded="false"
+            >
+              <span className="sr-only">Open main menu</span>
+              {isMenuOpen ? (
+                <X className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Menu className="block h-6 w-6" aria-hidden="true" />
+              )}
             </button>
-          </nav>
-          <button className="md:hidden p-2" onClick={toggleMenu}>
-            <Menu className="h-6 w-6" />
-          </button>
+          </div>
         </div>
       </div>
-      {isMenuOpen && (
-        <div className="md:hidden bg-white border-t">
-          <div className="container mx-auto px-4 py-2">
-            <form onSubmit={handleSearch} className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                <input
-                  className="w-full rounded-full border border-gray-300 bg-gray-100 py-2 pl-10 pr-4 focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
-                  placeholder="Search"
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
-            <NavLink href="#" icon={<Home className="h-6 w-6" />} text="Home" active />
-            <NavLink href="#" icon={<Users2 className="h-6 w-6" />} text="Network" />
-            <NavLink href="#" icon={<Briefcase className="h-6 w-6" />} text="Jobs" />
-            <NavLink href="#" icon={<MessageSquare className="h-6 w-6" />} text="Messages" />
-            <NavLink href="#" icon={<Bell className="h-6 w-6" />} text="Notifications" />
-          </div>
-        </div>
-      )}
-    </header>
-  )
-}
 
-function NavLink({ href, icon, text, active = false }) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-2 p-2 rounded-lg ${
-        active ? 'text-[#6366F1] font-medium' : 'text-gray-500 hover:bg-gray-100'
-      }`}
-    >
-      {icon}
-      <span className="text-sm">{text}</span>
-    </Link>
+      {/* Mobile menu, show/hide based on menu state */}
+      <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'}`}>
+        <div className="pt-2 pb-3 space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center px-3 py-2 text-base font-medium ${
+                pathname === item.href
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <item.icon className="h-6 w-6 mr-3" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </nav>
   )
 }

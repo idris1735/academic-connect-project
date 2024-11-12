@@ -6,67 +6,71 @@ import ProfileSidebar from '../../components/ProfileSlidebar'
 import PostCreation from '../../components/PostCreation'
 import Post from '../../components/Post'
 import RightSidebar from '../../components/RightSidebar'
+import { MessageCircle, MapPin, Clock } from 'lucide-react'
 
 export default function Feeds() {
   const [posts, setPosts] = useState([])
   const [filter, setFilter] = useState('all')
+  const [locationFilter, setLocationFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('recent')
 
   useEffect(() => {
     // Simulating API call to fetch posts
     const fetchedPosts = [
       {
         id: 1,
-        author: 'John Doe',
-        avatar: '/placeholder-user.jpg',
-        content: 'Excited to share my latest research findings!',
+        author: 'Dr. Sarah Johnson',
+        authorTitle: 'Research Scientist | AI & Machine Learning | PhD Stanford',
+        authorLocation: 'San Francisco, CA',
+        connectionDegree: '1st',
+        avatar: 'https://picsum.photos/seed/user1/200',
+        content: 'Excited to announce our new research project on quantum computing applications in drug discovery. Looking for collaborators!',
         timestamp: '2h ago',
         likes: 15,
         comments: [
-          { id: 1, author: 'Jane Smith', content: 'Great work!', timestamp: '1h ago' },
-          { id: 2, author: 'Bob Johnson', content: 'Interesting results.', timestamp: '30m ago' }
+          { id: 1, author: 'Prof. Jane Smith', content: 'Interested in collaboration!', timestamp: '1h ago' }
         ],
-        image: '/research-paper.svg',
-        category: 'research'
+        image: 'https://picsum.photos/seed/quantum/800/600',
+        category: 'research',
+        location: 'San Francisco',
+        projectRoom: 'quantum-computing-research'
       },
       {
         id: 2,
-        author: 'Alice Brown',
-        avatar: '/placeholder-user.jpg',
-        content: 'New job opening in our lab. Apply now!',
+        author: 'Prof. Michael Chen',
+        authorTitle: 'Department Head | Molecular Biology | Harvard University',
+        authorLocation: 'Boston, MA',
+        connectionDegree: '2nd',
+        avatar: 'https://picsum.photos/seed/user2/200',
+        content: 'Publishing our findings on CRISPR applications in cancer treatment. Open for discussion and future collaboration.',
         timestamp: '4h ago',
-        likes: 8,
+        likes: 28,
         comments: [],
-        image: '/research-presentation.svg',
-        category: 'job'
-      },
-      {
-        id: 3,
-        author: 'Emily White',
-        avatar: '/placeholder-user.jpg',
-        content: 'Just published a new paper in Nature!',
-        timestamp: '1d ago',
-        likes: 32,
-        comments: [
-          { id: 3, author: 'David Lee', content: 'Congratulations!', timestamp: '20h ago' }
-        ],
-        image: '/research-paper.svg',
-        category: 'publication'
+        image: 'https://picsum.photos/seed/biology/800/600',
+        category: 'publication',
+        location: 'Boston',
+        projectRoom: 'crispr-research'
       }
     ]
     setPosts(fetchedPosts)
   }, [])
 
-  const addPost = (content, image, category) => {
+  const addPost = (content, image, category, location) => {
     const newPost = {
       id: posts.length + 1,
       author: 'Current User',
-      avatar: '/research-svgrepo-com.svg',
+      authorTitle: 'Research Assistant | Computer Science | MIT',
+      authorLocation: 'Cambridge, MA',
+      connectionDegree: '1st',
+      avatar: 'https://picsum.photos/seed/currentuser/200',
       content,
       image,
       timestamp: 'Just now',
       likes: 0,
       comments: [],
-      category
+      category,
+      location,
+      projectRoom: `project-${Date.now()}`
     }
     setPosts([newPost, ...posts])
   }
@@ -82,7 +86,7 @@ export default function Feeds() {
       post.id === postId ? { 
         ...post, 
         comments: [...post.comments, {
-          id: post.comments.length + 1,
+          id: Date.now(),
           author: 'Current User',
           content: comment,
           timestamp: 'Just now'
@@ -91,7 +95,20 @@ export default function Feeds() {
     ))
   }
 
-  const filteredPosts = filter === 'all' ? posts : posts.filter(post => post.category === filter)
+  const handleJoinRoom = (projectRoom) => {
+    console.log(`Joining chat room: ${projectRoom}`)
+    // Implement chat room joining logic here
+  }
+
+  const filteredPosts = posts
+    .filter(post => filter === 'all' || post.category === filter)
+    .filter(post => locationFilter === 'all' || post.location === locationFilter)
+    .sort((a, b) => {
+      if (sortBy === 'recent') {
+        return new Date(b.timestamp) - new Date(a.timestamp)
+      }
+      return 0
+    })
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -101,34 +118,68 @@ export default function Feeds() {
           <ProfileSidebar />
           <div className="md:col-span-2 lg:col-span-2 space-y-6">
             <PostCreation onPostCreate={addPost} />
-            <div className="flex justify-center space-x-4 mb-4">
-              <button 
-                className={`px-4 py-2 rounded ${filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => setFilter('all')}
-              >
-                All
-              </button>
-              <button 
-                className={`px-4 py-2 rounded ${filter === 'research' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => setFilter('research')}
-              >
-                Research
-              </button>
-              <button 
-                className={`px-4 py-2 rounded ${filter === 'publication' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => setFilter('publication')}
-              >
-                Publication
-              </button>
-              <button 
-                className={`px-4 py-2 rounded ${filter === 'job' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => setFilter('job')}
-              >
-                Job
-              </button>
+            
+            {/* Filters */}
+            <div className="bg-white p-4 rounded-lg shadow space-y-4">
+              <div className="flex flex-wrap gap-4">
+                <button 
+                  className={`px-4 py-2 rounded-full ${filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setFilter('all')}
+                >
+                  All Posts
+                </button>
+                <button 
+                  className={`px-4 py-2 rounded-full ${filter === 'research' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setFilter('research')}
+                >
+                  Research
+                </button>
+                <button 
+                  className={`px-4 py-2 rounded-full ${filter === 'publication' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setFilter('publication')}
+                >
+                  Publications
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <select 
+                    className="border rounded-md px-2 py-1"
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  >
+                    <option value="all">All Locations</option>
+                    <option value="San Francisco">San Francisco</option>
+                    <option value="Boston">Boston</option>
+                    <option value="Cambridge">Cambridge</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <select 
+                    className="border rounded-md px-2 py-1"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="recent">Most Recent</option>
+                    <option value="relevant">Most Relevant</option>
+                  </select>
+                </div>
+              </div>
             </div>
+
+            {/* Posts */}
             {filteredPosts.map(post => (
-              <Post key={post.id} post={post} onLike={handleLike} onComment={handleComment} />
+              <Post 
+                key={post.id} 
+                post={post} 
+                onLike={handleLike} 
+                onComment={handleComment}
+                onJoinRoom={handleJoinRoom}
+              />
             ))}
           </div>
           <RightSidebar />
