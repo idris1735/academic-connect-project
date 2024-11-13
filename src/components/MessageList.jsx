@@ -1,9 +1,10 @@
 'use client'
 
 import { Hash } from 'lucide-react'
-import Link from 'next/link'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
-export default function MessageList({ onSelectConversation }) {
+export default function MessageList({ onSelectConversation, selectedConversation }) {
   const conversations = [
     {
       id: 1,
@@ -37,39 +38,46 @@ export default function MessageList({ onSelectConversation }) {
       unread: true,
       type: 'discussion'
     },
-    // Add more conversations and discussions as needed
   ]
 
   return (
-    <div className="divide-y">
-      {conversations.map(conversation => (
-        <Link
-          key={conversation.id}
-          href={conversation.type === 'discussion' ? `/messages?discussion=${conversation.id}` : `/messages?dm=${conversation.id}`}
-          className="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer"
-          onClick={() => onSelectConversation(conversation)}
-        >
-          {conversation.type === 'direct' ? (
-            <img src={conversation.avatar} alt={conversation.name} className="w-12 h-12 rounded-full" />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-              <Hash className="w-6 h-6 text-gray-600" />
+    <ScrollArea className="h-full border-r border-gray-200">
+      <div className="divide-y divide-gray-200">
+        {conversations.map(conversation => (
+          <button
+            key={conversation.id}
+            className={`flex items-center gap-4 p-4 w-full text-left transition-colors ${
+              selectedConversation?.id === conversation.id
+                ? 'bg-[#6366F1]/10'
+                : 'hover:bg-gray-50'
+            }`}
+            onClick={() => onSelectConversation(conversation)}
+          >
+            {conversation.type === 'direct' ? (
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={conversation.avatar} alt={conversation.name} />
+                <AvatarFallback>{conversation.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-[#6366F1]/10 flex items-center justify-center">
+                <Hash className="h-5 w-5 text-[#6366F1]" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h4 className={`font-semibold truncate ${conversation.unread ? 'text-[#6366F1]' : 'text-gray-900'}`}>
+                  {conversation.type === 'discussion' && '#'}
+                  {conversation.name}
+                </h4>
+                <span className="text-xs text-gray-500">{conversation.timestamp}</span>
+              </div>
+              <p className={`text-sm truncate ${conversation.unread ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
+                {conversation.lastMessage}
+              </p>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold truncate">
-                {conversation.type === 'discussion' && '#'}
-                {conversation.name}
-              </h4>
-              <span className="text-sm text-gray-500">{conversation.timestamp}</span>
-            </div>
-            <p className={`text-sm truncate ${conversation.unread ? 'font-semibold' : 'text-gray-500'}`}>
-              {conversation.lastMessage}
-            </p>
-          </div>
-        </Link>
-      ))}
-    </div>
+          </button>
+        ))}
+      </div>
+    </ScrollArea>
   )
 }

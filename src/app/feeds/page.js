@@ -123,19 +123,19 @@ export default function Feeds() {
             <div className="bg-white p-4 rounded-lg shadow space-y-4">
               <div className="flex flex-wrap gap-4">
                 <button 
-                  className={`px-4 py-2 rounded-full ${filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  className={`px-4 py-2 rounded-full ${filter === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFilter('all')}
                 >
                   All Posts
                 </button>
                 <button 
-                  className={`px-4 py-2 rounded-full ${filter === 'research' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  className={`px-4 py-2 rounded-full ${filter === 'research' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFilter('research')}
                 >
                   Research
                 </button>
                 <button 
-                  className={`px-4 py-2 rounded-full ${filter === 'publication' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  className={`px-4 py-2 rounded-full ${filter === 'publication' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFilter('publication')}
                 >
                   Publications

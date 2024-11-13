@@ -23,7 +23,7 @@ export default function NavComponent() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0">
-              <span className="text-2xl font-bold text-blue-600">AcademicConnect</span>
+              <span className="text-2xl font-bold text-indigo-600 ">AcademicConnect</span>
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-4">
@@ -33,7 +33,7 @@ export default function NavComponent() {
                 href={item.href}
                 className={`flex flex-col items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname === item.href
-                    ? 'text-blue-600 bg-blue-50'
+                    ? 'text-indigo-600  bg-blue-50'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -45,7 +45,7 @@ export default function NavComponent() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -68,7 +68,7 @@ export default function NavComponent() {
               href={item.href}
               className={`flex items-center px-3 py-2 text-base font-medium ${
                 pathname === item.href
-                  ? 'text-blue-600 bg-blue-50'
+                  ? 'ttext-indigo-600  bg-blue-50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
               onClick={() => setIsMenuOpen(false)}

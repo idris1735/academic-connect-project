@@ -1,37 +1,45 @@
-import { Users, UserPlus, UsersRectangle, Calendar, Newspaper, Hash } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Users, UserPlus, Microscope, Calendar, BookOpen, Hash } from 'lucide-react'
 
-export default function NetworkSidebar() {
+export function NetworkSidebar() {
   const navItems = [
     { Icon: Users, label: 'Connections', count: 1274 },
-    { Icon: UserPlus, label: 'Following & Followers' },
-    { Icon: UsersRectangle, label: 'Groups', count: 5 },
-    { Icon: Calendar, label: 'Events', count: 1 },
-    { Icon: Newspaper, label: 'Pages', count: 89 },
-    { Icon: Newspaper, label: 'Newsletters', count: 8 },
-    { Icon: Hash, label: 'Hashtags' },
+    { Icon: UserPlus, label: 'Discover Researchers' },
+    { Icon: Microscope, label: 'Research Groups', count: 5 },
+    { Icon: Calendar, label: 'Conferences', count: 3 },
+    { Icon: BookOpen, label: 'Publications', count: 89 },
+    { Icon: Hash, label: 'Research Topics' },
   ]
 
   return (
-    <aside className="bg-white rounded-lg shadow-md p-4">
-      <h2 className="font-semibold text-lg mb-4">Manage my network</h2>
-      <nav>
-        <ul className="space-y-2">
-          {navItems.map((item, index) => (
-            <li key={index}>
-              <a
-                href="#"
-                className="flex items-center justify-between text-gray-700 hover:bg-gray-100 rounded-md p-2"
-              >
-                <div className="flex items-center gap-3">
-                  {/* <item.Icon className="h-5 w-5" /> */}
-                  <span>{item.label}</span>
-                </div>
-                {item.count !== undefined && <span className="text-gray-500">{item.count}</span>}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </aside>
+    <Card className="bg-white/50 backdrop-blur-sm border-none shadow-lg">
+      <CardHeader className="border-b border-indigo-100">
+        <CardTitle className="text-2xl font-bold text-indigo-900">Academic Network</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <nav>
+          <ul className="space-y-2">
+            {navItems.map((item, index) => (
+              <li key={index}>
+                <a
+                  href="#"
+                  className="flex items-center justify-between text-indigo-900 hover:bg-indigo-100 rounded-md p-3 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <item.Icon className="h-5 w-5 text-indigo-600" />
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                  {item.count !== undefined && (
+                    <span className="text-sm font-bold bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full">
+                      {item.count}
+                    </span>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </CardContent>
+    </Card>
   )
 }

@@ -39,9 +39,9 @@ export default function NotificationsFeed({ activeFilter }) {
     {
       id: 4,
       type: 'job',
-      content: 'New job opening: Frontend Developer at TechCorp',
+      content: 'New project opening:Researching on Human development at TechCorp',
       timestamp: '2d ago',
-      category: 'jobs',
+      category: 'projects',
     },
   ]
 

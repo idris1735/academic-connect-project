@@ -64,14 +64,14 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
       {/* Action Buttons */}
       <div className="border-t px-4 py-2 flex justify-between">
         <button 
-          className="flex items-center gap-2 text-gray-500 hover:text-blue-500"
+          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
           onClick={handleLike}
         >
           <ThumbsUp className="h-5 w-5" />
           <span>Like ({post.likes})</span>
         </button>
         <button 
-          className="flex items-center gap-2 text-gray-500 hover:text-blue-500"
+          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
           onClick={handleComment}
         >
           <MessageSquare className="h-5 w-5" />
@@ -79,13 +79,13 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
         </button>
         <Link 
           href={`/messages?discussion=${post.discussionId}`}
-          className="flex items-center gap-2 text-gray-500 hover:text-blue-500"
+          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
           onClick={() => onJoinDiscussion(post.discussionId)}
         >
           <MessageCircle className="h-5 w-5" />
           <span>Join Discussion</span>
         </Link>
-        <button className="flex items-center gap-2 text-gray-500 hover:text-blue-500">
+        <button className="flex items-center gap-2 text-gray-500 hover:text-indigo-500">
           <Share2 className="h-5 w-5" />
           <span>Share</span>
         </button>
@@ -109,14 +109,14 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
         <div className="px-4 py-2 bg-gray-50">
           <form onSubmit={submitComment} className="flex gap-2">
             <input
-              className="flex-grow px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-grow px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Write a comment..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
             <button 
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               Post
             </button>

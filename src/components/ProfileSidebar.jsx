@@ -1,42 +1,106 @@
-import { Users, Eye } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Award, BookOpen, Users } from "lucide-react"
 
 export default function ProfileSidebar() {
+  const stats = {
+    publications: 47,
+    citations: 3200,
+    hIndex: 25,
+    collaborators: 73
+  }
+
+  const education = [
+    {
+      degree: "Ph.D. in Computer Science",
+      institution: "Stanford University",
+      year: "2015-2019"
+    },
+    {
+      degree: "M.S. in Computer Science",
+      institution: "MIT",
+      year: "2013-2015"
+    },
+    {
+      degree: "B.S. in Computer Science",
+      institution: "UC Berkeley",
+      year: "2009-2013"
+    }
+  ]
+
   return (
     <div className="space-y-6">
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4">Profile Strength</h2>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div className="bg-blue-600 h-2.5 rounded-full w-4/5"></div>
-        </div>
-        <p className="mt-2 text-sm text-gray-600">Your profile is looking good!</p>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Award className="w-5 h-5 text-[#6366F1]" />
+            Research Impact
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#6366F1]">{stats.publications}</p>
+              <p className="text-sm text-gray-600">Publications</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#6366F1]">{stats.citations}</p>
+              <p className="text-sm text-gray-600">Citations</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#6366F1]">{stats.hIndex}</p>
+              <p className="text-sm text-gray-600">h-index</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#6366F1]">{stats.collaborators}</p>
+              <p className="text-sm text-gray-600">Collaborators</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4">Your Network</h2>
-        <div className="flex items-center gap-3 mb-2">
-          <Users className="h-5 w-5 text-gray-400" />
-          <span>500+ connections</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Eye className="h-5 w-5 text-gray-400" />
-          <span>1,234 profile views</span>
-        </div>
-      </section>
-
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4">People Also Viewed</h2>
-        <ul className="space-y-4">
-          {['Jane Smith', 'Mike Johnson', 'Emily Brown'].map((name) => (
-            <li key={name} className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-              <div>
-                <p className="font-medium">{name}</p>
-                <p className="text-sm text-gray-600">Software Engineer</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#6366F1]" />
+            Education
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {education.map((edu, index) => (
+              <div key={index} className="border-b last:border-0 pb-4 last:pb-0">
+                <h3 className="font-semibold">{edu.degree}</h3>
+                <p className="text-sm text-gray-600">{edu.institution}</p>
+                <p className="text-sm text-gray-500">{edu.year}</p>
               </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="w-5 h-5 text-[#6366F1]" />
+            Top Collaborators
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {["Prof. Sarah Chen", "Dr. Michael Brown", "Dr. Emily Taylor"].map((name, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#6366F1]/10 flex items-center justify-center">
+                  <span className="text-[#6366F1] font-medium">{name.charAt(0)}</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{name}</p>
+                  <p className="text-xs text-gray-500">Stanford University</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

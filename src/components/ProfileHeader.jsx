@@ -1,48 +1,44 @@
-import Image from 'next/image'
-import { MapPin, Briefcase, School } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { GraduationCap, MapPin, MessageSquare, Users } from "lucide-react"
 
 export default function ProfileHeader() {
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-      <div className="p-6 sm:p-8 -mt-20">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:space-x-5">
-          <div className="w-36 h-36 rounded-full border-4 border-white overflow-hidden">
-            <img
-              src="https://picsum.photos/seed/user123/400"
-            alt="Profile picture"
-              width={144}
-              height={144}
-            />
-          </div>
-          <div className="mt-4 sm:mt-0 flex-1">
-            <h1 className="text-3xl font-bold">John Doe</h1>
-            <p className="text-xl text-gray-600">Full Stack Developer | AI Enthusiast</p>
-            <div className="mt-2 flex flex-wrap items-center text-sm text-gray-600 gap-y-1">
-              <span className="flex items-center mr-4">
-                <MapPin className="h-4 w-4 mr-1" /> San Francisco Bay Area
-              </span>
-              <span className="flex items-center mr-4">
-                <Briefcase className="h-4 w-4 mr-1" /> TechCorp Inc.
+    <Card className="overflow-hidden">
+      <div className="h-32 sm:h-48 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]" />
+      <div className="p-4 sm:p-6 -mt-16 sm:-mt-20">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
+          <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white">
+            <AvatarImage src="https://picsum.photos/seed/researcher/200" alt="Researcher" />
+            <AvatarFallback>JS</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dr. Jane Smith</h1>
+            <p className="text-lg sm:text-xl text-gray-600">Computer Science Researcher</p>
+            <div className="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-600 gap-2 sm:gap-4">
+              <span className="flex items-center">
+                <GraduationCap className="w-4 h-4 mr-1" />
+                Stanford University
               </span>
               <span className="flex items-center">
-                <School className="h-4 w-4 mr-1" /> Stanford University
+                <MapPin className="w-4 h-4 mr-1" />
+                Stanford, CA
               </span>
             </div>
           </div>
-        </div>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
-            Connect
-          </button>
-          <button className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50 transition-colors">
-            Message
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors">
-            More
-          </button>
+          <div className="flex gap-3 mt-4 sm:mt-0">
+            <Button className="bg-[#6366F1] hover:bg-[#5457E5]">
+              <Users className="w-4 h-4 mr-2" />
+              Connect
+            </Button>
+            <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1] hover:text-white">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Message
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

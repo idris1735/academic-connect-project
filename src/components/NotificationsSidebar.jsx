@@ -3,7 +3,7 @@ import { Bell, Briefcase, Users, Star, Settings } from 'lucide-react'
 export default function NotificationsSidebar({ activeFilter, setActiveFilter }) {
   const filters = [
     { icon: Bell, label: 'All', value: 'all' },
-    { icon: Briefcase, label: 'My Jobs', value: 'jobs' },
+    { icon: Briefcase, label: 'My projects', value: 'projects' },
     { icon: Users, label: 'Connections', value: 'connections' },
     { icon: Star, label: 'Mentions', value: 'mentions' },
   ]
@@ -19,7 +19,7 @@ export default function NotificationsSidebar({ activeFilter, setActiveFilter }) 
                 onClick={() => setActiveFilter(filter.value)}
                 className={`w-full flex items-center gap-3 p-2 rounded-md ${
                   activeFilter === filter.value
-                    ? 'bg-blue-50 text-blue-600'
+                    ? 'bg-indigo-50 text-indigo-600'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >

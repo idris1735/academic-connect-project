@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Send } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function MessageView({ conversation }) {
   const [message, setMessage] = useState('')
@@ -13,26 +16,37 @@ export default function MessageView({ conversation }) {
     }
   }
 
+  if (!conversation) {
+    return (
+      <div className="flex h-full items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Select a conversation to start messaging</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.32))]">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold text-lg">{conversation.name}</h2>
+    <div className="flex flex-col h-full">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h2 className="text-xl font-semibold text-gray-900">
+          {conversation.type === 'discussion' && '#'}
+          {conversation.name}
+        </h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
+      <ScrollArea className="flex-1 p-6">
         {/* Message history would go here */}
-      </div>
-      <form onSubmit={handleSend} className="p-4 border-t">
-        <div className="flex items-center gap-2">
-          <input
+      </ScrollArea>
+      <form onSubmit={handleSend} className="px-6 py-4 border-t border-gray-200">
+        <div className="flex items-center gap-4">
+          <Input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Write a message..."
-            className="flex-1 px-4 py-2 border rounded-full"
+            placeholder="Type your message..."
+            className="flex-1"
           />
-          <button type="submit" className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600">
-            <Send size={20} />
-          </button>
+          <Button type="submit" size="icon" className="bg-[#6366F1] hover:bg-[#5457E5]">
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
       </form>
     </div>

@@ -1,63 +1,98 @@
-import { Briefcase, Book, Award } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import PublicationsList from "./PublicationsList"
 
 export default function ProfileContent() {
+  const researchInterests = [
+    "Machine Learning",
+    "Natural Language Processing",
+    "Computer Vision",
+    "Deep Learning",
+    "Artificial Intelligence"
+  ]
+
+  const currentProjects = [
+    {
+      title: "Neural Architecture Search",
+      description: "Developing efficient methods for automated machine learning model design"
+    },
+    {
+      title: "Cross-lingual Transfer Learning",
+      description: "Improving language models' performance across multiple languages"
+    },
+    {
+      title: "Sustainable AI",
+      description: "Research on energy-efficient deep learning architectures"
+    }
+  ]
+
   return (
-    <div className="space-y-6">
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">About</h2>
-        <p className="text-gray-600">
-          Passionate Full Stack Developer with 5+ years of experience in building scalable web applications.
-          Specializing in React, Node.js, and cloud technologies. Always eager to learn and explore new
-          technologies, particularly in the field of Artificial Intelligence and Machine Learning.
-        </p>
-      </section>
-
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Experience</h2>
-        <div className="space-y-4">
-          <div className="flex gap-4">
-            <Briefcase className="h-10 w-10 text-gray-400" />
+    <Tabs defaultValue="about" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="about">About</TabsTrigger>
+        <TabsTrigger value="publications">Publications</TabsTrigger>
+        <TabsTrigger value="projects">Projects</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="about">
+        <Card>
+          <CardHeader>
+            <CardTitle>About</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold">Senior Full Stack Developer</h3>
-              <p className="text-gray-600">TechCorp Inc. · Full-time</p>
-              <p className="text-sm text-gray-500">Jan 2020 - Present · 3 yrs 5 mos</p>
-              <p className="text-sm text-gray-500">San Francisco Bay Area</p>
+              <h3 className="font-semibold mb-2">Research Overview</h3>
+              <p className="text-gray-600">
+                Leading research in machine learning and artificial intelligence, with a focus on developing
+                scalable and efficient algorithms for real-world applications. Experienced in both theoretical
+                foundations and practical implementations of AI systems.
+              </p>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <Briefcase className="h-10 w-10 text-gray-400" />
+            
             <div>
-              <h3 className="font-semibold">Full Stack Developer</h3>
-              <p className="text-gray-600">InnovateTech · Full-time</p>
-              <p className="text-sm text-gray-500">Jun 2017 - Dec 2019 · 2 yrs 7 mos</p>
-              <p className="text-sm text-gray-500">New York, NY</p>
+              <h3 className="font-semibold mb-2">Research Interests</h3>
+              <div className="flex flex-wrap gap-2">
+                {researchInterests.map(interest => (
+                  <Badge key={interest} className="bg-[#6366F1]">{interest}</Badge>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Education</h2>
-        <div className="flex gap-4">
-          <Book className="h-10 w-10 text-gray-400" />
-          <div>
-            <h3 className="font-semibold">Stanford University</h3>
-            <p className="text-gray-600">Master of Science - MS, Computer Science</p>
-            <p className="text-sm text-gray-500">2015 - 2017</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Skills</h2>
-        <div className="flex flex-wrap gap-2">
-          {['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker', 'GraphQL', 'MongoDB', 'TypeScript', 'Machine Learning'].map((skill) => (
-            <span key={skill} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-              {skill}
-            </span>
-          ))}
-        </div>
-      </section>
-    </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="publications">
+        <Card>
+          <CardHeader>
+            <CardTitle>Publications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[600px] pr-4">
+              <PublicationsList />
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="projects">
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6">
+              {currentProjects.map(project => (
+                <div key={project.title} className="border-b pb-6 last:border-0">
+                  <h3 className="font-semibold text-lg mb-2">{project.title}</h3>
+                  <p className="text-gray-600">{project.description}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   )
 }
