@@ -17,6 +17,7 @@ import {
   ToastDescription,
   ToastClose,
 } from '@/components/ui/toast'
+import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline'; // Import icons
 
 
 export default function LoginPage() {
@@ -31,6 +32,7 @@ export default function LoginPage() {
     description: "",
     variant: "default",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -42,11 +44,6 @@ export default function LoginPage() {
         variant: "default",
       });
       setShowToast(true);
-      
-      // toast({
-      //   title: "Login successful",
-      //   description: "You have been logged in successfully.",
-      // })
       router.push('/feeds')
     } catch (error) {
       if (error.code === "auth/invalid-credential") {
@@ -132,25 +129,41 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <div className='space-y-2'>
-              <div className='flex justify-between'>
-                <Label htmlFor='password'>Password</Label>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="password">Password</Label>
                 <Link
-                  href='/forgot-password'
-                  className='text-sm text-primary hover:underline'
+                  href="/forgot-password"
+                  className="text-sm text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>
               </div>
-              <Input
-                id='password'
-                type='password'
-                placeholder='Password'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"} // Toggle type between 'password' and 'text'
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10" // Padding for the show/hide icon
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                  className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="w-5 h-5" /> // Hide password icon
+                  ) : (
+                    <EyeIcon className="w-5 h-5" /> // Show password icon
+                  )}
+                </button>
+              </div>
             </div>
+
             <div className='flex items-center space-x-2'>
               <Checkbox
                 id='keep-logged-in'

@@ -23,6 +23,12 @@ import {
   ToastDescription,
   ToastClose,
 } from '@/components/ui/toast'
+import { countries } from 'countries-list'
+import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline'; // Import icons
+
+
+
+
 
 
 export default function SignupForm() {
@@ -73,6 +79,9 @@ export default function SignupForm() {
     setStep(2)
   }
 
+  const [showPassword, setShowPassword] = useState(false);
+  
+
   const handleSignup = async () => {
     if (!formData.agreeTerms) {
       // toast({
@@ -110,6 +119,11 @@ export default function SignupForm() {
       console.error('Sign up error:', error)
     }
   }
+  // Generate the list of countries from the countries-list library
+  const countryOptions = Object.entries(countries).map(([code, country]) => ({
+    code,
+    name: country.name,
+  }))
 
   return (
     <div className='min-h-screen bg-background'>
@@ -202,11 +216,14 @@ export default function SignupForm() {
                   <SelectTrigger>
                     <SelectValue placeholder='Select your country' />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='us'>United States</SelectItem>
-                    <SelectItem value='uk'>United Kingdom</SelectItem>
-                    <SelectItem value='ca'>Canada</SelectItem>
-                    {/* Add more countries as needed */}
+                  <SelectContent
+                    className="max-h-60 overflow-y-auto"
+                  >
+                    {countryOptions.map((country) => (
+                      <SelectItem key={country.code} value={country.code}>
+                        {country.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -221,17 +238,33 @@ export default function SignupForm() {
                   required
                 />
               </div>
-              <div className='space-y-2'>
-                <Label htmlFor='password'>Password</Label>
-                <Input
-                  id='password'
-                  name='password'
-                  type='password'
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                />
+            
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"} // Toggle between 'text' and 'password'
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    className="pr-10" // Add padding to the right for the toggle button
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"
+                    onClick={() => setShowPassword(!showPassword)} // Toggle state
+                  >
+                    {showPassword ? (
+                      <EyeOffIcon className="w-5 h-5" /> // Icon for hiding password
+                    ) : (
+                      <EyeIcon className="w-5 h-5" /> // Icon for showing password
+                    )}
+                  </button>
+                </div>
               </div>
+
               <div className='flex items-center space-x-2'>
                 <Checkbox
                   id='terms'
