@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
+import { browserPopupRedirectResolver } from "firebase/auth";
 import { auth } from '@/app/firebase-config'
 // import { toast } from '@/components/ui/use-toast'
 import {
@@ -18,6 +19,7 @@ import {
   ToastClose,
 } from '@/components/ui/toast'
 import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline'; // Import icons
+
 
 
 export default function LoginPage() {
@@ -35,48 +37,89 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault()    
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const res = await fetch('/login', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await res.json();
+      console.log('Response:', data);
+    
+      if (res.status === 200) {
+        setToastDetails({
+          title: 'Login successful',
+          description: 'You have been logged in successfully.',
+          variant: 'default',
+        });
+        setShowToast(true);
+        window.location.href = data.redirectTo;
+      } else {
+        setToastDetails({
+          title: 'Login failed',
+          description: 'Please check your email and password and try again.',
+          variant: 'destructive',
+        });
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error('Error:', error.message);
       setToastDetails({
-        title: "Login successful",
-        description: "You have been logged in successfully.",
-        variant: "default",
+        title: 'Login failed',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
       });
       setShowToast(true);
-      router.push('/feeds')
-    } catch (error) {
-      if (error.code === "auth/invalid-credential") {
-        setToastDetails({
-          title: "Login failed",
-          description: "Please check your email and password and try again.",
-          variant: "destructive",
-        });
-        setShowToast(true);
-      }
-      else{
-        setToastDetails({
-          title: "Login unsuccessful",
-          description: "An error occured during login. Please try again.",
-          variant: "destructive",
-        });
-        setShowToast(true);
-        console.error('Login error:', error)
-      }
     }
   }
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider()
     try {
-      await signInWithPopup(auth, provider)
-      setToastDetails({
-        title: "Google Sign-In successful",
-        description: "You have been logged in with Google successfully.",
-        variant: "default",
+      const userCredential =  await signInWithPopup(auth, provider, browserPopupRedirectResolver)
+      let data = userCredential.user
+       // Get the ID token
+      const idToken = await data.getIdToken();
+      data['idToken'] = idToken;
+      let user = {}
+      user.email = data.email;
+      user.displayName = data.displayName;
+      user.photoURL = data.photoURL;
+      user.idToken = idToken;
+      user.uid = data.uid;
+
+      console.log('Google Sign-In data:', data);
+      console.log('Google Sign-In idToken:', idToken);
+      const res = await fetch('/google-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user }),
       });
-      setShowToast(true);
-      router.push('/feeds')
+      let info = await res.json();
+      console.log('Google Sign-In response:', res);
+      if (res.status === 200) {
+        setToastDetails({
+          title: "Google Sign-In successful",
+          description: "You have been logged in with Google successfully.",
+          variant: "default",
+        });
+        setShowToast(true);
+        window.location.href = info.redirectTo;
+      }
+      else{
+        setToastDetails({
+          title: "Google Sign-In unsuccessful",
+          description: "An unexpected error occurred.",
+          variant: "destructive",
+        });
+        setShowToast(true);
+      }
     } catch (error) {
       if (error.code === "auth/popup-closed-by-user") {
         return ;

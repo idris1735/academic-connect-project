@@ -1,6 +1,6 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 
+const { getAuth} = require('firebase/auth');
+const { initializeApp, getApps } = require('firebase/app');
 
 
 
@@ -26,5 +26,7 @@ if (!getApps().length) {
 
 const auth = getAuth(app);
 
-export { auth };
+
+
+module.exports = { auth };
   
