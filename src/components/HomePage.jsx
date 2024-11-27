@@ -8,7 +8,6 @@ import { Beaker, Dna, Satellite, Microscope, X, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const HomePage = () => {
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [showLearnMore, setShowLearnMore] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
@@ -26,8 +25,8 @@ const HomePage = () => {
         <p className='text-gray-600 mb-4'>
           AcademicConnect is a cutting-edge platform designed to revolutionize
           the way researchers collaborate and share knowledge. Our mission is to
-          accelerate scientific discovery by providing powerful tools and a
-          global network for academics.
+          accelerate research access by providing powerful tools and a global
+          network for academics.
         </p>
         <h3 className='text-xl font-semibold text-indigo-700 mb-2'>
           Key Features:
@@ -104,31 +103,16 @@ const HomePage = () => {
         )}
       </header>
 
-      {/* Enhanced Video Hero Section with Dark Transparent Card Overlay */}
+      {/* Hero Section with Background Image */}
       <section className='relative min-h-screen flex items-center justify-center pt-16'>
+        <Image
+          src='/homebanner.jpg'
+          alt='Research background'
+          layout='fill'
+          objectFit='cover'
+          quality={100}
+        />
         <div className='absolute inset-0 bg-gradient-to-b from-black/60 to-black/80 z-10' />
-        <div
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            isVideoLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            onLoadedData={() => setIsVideoLoaded(true)}
-            className='w-full h-full object-cover'
-          >
-            <source src='/research.mp4' type='video/mp4' />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-
-        {/* Loading state */}
-        {!isVideoLoaded && (
-          <div className='absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 animate-pulse' />
-        )}
 
         {/* Dark Transparent Card Overlay */}
         <div className='relative z-20 bg-black bg-opacity-50 p-8 rounded-lg max-w-2xl mx-4'>
@@ -173,7 +157,7 @@ const HomePage = () => {
       <section className='py-16 sm:py-24 bg-white'>
         <div className='max-w-6xl mx-auto px-4'>
           <h2 className='text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-12 text-indigo-800'>
-            Discover scientific knowledge and stay connected
+            Discover Research knowledge and stay connected
           </h2>
           <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-8'>
             {[
@@ -190,7 +174,7 @@ const HomePage = () => {
               {
                 icon: <Satellite className='w-8 h-8' />,
                 title: 'Connect',
-                description: 'Collaborate with peers worldwide',
+                description: 'Collaborate with Researchers worldwide',
               },
             ].map((item, index) => (
               <Card
@@ -220,15 +204,17 @@ const HomePage = () => {
           </h3>
           <div className='flex flex-wrap justify-center gap-3'>
             {[
-              'Engineering',
-              'Mathematics',
-              'Biology',
-              'Computer Science',
-              'Climate Change',
-              'Medicine',
-              'Physics',
-              'Social Science',
-              'Astrophysics',
+              'Business & Management',
+              'Computer Science and Technology',
+              'Education',
+              'Life Sciences',
+              'Government and Law',
+              'Library and Information Science',
+              'Media and Communications',
+              'Medicine and Healthcare',
+              'Physical Sciences & Engineering',
+              'Security and forensics',
+              'Social Science and Humanities',
               'Chemistry',
             ].map((topic, index) => (
               <button
@@ -245,12 +231,20 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Enhanced Call to Action */}
-      <section className='py-16 sm:py-24 bg-gradient-to-r from-indigo-600 to-purple-600 relative overflow-hidden'>
-        <div className="absolute inset-0 opacity-10 bg-[url('/grid.svg')]" />
-        <div className='max-w-4xl mx-auto text-center px-4 relative z-10'>
+      {/* Enhanced Call to Action with Background Image */}
+      <section className='py-16 sm:py-24 relative overflow-hidden'>
+        <Image
+          src='/researchbanner.jpg'
+          alt='Researchers collaborating'
+          layout='fill'
+          objectFit='cover'
+          objectPosition='top center'
+          quality={100}
+        />
+        <div className='absolute inset-0 bg-indigo-600/70 z-10' />
+        <div className='max-w-4xl mx-auto text-center px-4 relative z-20'>
           <h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-8 leading-tight'>
-            Join 25 million scientists advancing research together
+            Join 25 million researchers across the globe!
           </h2>
           <Button
             size='lg'
