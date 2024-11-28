@@ -10,7 +10,7 @@ export function Header({ onMenuToggle }) {
         <Menu className="h-5 w-5" />
       </Button>
       <Link href="/" className="flex items-center gap-2 font-semibold text-gray-900">
-        <span className="text-teal-500 text-xl">⚗️</span> ResearchHub
+        <span className="text-teal-500 text-xl">⚗️</span> Academic Connect
       </Link>
       <div className="flex items-center ml-4 flex-1 gap-4">
         <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-gray-600">
