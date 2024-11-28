@@ -1,15 +1,61 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Beaker, Dna, Satellite, Microscope, X, Menu } from 'lucide-react'
+import {
+  Beaker,
+  Dna,
+  Satellite,
+  Microscope,
+  Search,
+  X,
+  Menu,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const HomePage = () => {
   const [showLearnMore, setShowLearnMore] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+
+  // Simulate initial loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Handle search with debounce
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults([])
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const response = await fetch(
+          `https://api.crossref.org/works?query=${searchQuery}&rows=5`
+        )
+        const data = await response.json()
+        setSearchResults(data.message.items || [])
+      } catch (error) {
+        console.error('Search error:', error)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const LearnMoreModal = () => (
     <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
@@ -232,7 +278,7 @@ const HomePage = () => {
       </section>
 
       {/* Enhanced Call to Action with Background Image */}
-      <section className='py-16 sm:py-24 relative overflow-hidden'>
+      {/* <section className='py-16 sm:py-24 relative overflow-hidden'>
         <Image
           src='/researchbanner.jpg'
           alt='Researchers collaborating'
@@ -246,6 +292,110 @@ const HomePage = () => {
           <h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-8 leading-tight'>
             Join 25 million researchers across the globe!
           </h2>
+          <Button
+            size='lg'
+            className='bg-white text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transform hover:scale-105 transition-all text-sm sm:text-base'
+          >
+            Get Started Now
+          </Button>
+        </div>
+      </section> */}
+
+      <section className='py-16 sm:py-24 relative overflow-hidden'>
+        <Image
+          src='/researchbanner.jpg'
+          alt='Researchers collaborating'
+          layout='fill'
+          objectFit='cover'
+          objectPosition='top center'
+          quality={100}
+          priority
+        />
+        <div className='absolute inset-0 bg-indigo-600/70 z-10' />
+        <div className='max-w-4xl mx-auto text-center px-4 relative z-20 space-y-8'>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-8 leading-tight'
+          >
+            Join 25 million researchers across the globe!
+          </motion.h2>
+
+          <div className='max-w-2xl mx-auto space-y-4'>
+            <div className='relative'>
+              <Input
+                type='search'
+                placeholder='Search for publications, researchers, or topics...'
+                className='w-full pl-10 pr-4 py-3 bg-white/95 backdrop-blur-sm border-0 focus-visible:ring-2 focus-visible:ring-white'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <div className='absolute left-3 top-1/2 -translate-y-1/2'>
+                {isSearching ? (
+                  <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
+                ) : (
+                  <Search className='h-4 w-4 text-gray-500' />
+                )}
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {searchResults.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <Card className='bg-white/95 backdrop-blur-sm shadow-xl'>
+                    <CardContent className='p-2'>
+                      {searchResults.map((result, index) => (
+                        <motion.div
+                          key={result.DOI || index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className='p-3 hover:bg-gray-100 rounded-lg transition-colors'
+                        >
+                          <a
+                            href={result.URL}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='flex items-start gap-2 group'
+                          >
+                            <div className='flex-1'>
+                              <h3 className='font-medium text-sm group-hover:text-indigo-600 transition-colors'>
+                                {result.title?.[0] || 'Untitled'}
+                              </h3>
+                              <p className='text-xs text-gray-500 mt-1'>
+                                {result.author?.[0]?.family
+                                  ? `${result.author[0].family}, ${result.author[0].given}`
+                                  : 'Unknown Author'}
+                                {result.published &&
+                                  ` • ${new Date(
+                                    result.published['date-parts'][0]
+                                  ).getFullYear()}`}
+                              </p>
+                            </div>
+                            <ExternalLink className='h-4 w-4 text-gray-400 group-hover:text-indigo-600 transition-colors' />
+                          </a>
+                        </motion.div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {searchQuery && isSearching && (
+              <Card className='p-4 text-center bg-white/95 backdrop-blur-sm'>
+                <Loader2 className='h-6 w-6 animate-spin mx-auto text-indigo-600' />
+                <p className='text-sm text-gray-500 mt-2'>
+                  Searching publications...
+                </p>
+              </Card>
+            )}
+          </div>
+
           <Button
             size='lg'
             className='bg-white text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transform hover:scale-105 transition-all text-sm sm:text-base'
