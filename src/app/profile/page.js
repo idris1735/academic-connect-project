@@ -1,25 +1,32 @@
-import NavComponent from '../../components/NavComponent'
-import ProfileHeader from '../../components/ProfileHeader'
-import ProfileContent from '../../components/ProfileContent'
-import ProfileSidebar from '../../components/ProfileSidebar'
+'use client'
+
+import { useState } from 'react'
+import { Header } from "@/components/Header"
+import { Sidebar } from "@/components/ProfileSidebar"
+import { ProfileHeader } from "@/components/ProfileHeader"
+import { StatsSection } from "@/components/StatsSection"
+import { ProfileTabs } from "@/components/ProfileTabs"
+import { profileData } from "@/data/profile-data"
 
 export default function ProfilePage() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavComponent />
-      <main className="container mx-auto px-4 py-8">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <ProfileHeader />
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8">
-            <ProfileContent />
+    <div className="min-h-screen flex flex-col">
+      <Header onMenuToggle={toggleSidebar} />
+      <div className="flex-1 flex">
+        <Sidebar className={`${isSidebarOpen ? 'block' : 'hidden'} lg:block fixed inset-y-0 left-0 z-50 w-64 lg:sticky lg:top-14 lg:z-0`} />
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto max-w-4xl">
+            <ProfileHeader data={profileData} />
+            <StatsSection data={profileData} />
+            <ProfileTabs data={profileData} />
           </div>
-          <div className="lg:col-span-4">
-            <ProfileSidebar />
-          </div>
-    </div>
-    </div>
-    </main>
+        </main>
+      </div>
     </div>
   )
 }
+
