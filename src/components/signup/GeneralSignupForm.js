@@ -53,36 +53,74 @@ const GeneralSignupForm = ({ preSignupData, userType }) => {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      )
-      const user = userCredential.user
-
-      // Update profile with first and last name
-      await updateProfile(user, {
-        displayName: `${formData.firstName} ${formData.lastName}`,
+      res = await fetch('/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       })
-
-      // Save user details to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        userType: userType,
-        country: formData.country,
-        createdAt: serverTimestamp(),
-        [userType]: preSignupData,
-      })
-
-      // Redirect to dashboard
-      router.push('/feeds')
+      
+      if (res.status === 200) {
+        setToastDetails({
+          title: "Sign up successful",
+          description: "Your account has been created successfully.",
+          variant: "default",
+        });
+        setShowToast(true);
+        console.log("Sign up successful")
+      }
+      else{
+        setToastDetails({
+          title: "Sign up failed",
+          description: res.json().error,
+          variant: "destructive",
+        });
+        setShowToast(true);
+        console.error('Sign up error:', error)
+      }
     } catch (error) {
-      console.error('Signup Error:', error)
-      setError(error.message)
+      setToastDetails({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setShowToast(true);
+      console.error('Sign up error:', error)
     }
   }
+
+  //   try {
+  //     const userCredential = await createUserWithEmailAndPassword(
+  //       auth,
+  //       formData.email,
+  //       formData.password
+  //     )
+  //     const user = userCredential.user
+
+  //     // Update profile with first and last name
+  //     await updateProfile(user, {
+  //       displayName: `${formData.firstName} ${formData.lastName}`,
+  //     })
+
+  //     // Save user details to Firestore
+  //     await setDoc(doc(db, 'users', user.uid), {
+  //       firstName: formData.firstName,
+  //       lastName: formData.lastName,
+  //       email: formData.email,
+  //       userType: userType,
+  //       country: formData.country,
+  //       createdAt: serverTimestamp(),
+  //       [userType]: preSignupData,
+  //     })
+
+  //     // Redirect to dashboard
+  //     router.push('/feeds')
+  //   } catch (error) {
+  //     console.error('Signup Error:', error)
+  //     setError(error.message)
+  //   }
+  // }
 
   return (
     <motion.div
