@@ -82,33 +82,47 @@ export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   
 
+ 
   const handleSignup = async () => {
     if (!formData.agreeTerms) {
-      // toast({
-      //   title: "Terms not accepted",
-      //   description: "Please agree to the Terms of Service and Privacy Policy.",
-      //   variant: "destructive",
-      // })
+      setToastDetails({
+        title: "Terms not accepted",
+        description: "Please agree to the Terms of Service and Privacy Policy.",
+        variant: "destructive",
+      });
+      setShowToast(true);
       console.log("terms not accepted")
       return
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
-      const user = userCredential.user
 
-      await updateProfile(user, {
-        displayName: `${formData.firstName} ${formData.lastName}`,
+      res = await fetch('/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       })
-      setToastDetails({
-        title: "Sign up successful",
-        description: "Your account has been created successfully.",
-        variant: "default",
-      });
-      setShowToast(true);
-      console.log("Sign up successful")
-
-      router.push('/feeds')
+      
+      if (res.status === 200) {
+        setToastDetails({
+          title: "Sign up successful",
+          description: "Your account has been created successfully.",
+          variant: "default",
+        });
+        setShowToast(true);
+        console.log("Sign up successful")
+      }
+      else{
+        setToastDetails({
+          title: "Sign up failed",
+          description: res.json().error,
+          variant: "destructive",
+        });
+        setShowToast(true);
+        console.error('Sign up error:', error)
+      }
     } catch (error) {
       setToastDetails({
         title: "Sign up failed",

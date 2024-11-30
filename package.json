@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "nodemon server.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -22,12 +22,17 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cookie-parser": "^1.4.7",
     "countries-list": "^3.1.1",
     "date-fns": "^4.1.0",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
     "firebase": "^11.0.1",
-    "framer-motion": "^11.11.17",
+    "firebase-admin": "^13.0.1",
+    "framer-motion": "^11.12.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
-    "next": "^15.0.1",
+    "next": "^15.0.3",
     "next-video": "^1.2.2",
     "react": "^18.2.0",
     "react-day-picker": "^9.3.0",
