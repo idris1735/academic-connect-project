@@ -5,6 +5,14 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 import { auth, db } from '@/app/firebase-config'
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+} from '@/components/ui/toast'
 
 const GeneralSignupForm = ({ preSignupData, userType }) => {
   const router = useRouter()
@@ -15,10 +23,19 @@ const GeneralSignupForm = ({ preSignupData, userType }) => {
     password: '',
     confirmPassword: '',
     country: '',
+    ...preSignupData, // Include preloaded data dynamically
   })
   const [error, setError] = useState('')
   const [countries, setCountries] = useState([])
   const [showPassword, setShowPassword] = useState(false)
+
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastDetails, setToastDetails] = useState({
+    title: "",
+    description: "",
+    variant: "default",
+  });
 
   // Dummy country list to avoid API dependency
   useEffect(() => {
@@ -35,61 +52,63 @@ const GeneralSignupForm = ({ preSignupData, userType }) => {
   }, [])
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-
+    e.preventDefault();
+  
     // Log formData for debugging
-    console.log('Form Data:', formData)
-
+    console.log('Form Data:', formData);
+  
     // Validate email
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      setError('Please enter a valid email address')
-      return
+      setError('Please enter a valid email address');
+      return;
     }
-
+  
     // Validate password match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return
+      setError('Passwords do not match');
+      return;
     }
-
+  
     try {
-      res = await fetch('/signup', {
+      const res = await fetch('/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-      })
-      
+      });
+  
+      const result = await res.json(); // Parse JSON response
+  
       if (res.status === 200) {
         setToastDetails({
-          title: "Sign up successful",
-          description: "Your account has been created successfully.",
-          variant: "default",
+          title: 'Sign up successful',
+          description: 'Your account has been created successfully.',
+          variant: 'default',
         });
         setShowToast(true);
-        console.log("Sign up successful")
-      }
-      else{
+        console.log('Sign up successful:', result);
+        window.location.href = result.redirectTo;
+      } else {
         setToastDetails({
-          title: "Sign up failed",
-          description: res.json().error,
-          variant: "destructive",
+          title: 'Sign up failed',
+          description: result.error || 'An unknown error occurred',
+          variant: 'destructive',
         });
         setShowToast(true);
-        console.error('Sign up error:', error)
+        console.error('Sign up error:', result.error);
       }
     } catch (error) {
       setToastDetails({
-        title: "Sign up failed",
-        description: error.message,
-        variant: "destructive",
+        title: 'Sign up failed',
+        description: error.message || 'Network error occurred',
+        variant: 'destructive',
       });
       setShowToast(true);
-      console.error('Sign up error:', error)
+      console.error('Sign up error:', error);
     }
-  }
-
+  };
+  
   //   try {
   //     const userCredential = await createUserWithEmailAndPassword(
   //       auth,
@@ -128,6 +147,22 @@ const GeneralSignupForm = ({ preSignupData, userType }) => {
       animate={{ opacity: 1, y: 0 }}
       className='max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8'
     >
+
+  <ToastProvider>
+
+  {showToast && (
+    <Toast
+      variant={toastDetails.variant}
+      onOpenChange={(open) => setShowToast(open)}
+    >
+      <ToastTitle>{toastDetails.title}</ToastTitle>
+      <ToastDescription>{toastDetails.description}</ToastDescription>
+      <ToastClose />
+    </Toast>
+  )}
+
+  <ToastViewport />
+  </ToastProvider>
       <h2 className='text-2xl font-semibold mb-6 text-gray-800 dark:text-white'>
         Create Your Account
       </h2>

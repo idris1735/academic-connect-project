@@ -39,7 +39,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()    
     try {
-      const res = await fetch('/login', { 
+      const res = await fetch('/auth/login', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

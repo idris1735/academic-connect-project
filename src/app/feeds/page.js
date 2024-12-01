@@ -8,11 +8,15 @@ import Post from '../../components/Post'
 import RightSidebar from '../../components/RightSidebar'
 import { MessageCircle, MapPin, Clock } from 'lucide-react'
 
+
 export default function Feeds() {
   const [posts, setPosts] = useState([])
   const [filter, setFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
+  // const router = useRouter();
+  
+  
 
   useEffect(() => {
     // Simulating API call to fetch posts

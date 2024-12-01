@@ -14,6 +14,7 @@ const IndividualForm = ({ onComplete }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState({
+    userType: 'individual', // Adding userType to identify this form's data
     occupation: '',
     interests: '',
   })
