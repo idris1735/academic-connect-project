@@ -14,7 +14,7 @@ export default function NavComponent() {
     { icon: Users, label: 'Network', href: '/network' },
     { icon: MessageSquare, label: 'Messages', href: '/messages' },
     { icon: Bell, label: 'Notifications', href: '/notifications' },
-    { icon: User, label: 'Profile', href: '/profile' },
+    { icon: User, label: 'Profile', href: '/profile/individual' },
   ]
 
   return (

@@ -6,17 +6,15 @@ import ProfileSidebar from '../../components/ProfileSlidebar'
 import PostCreation from '../../components/PostCreation'
 import Post from '../../components/Post'
 import RightSidebar from '../../components/RightSidebar'
-import { MessageCircle, MapPin, Clock } from 'lucide-react'
-
+import SearchBar from '../../components/SearchBar'
+import { MapPin, Clock } from 'lucide-react'
 
 export default function Feeds() {
   const [posts, setPosts] = useState([])
   const [filter, setFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
-  // const router = useRouter();
-  
-  
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     // Simulating API call to fetch posts
@@ -104,12 +102,21 @@ export default function Feeds() {
     // Implement chat room joining logic here
   }
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    // You can add additional search logic here if needed
+  }
+
   const filteredPosts = posts
     .filter(post => filter === 'all' || post.category === filter)
     .filter(post => locationFilter === 'all' || post.location === locationFilter)
+    .filter(post => 
+      post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     .sort((a, b) => {
       if (sortBy === 'recent') {
-        return new Date(b.timestamp) - new Date(a.timestamp)
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       }
       return 0
     })
@@ -122,7 +129,14 @@ export default function Feeds() {
           <ProfileSidebar />
           <div className="md:col-span-2 lg:col-span-2 space-y-6">
             <PostCreation onPostCreate={addPost} />
-            
+            {/* Search Bar */}
+            <div className="bg-white p-4 rounded-lg shadow mb-4">
+              <SearchBar
+                placeholder="Search profiles or posts..."
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+            </div>
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow space-y-4">
               <div className="flex flex-wrap gap-4">
@@ -192,3 +206,4 @@ export default function Feeds() {
     </div>
   )
 }
+

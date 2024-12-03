@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChevronDown, MessageCircle, MoreHorizontal, Search, Send, ArrowLeft } from 'lucide-react'
 import { cn } from "@/lib/utils"
+import { format } from 'date-fns'
 
 export default function MessagingPopup() {
   const [isOpen, setIsOpen] = useState(false)
@@ -23,38 +24,38 @@ export default function MessagingPopup() {
       id: 1,
       name: "Dr. Sarah Johnson",
       message: "Hi, I'd love to collaborate on your research...",
-      timestamp: "Nov 12",
+      timestamp: "2023-11-29T10:30:00",
       avatar: "https://picsum.photos/seed/sarah/200",
       online: true,
       messages: [
-        { id: 1, sender: "Dr. Sarah Johnson", content: "Hi, I'd love to collaborate on your research project. Do you have time to discuss it?", timestamp: "Nov 12, 10:30 AM" },
-        { id: 2, sender: "You", content: "I'm very interested in collaboration. What aspects of the research are you most interested in?", timestamp: "Nov 12, 11:15 AM" },
-        { id: 3, sender: "Dr. Sarah Johnson", content: "I'm particularly intrigued by your methodology. Could we schedule a call to dive deeper into the details?", timestamp: "Nov 12, 11:45 AM" },
+        { id: 1, sender: "Dr. Sarah Johnson", content: "Hi, I'd love to collaborate on your research project. Do you have time to discuss it?", timestamp: "2023-11-29T10:30:00" },
+        { id: 2, sender: "You", content: "I'm very interested in collaboration. What aspects of the research are you most interested in?", timestamp: "2023-11-29T11:15:00" },
+        { id: 3, sender: "Dr. Sarah Johnson", content: "I'm particularly intrigued by your methodology. Could we schedule a call to dive deeper into the details?", timestamp: "2023-11-29T11:45:00" },
       ]
     },
     {
       id: 2,
       name: "Prof. David Lee",
       message: "The conference deadline has been extended...",
-      timestamp: "Nov 7",
+      timestamp: "2023-11-28T14:00:00",
       avatar: "https://picsum.photos/seed/david/200",
       online: false,
       messages: [
-        { id: 1, sender: "Prof. David Lee", content: "The conference deadline has been extended by two weeks. Will you be able to submit your paper?", timestamp: "Nov 7, 2:00 PM" },
-        { id: 2, sender: "You", content: "That's great news! Yes, I'll definitely be able to submit now. Thanks for letting me know.", timestamp: "Nov 7, 2:30 PM" },
+        { id: 1, sender: "Prof. David Lee", content: "The conference deadline has been extended by two weeks. Will you be able to submit your paper?", timestamp: "2023-11-28T14:00:00" },
+        { id: 2, sender: "You", content: "That's great news! Yes, I'll definitely be able to submit now. Thanks for letting me know.", timestamp: "2023-11-28T14:30:00" },
       ]
     },
     {
       id: 3,
       name: "Dr. Maria Rodriguez",
       message: "Here's the latest data from the experiment...",
-      timestamp: "Nov 6",
+      timestamp: "2023-11-29T09:00:00",
       avatar: "https://picsum.photos/seed/maria/200",
       online: true,
       messages: [
-        { id: 1, sender: "Dr. Maria Rodriguez", content: "Here's the latest data from the experiment. The results are quite interesting!", timestamp: "Nov 6, 9:00 AM" },
-        { id: 2, sender: "You", content: "Thank you, Maria! I'll take a look right away. Do you want to discuss the findings later today?", timestamp: "Nov 6, 9:30 AM" },
-        { id: 3, sender: "Dr. Maria Rodriguez", content: "How about we meet at 3 PM?", timestamp: "Nov 6, 10:00 AM" },
+        { id: 1, sender: "Dr. Maria Rodriguez", content: "Here's the latest data from the experiment. The results are quite interesting!", timestamp: "2023-11-29T09:00:00" },
+        { id: 2, sender: "You", content: "Thank you, Maria! I'll take a look right away. Do you want to discuss the findings later today?", timestamp: "2023-11-29T09:30:00" },
+        { id: 3, sender: "Dr. Maria Rodriguez", content: "How about we meet at 3 PM?", timestamp: "2023-11-29T10:00:00" },
       ]
     },
   ]
@@ -66,7 +67,7 @@ export default function MessagingPopup() {
         id: selectedConversation.messages.length + 1,
         sender: "You",
         content: message,
-        timestamp: new Date().toLocaleString()
+        timestamp: new Date().toISOString()
       }
       setSelectedConversation({
         ...selectedConversation,
@@ -148,7 +149,7 @@ export default function MessagingPopup() {
                     )}>
                       <p className="text-sm">{msg.content}</p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{msg.timestamp}</p>
+                    <p className="text-xs text-gray-500 mt-1">{format(new Date(msg.timestamp), 'MMM d, h:mm a')}</p>
                   </div>
                 ))}
               </ScrollArea>
@@ -227,7 +228,7 @@ export default function MessagingPopup() {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline">
                           <p className="font-medium truncate">{conversation.name}</p>
-                          <span className="text-xs text-gray-500 flex-shrink-0">{conversation.timestamp}</span>
+                          <span className="text-xs text-gray-500 flex-shrink-0">{format(new Date(conversation.timestamp), 'MMM d')}</span>
                         </div>
                         <p className="text-sm text-gray-500 truncate">{conversation.message}</p>
                       </div>
@@ -242,3 +243,4 @@ export default function MessagingPopup() {
     </div>
   )
 }
+

@@ -1,18 +1,19 @@
-import localFont from 'next/font/local'
-import './globals.css'
-import Footer from '@/components/Footer' // Add this import
-import MessagingPopup from '@/components/MessagingPopup'
+'use client'
 
-export const metadata = {
-  title: 'Academic Connect Project',
-  description: 'Connect researchers globally',
-}
+import { useNavigationLoading } from '@/hooks/UseNavigationLoading'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import Footer from '@/components/Footer'
+import MessagingPopup from '@/components/MessagingPopup'
+import './globals.css'
 
 export default function RootLayout({ children }) {
+  const isLoading = useNavigationLoading()
+
   return (
     <html lang='en'>
       <body>
         <div className='flex flex-col min-h-screen'>
+          {isLoading && <LoadingSpinner />}
           <main className='flex-grow'>{children}</main>
           <Footer />
           <MessagingPopup />
@@ -21,3 +22,4 @@ export default function RootLayout({ children }) {
     </html>
   )
 }
+

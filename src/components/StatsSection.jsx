@@ -1,55 +1,54 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Trophy, BookOpen, Quote, Hash } from 'lucide-react'
 
 export function StatsSection({ data }) {
+  if (!data) {
+    return null;
+  }
+
+  const stats = [
+    { name: 'Upvotes', value: data.stats.upvotes, icon: Trophy },
+    { name: 'Publications', value: data.stats.publications, icon: BookOpen },
+    { name: 'Citations', value: data.stats.citations, icon: Quote },
+    { name: 'h-index', value: data.stats.hIndex, icon: Hash },
+  ]
+
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 px-6">
-      <Card>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((item) => (
+          <Card key={item.name} className="border-none shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">{item.name}</CardTitle>
+              <item.icon className="h-4 w-4 text-[#6366F1]" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{item.value}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card className="mt-5 border-none shadow-lg">
         <CardHeader>
-          <CardTitle>ACHIEVEMENTS</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center h-40">
-          <div className="text-gray-500 text-center">
-            This user has not unlocked any achievements yet.
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>KEY STATS</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-gray-600">
-          <div>Upvotes received: {data.stats.upvotes}</div>
-          <div>Publications: {data.stats.publications}</div>
-          <div>Cited by: {data.stats.citations}</div>
-          <div>h-index: {data.stats.hIndex} / i10-index: {data.stats.i10Index}</div>
-        </CardContent>
-      </Card>
-      
-      <Card className="sm:col-span-2 lg:col-span-1">
-        <CardHeader>
-          <CardTitle>REPUTATION</CardTitle>
+          <CardTitle className="text-gray-900">Reputation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {Object.entries(data.reputation).map(([field, value]) => (
             <div key={field} className="space-y-1">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{field}</span>
-                <span className="text-gray-600">&lt; {Math.round(value * 100)}%</span>
+                <span className="font-medium text-gray-700">{field}</span>
+                <span className="text-[#6366F1]">{Math.round(value * 100)}%</span>
               </div>
-              <Progress value={value * 100} />
+              <Progress 
+                value={value * 100} 
+                className="h-2 bg-gray-100" 
+              />
             </div>
           ))}
-          <div className="flex justify-between text-sm">
-            <button className="text-blue-500 hover:underline">Show more</button>
-            <button className="text-blue-500 hover:underline">How is this calculated?</button>
-          </div>
         </CardContent>
       </Card>
     </div>
   )
 }
-
-
 

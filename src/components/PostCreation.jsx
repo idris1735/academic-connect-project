@@ -1,19 +1,84 @@
 'use client'
 
-import { useState } from 'react'
-import { MessageSquare, Users2, Briefcase, Image } from "lucide-react"
+import { useState, useRef } from 'react'
+import { MessageSquare, Users2, Briefcase, Image, FileText, Film, X, Paperclip } from 'lucide-react'
 
 export default function PostCreation({ onPostCreate }) {
   const [content, setContent] = useState('')
-  const [image, setImage] = useState('')
+  const [attachment, setAttachment] = useState(null)
   const [category, setCategory] = useState('research')
+  const [error, setError] = useState('')
+  const fileInputRef = useRef(null)
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (content.trim()) {
-      onPostCreate(content, image, category)
+      onPostCreate(content, attachment, category)
       setContent('')
-      setImage('')
+      setAttachment(null)
+      setError('')
+    } else {
+      setError('Please enter some content for your post.')
+    }
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('File size should not exceed 10MB.')
+        return
+      }
+      setAttachment(file)
+      setError('')
+    }
+  }
+
+  const removeAttachment = () => {
+    setAttachment(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const renderAttachmentPreview = () => {
+    if (!attachment) return null
+
+    const isImage = attachment.type.startsWith('image/')
+    const isVideo = attachment.type.startsWith('video/')
+
+    if (isImage) {
+      return (
+        <div className="relative">
+          <img src={URL.createObjectURL(attachment)} alt="Attachment preview" className="max-w-full h-auto rounded-md" />
+          <button onClick={removeAttachment} className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )
+    } else if (isVideo) {
+      return (
+        <div className="relative">
+          <video src={URL.createObjectURL(attachment)} controls className="max-w-full h-auto rounded-md">
+            Your browser does not support the video tag.
+          </video>
+          <button onClick={removeAttachment} className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )
+    } else {
+      return (
+        <div className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
+          <div className="flex items-center">
+            <FileText className="h-5 w-5 mr-2 text-gray-500" />
+            <span className="text-sm text-gray-700">{attachment.name}</span>
+          </div>
+          <button onClick={removeAttachment} className="text-gray-500 hover:text-gray-700">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )
     }
   }
 
@@ -24,31 +89,42 @@ export default function PostCreation({ onPostCreate }) {
           <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-medium">
             AC
           </div>
-          <input
+          <textarea
             placeholder="Start a post"
-            className="flex-grow px-3 py-2 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+            className="flex-grow px-3 py-2 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1] min-h-[100px]"
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            aria-label="Post content"
           />
         </div>
+        {renderAttachmentPreview()}
         <div className="flex justify-between items-center mb-4">
           <input
-            type="text"
-            placeholder="Image URL"
-            className="w-1/2 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            id="file-upload"
+            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
           />
+          <label
+            htmlFor="file-upload"
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+          >
+            <Paperclip className="h-4 w-4" />
+            Attach File
+          </label>
           <select
             className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            aria-label="Post category"
           >
             <option value="research">Research</option>
             <option value="publication">Publication</option>
-            <option value="job">Job</option>
           </select>
         </div>
+        {error && <p className="text-red-500 mb-2">{error}</p>}
         <div className="flex justify-between">
           <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]">
             <MessageSquare className="h-4 w-4" />
@@ -57,6 +133,10 @@ export default function PostCreation({ onPostCreate }) {
           <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
             <Image className="h-4 w-4" />
             Image
+          </button>
+          <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
+            <Film className="h-4 w-4" />
+            Video
           </button>
           <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
             <Users2 className="h-4 w-4" />
@@ -71,3 +151,4 @@ export default function PostCreation({ onPostCreate }) {
     </div>
   )
 }
+

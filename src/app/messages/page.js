@@ -1,38 +1,63 @@
 'use client'
 
 import { useState } from 'react'
-import NavComponent from '../../components/NavComponent'
-import MessageSidebar from '../../components/MessageSidebar'
-import MessageView from '../../components/MessageView'
+import MessageSidebar from '@/components/MessageSidebar'
+import MessageView from '@/components/MessageView'
+import ResearchRoom from '@/components/ResearchRoom'
+import Workflow from '@/components/Workflow'
+import { useToast } from "@/components/ui/use-toast"
 
 export default function MessagesPage() {
-  const [selectedDiscussion, setSelectedDiscussion] = useState(null)
-  const [selectedDM, setSelectedDM] = useState(null)
+  const [activeView, setActiveView] = useState('messages')
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [rooms, setRooms] = useState([
+    { id: 1, name: 'AI in Healthcare', members: 5, type: 'research' },
+    { id: 2, name: 'Climate Change Mitigation', members: 8, type: 'research' },
+  ])
+  const { toast } = useToast()
+
+  const handleSelectItem = (item, type) => {
+    setSelectedItem(item)
+    setActiveView(type)
+  }
+
+  const handleCreateRoom = (name, description) => {
+    const newRoom = {
+      id: rooms.length + 1,
+      name,
+      description,
+      members: 1,
+      type: 'research'
+    }
+    setRooms([...rooms, newRoom])
+    toast({
+      title: "Room Created",
+      description: `Your new room "${name}" has been created successfully.`,
+    })
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavComponent />
-      <main className="h-[calc(100vh-4rem)]">
-        <div className="mx-auto h-full max-w-7xl">
-          <div className="grid h-full grid-cols-[280px_1fr] overflow-hidden rounded-lg bg-white shadow-md">
-            <MessageSidebar 
-              onSelectDiscussion={setSelectedDiscussion} 
-              onSelectDM={setSelectedDM}
-              selectedDiscussion={selectedDiscussion}
-              selectedDM={selectedDM}
-            />
-            <div className="border-l">
-              {(selectedDiscussion || selectedDM) ? (
-                <MessageView conversation={selectedDiscussion || selectedDM} />
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground">Select a discussion or conversation to start messaging</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
+    <div className="flex h-screen bg-white">
+      <div className="w-1/4 border-r border-gray-200">
+        <MessageSidebar
+          onSelectDiscussion={(discussion) => handleSelectItem(discussion, 'discussion')}
+          onSelectDM={(dm) => handleSelectItem(dm, 'messages')}
+          onSelectResearchRoom={(room) => handleSelectItem(room, 'research')}
+          onSelectWorkflow={(workflow) => handleSelectItem(workflow, 'workflow')}
+          onCreateRoom={handleCreateRoom}
+          rooms={rooms}
+        />
+      </div>
+      <div className="w-3/4">
+        {activeView === 'messages' && <MessageView conversation={selectedItem} onCreateRoom={handleCreateRoom} />}
+        {activeView === 'discussion' && <MessageView conversation={selectedItem} onCreateRoom={handleCreateRoom} />}
+        {activeView === 'research' && <ResearchRoom room={selectedItem} />}
+        {activeView === 'workflow' && <Workflow workflow={selectedItem} />}
+      </div>
     </div>
   )
 }
+
+
+
+
