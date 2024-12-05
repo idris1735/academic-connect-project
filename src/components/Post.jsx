@@ -8,20 +8,55 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
   const [isCommenting, setIsCommenting] = useState(false)
   const [comment, setComment] = useState('')
 
-  const handleLike = () => {
-    onLike(post.id)
+  const handleLike = async () => {
+    try {
+      const response = await fetch(`/api/posts/${post.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        onLike(post.id, data.likesCount);
+      } else {
+        console.error('Failed to like post:', data.message);
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
   }
 
   const handleComment = () => {
     setIsCommenting(!isCommenting)
   }
 
-  const submitComment = (e) => {
-    e.preventDefault()
+  const submitComment = async (e) => {
+    e.preventDefault();
     if (comment.trim()) {
-      onComment(post.id, comment)
-      setComment('')
-      setIsCommenting(false)
+      try {
+        const response = await fetch(`/api/posts/${post.id}/comment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: comment }),
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          onComment(post.id, data.comment);
+          setComment('');
+          setIsCommenting(false);
+        } else {
+          console.error('Failed to add comment:', data.message);
+        }
+      } catch (error) {
+        console.error('Error adding comment:', error);
+      }
     }
   }
 
@@ -33,14 +68,14 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
           <div className="relative">
             <img
               src={post.avatar}
-              alt={post.author}
+              alt={post.userInfo.author}
               className="w-12 h-12 rounded-full"
             />
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-lg">{post.author}</h3>
+              <h3 className="font-bold text-lg">{post.userInfo.author}</h3>
               <span className="text-sm text-gray-500">{post.connectionDegree}</span>
             </div>
             <p className="text-sm text-gray-600">{post.authorTitle}</p>
@@ -68,14 +103,14 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
           onClick={handleLike}
         >
           <ThumbsUp className="h-5 w-5" />
-          <span>Like ({post.likes})</span>
+          <span>Like ({post.likesCount})</span>
         </button>
         <button 
           className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
           onClick={handleComment}
         >
           <MessageSquare className="h-5 w-5" />
-          <span>Comment ({post.comments.length})</span>
+          <span>Comment ({post.commentsCount})</span>
         </button>
         <Link 
           href={`/messages?discussion=${post.discussionId}`}
@@ -92,12 +127,14 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
       </div>
 
       {/* Comments Section */}
-      {post.comments.length > 0 && (
+      {post.commentsCount > 0 && post.comments && (
         <div className="px-4 py-2 bg-gray-50">
           <h4 className="font-semibold mb-2">Comments</h4>
           {post.comments.map((comment) => (
             <div key={comment.id} className="mb-2">
-              <p className="text-sm"><strong>{comment.author}</strong>: {comment.content}</p>
+              <p className="text-sm">
+                <strong>{comment.author}</strong>: {comment.content}
+              </p>
               <p className="text-xs text-gray-500">{comment.timestamp}</p>
             </div>
           ))}

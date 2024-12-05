@@ -30,6 +30,7 @@ server.use(
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const postRoutes = require('./routes/posts');
 
 // Import middleware
 const checkAuth = require('./middleware/auth');
@@ -38,6 +39,8 @@ const errorHandler = require('./middleware/errorHandler');
 // Use routes
 server.use('/auth', authRoutes);
 server.use('/user', checkAuth, userRoutes);
+server.use('/api/posts', checkAuth, postRoutes);
+server.use('/api/users', checkAuth, userRoutes);
 
 app.prepare().then(() => {
     

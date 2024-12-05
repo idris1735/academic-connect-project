@@ -1,28 +1,135 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Pencil } from "lucide-react"
+
+
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+} from '@/components/ui/toast'
 
 export default function ProfileSidebar() {
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [profile, setProfile] = useState({
-    name: 'John Researcher',
-    title: 'Computer Science PhD Student',
-    views: 205,
-    connections: 500
+    name: '',
+    title: '',
+    views: 0,
+    connections: 0
   })
+  const [showToast, setShowToast] = useState(false);
+  const [toastDetails, setToastDetails] = useState({
+    title: "",
+    description: "",
+    variant: "default",
+  });
+
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/users/profile')
+      const data = await response.json()
+      
+      if (response.ok) {
+        setProfile(data.profile)
+      } else {
+        setShowToast(true);
+        setToastDetails({
+          title: "Error",
+          description: data.message || "Failed to fetch profile",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      setShowToast(true);
+      setToastDetails({
+        title: "Error",
+        description: "Failed to fetch profile",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleEdit = () => {
     setIsEditing(!isEditing)
   }
 
-  const handleSave = () => {
-    setIsEditing(false)
-    // Here you would typically send an API request to update the profile
+  const handleSave = async () => {
+    try {
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: profile.name,
+          title: profile.title,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setIsEditing(false)
+        toast({
+          title: "Success",
+          description: "Profile updated successfully",
+        })
+      } else {
+        setShowToast(true);
+        setToastDetails({
+          title: "Error",
+          description: data.message || "Failed to update profile",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setShowToast(true);
+      setToastDetails({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value })
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    fetchProfile() // Reset to original data
+  }
+
+  if (isLoading) {
+    return (
+      <aside className="md:col-span-1">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="animate-pulse">
+            <div className="h-20 bg-gray-200 rounded-t-lg" />
+            <div className="h-16 w-16 bg-gray-200 rounded-full mx-auto -mt-8" />
+            <div className="space-y-3 mt-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto" />
+              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
+            </div>
+          </div>
+        </div>
+      </aside>
+    )
   }
 
   return (
@@ -36,6 +143,21 @@ export default function ProfileSidebar() {
             </div>
           </div>
         </div>
+        <ToastProvider>
+
+        {showToast && (
+          <Toast
+            variant={toastDetails.variant}
+            onOpenChange={(open) => setShowToast(open)}
+          >
+            <ToastTitle>{toastDetails.title}</ToastTitle>
+            <ToastDescription>{toastDetails.description}</ToastDescription>
+            <ToastClose />
+          </Toast>
+        )}
+
+        <ToastViewport />
+        </ToastProvider>
         <div className="pt-12 pb-6 px-4 text-center">
           {isEditing ? (
             <div className="space-y-2">
@@ -51,12 +173,20 @@ export default function ProfileSidebar() {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-md text-center focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
               />
-              <button 
-                onClick={handleSave}
-                className="px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]"
-              >
-                Save
-              </button>
+              <div className="flex gap-2 justify-center">
+                <button 
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]"
+                >
+                  Save
+                </button>
+                <button 
+                  onClick={handleCancel}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           ) : (
             <>
