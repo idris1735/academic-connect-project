@@ -220,7 +220,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       const hasActivity = scheduledActivities.some(
         activity => activity.date.toDateString() === date.toDateString()
       )
-      return hasActivity ? 'bg-blue-100 text-blue-600 font-bold' : null
+      return hasActivity ? 'bg-blue-100 text-blue-500 font-bold' : null
     }
   }
 
@@ -422,78 +422,128 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
             </div></ScrollArea>
         </TabsContent>
 
-        <TabsContent value="schedule" className="h-[calc(100vh-220px)] p-4 m-0">
+        <TabsContent value="schedule" className="h-[calc(100vh-220px)] p-6 m-0 bg-indigo-50/20">
           <ScrollArea className="h-[calc(100vh-220px)]">
-            <div className="max-w-4xl mx-auto space-y-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Schedule New Activity</CardTitle>
-                  <CardDescription>Plan your research activities and meetings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="activity-name">Activity Name</Label>
-                      <Input
-                        id="activity-name"
-                        value={activityName}
-                        onChange={(e) => setActivityName(e.target.value)}
-                        placeholder="Enter activity name"
+            <div className="max-w-6xl mx-auto space-y-6">
+              {/* Calendar Card */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 border-none shadow-lg">
+                  <CardHeader className="bg-indigo-500 text-white rounded-t-lg px-6 py-4">
+                    <CardTitle className="flex items-center text-xl font-semibold">
+                      <CalendarIcon className="w-5 h-5 mr-2" />
+                      Research Calendar
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="bg-white rounded-xl shadow-inner p-4">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        className="mx-auto"
+                        modifiers={{
+                          booked: scheduledActivities.map(activity => activity.date)
+                        }}
+                        modifiersClassNames={{
+                          booked: "bg-indigo-100 font-medium text-indigo-500 hover:bg-indigo-200"
+                        }}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="activity-time">Time</Label>
-                      <Input
-                        id="activity-time"
-                        type="time"
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>Date</Label>
-                      <div className="border rounded-lg p-4 bg-white">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          className="mx-auto"
+                  </CardContent>
+                </Card>
+
+                {/* New Activity Form */}
+                <Card className="border-none shadow-lg">
+                  <CardHeader className="bg-indigo-500 text-white rounded-t-lg px-6 py-4">
+                    <CardTitle className="text-lg font-semibold">New Activity</CardTitle>
+                    <CardDescription className="text-indigo-50 mt-1">
+                      Schedule a research activity or meeting
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="activity-name" className="text-indigo-500 font-medium">
+                          Activity Name
+                        </Label>
+                        <Input
+                          id="activity-name"
+                          value={activityName}
+                          onChange={(e) => setActivityName(e.target.value)}
+                          placeholder="Enter activity name"
+                          className="border-indigo-200 focus-visible:ring-indigo-500"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="activity-time" className="text-indigo-500 font-medium">
+                          Time
+                        </Label>
+                        <Input
+                          id="activity-time"
+                          type="time"
+                          value={selectedTime}
+                          onChange={(e) => setSelectedTime(e.target.value)}
+                          className="border-indigo-200 focus-visible:ring-indigo-500"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleScheduleActivity} 
+                        className="w-full bg-indigo-500 hover:bg-indigo-700 text-white transition-colors"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Schedule Activity
+                      </Button>
                     </div>
-                  </div>
-                  <Button onClick={handleScheduleActivity} className="w-full mt-6">
-                    Schedule Activity
-                  </Button>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Scheduled Activities</CardTitle>
-                  <CardDescription>Your upcoming research activities and meetings</CardDescription>
+              {/* Activities List */}
+              <Card className="border-none shadow-lg">
+                <CardHeader className="bg-indigo-500 text-white rounded-t-lg px-6 py-4">
+                  <CardTitle className="flex items-center text-xl font-semibold">
+                    <Clock className="w-5 h-5 mr-2" />
+                    Upcoming Activities
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="p-6">
+                  <div className="grid gap-4">
                     {scheduledActivities.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                      <div
+                        key={activity.id}
+                        className="flex items-center justify-between p-4 bg-white rounded-xl border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all duration-300"
+                      >
                         <div className="flex items-center space-x-4">
-                          <div className="bg-blue-100 p-2 rounded-full">
-                            <CalendarIcon className="h-6 w-6 text-blue-600" />
+                          <div className="bg-indigo-100 p-3 rounded-full">
+                            <CalendarIcon className="h-5 w-5 text-indigo-500" />
                           </div>
                           <div>
-                            <h4 className="font-medium">{activity.name}</h4>
-                            <p className="text-sm text-gray-500">
-                              {activity.date.toDateString()} at {activity.time}
+                            <h4 className="font-medium text-indigo-900">{activity.name}</h4>
+                            <p className="text-sm text-indigo-500">
+                              {activity.date.toLocaleDateString('en-US', { 
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
                             </p>
                           </div>
                         </div>
-                        <Badge variant="secondary">
-                          <Clock className="h-4 w-4 mr-1" />
+                        <Badge className="bg-indigo-100 text-indigo-500 hover:bg-indigo-200 transition-colors">
+                          <Clock className="h-3 w-3 mr-1" />
                           {activity.time}
                         </Badge>
                       </div>
                     ))}
+                    {scheduledActivities.length === 0 && (
+                      <div className="text-center py-12 bg-indigo-50/50 rounded-xl">
+                        <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-indigo-500" />
+                        <p className="text-indigo-500 font-medium">No activities scheduled yet</p>
+                        <p className="text-indigo-500 text-sm mt-1">
+                          Create your first activity using the form above
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -524,7 +574,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                       variant="outline"
                       onClick={() => handleInviteUser(member)}
                       className={cn(
-                        selectedMembers.some(m => m.id === member.id) && "bg-green-100 text-green-600"
+                        selectedMembers.some(m => m.id === member.id) && "bg-green-100 text-green-500"
                       )}
                     >
                       {selectedMembers.some(m => m.id === member.id) ? (
