@@ -6,8 +6,12 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
-import { browserPopupRedirectResolver } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from 'firebase/auth'
+import { browserPopupRedirectResolver } from 'firebase/auth'
 import { auth } from '@/app/firebase-config'
 // import { toast } from '@/components/ui/use-toast'
 import {
@@ -18,146 +22,168 @@ import {
   ToastDescription,
   ToastClose,
 } from '@/components/ui/toast'
-import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline'; // Import icons
-
-
+import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline' // Import icons
+import { Loader2 } from 'lucide-react' // Import Loader2 icon
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [keepLoggedIn, setKeepLoggedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // Add loading state
 
-  const [showToast, setShowToast] = useState(false);
+  const [showToast, setShowToast] = useState(false)
   const [toastDetails, setToastDetails] = useState({
-    title: "",
-    description: "",
-    variant: "default",
-  });
-  const [showPassword, setShowPassword] = useState(false);
+    title: '',
+    description: '',
+    variant: 'default',
+  })
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e) => {
-    e.preventDefault()    
+    e.preventDefault()
+    setIsLoading(true) // Start loading
     try {
-      const res = await fetch('/auth/login', { 
+      const res = await fetch('/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await res.json();
-      console.log('Response:', data);
-    
+      })
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+      }
+
+      let data
+      try {
+        data = await res.json()
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', parseError)
+        throw new Error('Invalid response format from server')
+      }
+
+      console.log('Response:', data)
+
       if (res.status === 200) {
         setToastDetails({
           title: 'Login successful',
           description: 'You have been logged in successfully.',
           variant: 'default',
-        });
-        setShowToast(true);
-        window.location.href = data.redirectTo;
-      } 
-       else {
+        })
+        setShowToast(true)
+
+        if (data.redirectTo) {
+          router.push(data.redirectTo)
+        }
+      } else {
         setToastDetails({
           title: 'Login failed',
-          description: 'Please check your email and password and try again.',
+          description:
+            data.message ||
+            'Please check your email and password and try again.',
           variant: 'destructive',
-        });
-        setShowToast(true);
+        })
+        setShowToast(true)
       }
     } catch (error) {
-      console.error('Error:', error.message);
+      console.error('Error:', error.message)
       setToastDetails({
         title: 'Login failed',
-        description: 'An unexpected error occurred.',
+        description: 'An unexpected error occurred. Please try again later.',
         variant: 'destructive',
-      });
-      setShowToast(true);
+      })
+      setShowToast(true)
+    } finally {
+      setIsLoading(false) // Stop loading regardless of outcome
     }
   }
 
   const handleGoogleSignIn = async () => {
+    setIsLoading(true) // Start loading
     const provider = new GoogleAuthProvider()
     try {
-      const userCredential =  await signInWithPopup(auth, provider, browserPopupRedirectResolver)
+      const userCredential = await signInWithPopup(
+        auth,
+        provider,
+        browserPopupRedirectResolver
+      )
       let data = userCredential.user
-       // Get the ID token
-      const idToken = await data.getIdToken();
-      data['idToken'] = idToken;
+      // Get the ID token
+      const idToken = await data.getIdToken()
+      data['idToken'] = idToken
       let user = {}
-      user.email = data.email;
-      user.displayName = data.displayName;
-      user.photoURL = data.photoURL;
-      user.idToken = idToken;
-      user.uid = data.uid;
+      user.email = data.email
+      user.displayName = data.displayName
+      user.photoURL = data.photoURL
+      user.idToken = idToken
+      user.uid = data.uid
 
-      console.log('Google Sign-In data:', data);
-      console.log('Google Sign-In idToken:', idToken);
+      console.log('Google Sign-In data:', data)
+      console.log('Google Sign-In idToken:', idToken)
       const res = await fetch('/google-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ user }),
-      });
-      let info = await res.json();
-      console.log('Google Sign-In response:', res);
+      })
+      let info = await res.json()
+      console.log('Google Sign-In response:', res)
       if (res.status === 200) {
         setToastDetails({
-          title: "Google Sign-In successful",
-          description: "You have been logged in with Google successfully.",
-          variant: "default",
-        });
-        setShowToast(true);
-        window.location.href = info.redirectTo;
-      }
-      else{
+          title: 'Google Sign-In successful',
+          description: 'You have been logged in with Google successfully.',
+          variant: 'default',
+        })
+        setShowToast(true)
+        window.location.href = info.redirectTo
+      } else {
         setToastDetails({
-          title: "Google Sign-In unsuccessful",
-          description: "An unexpected error occurred.",
-          variant: "destructive",
-        });
-        setShowToast(true);
+          title: 'Google Sign-In unsuccessful',
+          description: 'An unexpected error occurred.',
+          variant: 'destructive',
+        })
+        setShowToast(true)
       }
     } catch (error) {
-      if (error.code === "auth/popup-closed-by-user") {
-        return ;
-      }
-      else {
+      if (error.code === 'auth/popup-closed-by-user') {
+        return
+      } else {
         setToastDetails({
-          title: "Login unsuccessful",
-          description: "This Google account is not registered with us.",
-          variant: "destructive",
-        });
-     
-      console.error('Google Sign-In error:', error)
+          title: 'Login unsuccessful',
+          description: 'This Google account is not registered with us.',
+          variant: 'destructive',
+        })
+
+        console.error('Google Sign-In error:', error)
+      }
+    } finally {
+      setIsLoading(false) // Stop loading
     }
   }
-}
   return (
     <div className='min-h-screen bg-background flex flex-col'>
       <header className='bg-primary text-primary-foreground p-4'>
         <h1 className='text-2xl font-bold'>AcademicConnect</h1>
       </header>
 
-
       <ToastProvider>
+        {showToast && (
+          <Toast
+            variant={toastDetails.variant}
+            onOpenChange={(open) => setShowToast(open)}
+          >
+            <ToastTitle>{toastDetails.title}</ToastTitle>
+            <ToastDescription>{toastDetails.description}</ToastDescription>
+            <ToastClose />
+          </Toast>
+        )}
 
-      {showToast && (
-        <Toast
-          variant={toastDetails.variant}
-          onOpenChange={(open) => setShowToast(open)}
-        >
-          <ToastTitle>{toastDetails.title}</ToastTitle>
-          <ToastDescription>{toastDetails.description}</ToastDescription>
-          <ToastClose />
-        </Toast>
-      )}
-
-      <ToastViewport />
-    </ToastProvider>
+        <ToastViewport />
+      </ToastProvider>
 
       <main className='flex-grow container mx-auto px-4 py-8 flex items-center justify-center'>
         <div className='w-full max-w-md'>
@@ -173,36 +199,36 @@ export default function LoginPage() {
                 required
               />
             </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="password">Password</Label>
+
+            <div className='space-y-2'>
+              <div className='flex justify-between'>
+                <Label htmlFor='password'>Password</Label>
                 <Link
-                  href="/forgot-password"
-                  className="text-sm text-primary hover:underline"
+                  href='/forgot-password'
+                  className='text-sm text-primary hover:underline'
                 >
                   Forgot password?
                 </Link>
               </div>
-              <div className="relative">
+              <div className='relative'>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"} // Toggle type between 'password' and 'text'
-                  placeholder="Password"
+                  id='password'
+                  type={showPassword ? 'text' : 'password'} // Toggle type between 'password' and 'text'
+                  placeholder='Password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pr-10" // Padding for the show/hide icon
+                  className='pr-10' // Padding for the show/hide icon
                 />
                 <button
-                  type="button"
+                  type='button'
                   onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
-                  className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"
+                  className='absolute inset-y-0 right-0 flex items-center px-2 text-gray-500'
                 >
                   {showPassword ? (
-                    <EyeOffIcon className="w-5 h-5" /> // Hide password icon
+                    <EyeOffIcon className='w-5 h-5' /> // Hide password icon
                   ) : (
-                    <EyeIcon className="w-5 h-5" /> // Show password icon
+                    <EyeIcon className='w-5 h-5' /> // Show password icon
                   )}
                 </button>
               </div>
@@ -221,8 +247,15 @@ export default function LoginPage() {
                 Keep me logged in
               </label>
             </div>
-            <Button type='submit' className='w-full'>
-              Log in
+            <Button type='submit' className='w-full' disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Processing...
+                </>
+              ) : (
+                'Log in'
+              )}
             </Button>
           </form>
 
