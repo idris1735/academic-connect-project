@@ -1,37 +1,53 @@
 const db = require('../config/database');
 
-exports.getProfile = async (req, res) => {
+exports.getUserProfile = async (req, res) => {
   try {
-    const userRef = db.collection('users').doc(req.user.uid);
-    const userDoc = await userRef.get();
-
+    const pid = req.user.uid;
+    console.log(pid)
+    
+    // Get user profile from Firestore
+    const userDoc = await db.collection('profiles').doc(pid).get();
+    
     if (!userDoc.exists) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'User profile not found' });
     }
 
     const userData = userDoc.data();
-    res.status(200).json(userData);
+    console.log(userData)
+    const profile = {
+      name: userData.displayName || '',
+      title: userData.occupation || 'Research Assistant',
+      views: userData.profileViews || 0,
+      connections: userData.connections || 0,
+      // Add any other profile fields you need
+    };
+
+    return res.status(200).json({ profile });
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    res.status(500).json({ message: 'Failed to fetch user profile', error: error.message });
+    return res.status(500).json({ message: 'Failed to fetch user profile' });
   }
 };
 
-exports.updateProfile = async (req, res) => {
+exports.updateUserProfile = async (req, res) => {
   try {
-    const { displayName, photoURL, bio } = req.body;
-    const userRef = db.collection('users').doc(req.user.uid);
+    const uid = req.user.uid;
+    const { name, title } = req.body;
 
-    await userRef.update({
-      displayName,
-      photoURL,
-      bio
+    // Update user profile in Firestore
+    await db.collection('users').doc(uid).update({
+      name,
+      title,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.status(200).json({ message: 'Profile updated successfully' });
+    return res.status(200).json({ 
+      message: 'Profile updated successfully',
+      profile: { name, title }
+    });
   } catch (error) {
     console.error('Error updating user profile:', error);
-    res.status(500).json({ message: 'Failed to update user profile', error: error.message });
+    return res.status(500).json({ message: 'Failed to update profile' });
   }
 };
 

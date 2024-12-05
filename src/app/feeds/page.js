@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import NavComponent from '../../components/NavComponent'
-import ProfileSidebar from '../../components/ProfileSlidebar'
+import ProfileSlidebar from '../../components/ProfileSlidebar'
 import PostCreation from '../../components/PostCreation'
 import Post from '../../components/Post'
 import RightSidebar from '../../components/RightSidebar'
@@ -119,25 +119,25 @@ export default function Feeds() {
   };
   
 
-  const handleLike = (postId) => {
+  const handleLike = async (postId, newLikeCount) => {
     setPosts(posts.map(post => 
-      post.id === postId ? { ...post, likes: post.likes + 1 } : post
-    ))
-  }
+      post.id === postId 
+        ? { ...post, likesCount: newLikeCount } 
+        : post
+    ));
+  };
 
-  const handleComment = (postId, comment) => {
+  const handleComment = async (postId, newComment) => {
     setPosts(posts.map(post => 
-      post.id === postId ? { 
-        ...post, 
-        comments: [...post.comments, {
-          id: Date.now(),
-          author: 'Current User',
-          content: comment,
-          timestamp: 'Just now'
-        }]
-      } : post
-    ))
-  }
+      post.id === postId 
+        ? { 
+            ...post, 
+            commentsCount: (post.commentsCount || 0) + 1,
+            comments: [...(post.comments || []), newComment]
+          } 
+        : post
+    ));
+  };
 
   const handleJoinRoom = (projectRoom) => {
     console.log(`Joining chat room: ${projectRoom}`)
@@ -168,7 +168,7 @@ export default function Feeds() {
       <NavComponent />
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <ProfileSidebar />
+          <ProfileSlidebar />
           <div className="md:col-span-2 lg:col-span-2 space-y-6">
             <PostCreation onPostCreate={addPost} />
             {/* Search Bar */}

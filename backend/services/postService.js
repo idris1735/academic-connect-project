@@ -9,8 +9,8 @@ exports.createPost = async (req, res) => {
   console.log(req.body)
   const {content, attachment, category} = req.body;
   user = req.user;
-  console.log('User:', user);
-  console.log('Post:', content, attachment, category);
+  // console.log('User:', user);
+  // console.log('Post:', content, attachment, category);
 
   // TODO: If there's an mage, save to storgage and get the URL
   if (attachment == null){
@@ -116,23 +116,32 @@ exports.getPosts = async (req, res) => {
     for (const postDoc of postsSnapshot.docs) {
       const postData = postDoc.data();
 
-      // Fetch associated post content from the 'postContent' subcollection
+      // Fetch post content
       const postContentSnapshot = await postDoc.ref.collection('postContent').get();
-        // postContents.length > 0 ? postContents[0].content : ''
       const postContents = postContentSnapshot.docs.map((doc) => doc.data());
+      
+      // Fetch comments
+      const commentsSnapshot = await postDoc.ref.collection('comments')
+        .orderBy('timestamp', 'desc')
+        .limit(10)
+        .get();
+      
+      const comments = commentsSnapshot.docs.map(doc => ({
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString()
+      }));
 
-      // Combine main post data with its content and user info
-      // console.log(postContents)
-      content = postContents[0].content
-      const userName = await getUserNameByUid(postData.uid)
+      content = postContents[0].content;
+      const userName = await getUserNameByUid(postData.uid);
+      
       const fullPost = {
         ...postData,
         content,
+        comments,
         attachment: postData.attachment || null,
         category: postData.postCat,
         userInfo: {
-          // Replace these with actual user data if needed
-          author: userName, // Replace with user data fetched from `req.user` or other sources
+          author: userName,
         },
       };
 
@@ -144,5 +153,110 @@ exports.getPosts = async (req, res) => {
   } catch (error) {
     console.error('Error retrieving posts:', error);
     return res.status(500).json({ message: 'Failed to retrieve posts', error: error.message });
+  }
+};
+
+exports.likePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.uid;
+
+    // Get reference to the post
+    const postRef = db.collection('posts').doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Check if user has already liked the post
+    const likeRef = postRef.collection('likes').doc(userId);
+    const likeDoc = await likeRef.get();
+
+    let newLikeCount;
+    if (likeDoc.exists) {
+      // User already liked the post, remove the like
+      await likeRef.delete();
+      await postRef.update({
+        likesCount: FieldValue.increment(-1)
+      });
+      newLikeCount = (postDoc.data().likesCount || 1) - 1;
+    } else {
+      // Add new like
+      await likeRef.set({
+        userId,
+        timestamp: FieldValue.serverTimestamp()
+      });
+      await postRef.update({
+        likesCount: FieldValue.increment(1)
+      });
+      newLikeCount = (postDoc.data().likesCount || 0) + 1;
+    }
+
+    // Get the updated post document
+    const updatedPostDoc = await postRef.get();
+    const currentLikesCount = updatedPostDoc.data().likesCount;
+
+    return res.status(200).json({ 
+      message: likeDoc.exists ? 'Like removed' : 'Post liked',
+      liked: !likeDoc.exists,
+      likesCount: currentLikesCount
+    });
+  } catch (error) {
+    console.error('Error liking post:', error);
+    return res.status(500).json({ message: 'Failed to like post', error: error.message });
+  }
+};
+
+exports.addComment = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.uid;
+
+    // Get reference to the post
+    const postRef = db.collection('posts').doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Create new comment
+    const commentRef = postRef.collection('comments').doc();
+    const commentId = commentRef.id;
+    
+    // Get user name for the comment
+    const userName = await getUserNameByUid(userId);
+
+    const commentData = {
+      id: commentId,
+      content,
+      userId,
+      author: userName,
+      timestamp: FieldValue.serverTimestamp()
+    };
+
+    // Save the comment
+    await commentRef.set(commentData);
+
+    // Update comment count
+    await postRef.update({
+      commentsCount: FieldValue.increment(1)
+    });
+
+    // Prepare the response data
+    const responseComment = {
+      ...commentData,
+      timestamp: new Date().toISOString() // Use current time for immediate display
+    };
+
+    return res.status(200).json({ 
+      message: 'Comment added successfully',
+      comment: responseComment
+    });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    return res.status(500).json({ message: 'Failed to add comment', error: error.message });
   }
 };

@@ -8,20 +8,55 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
   const [isCommenting, setIsCommenting] = useState(false)
   const [comment, setComment] = useState('')
 
-  const handleLike = () => {
-    onLike(post.id)
+  const handleLike = async () => {
+    try {
+      const response = await fetch(`/api/posts/${post.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        onLike(post.id, data.likesCount);
+      } else {
+        console.error('Failed to like post:', data.message);
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
   }
 
   const handleComment = () => {
     setIsCommenting(!isCommenting)
   }
 
-  const submitComment = (e) => {
-    e.preventDefault()
+  const submitComment = async (e) => {
+    e.preventDefault();
     if (comment.trim()) {
-      onComment(post.id, comment)
-      setComment('')
-      setIsCommenting(false)
+      try {
+        const response = await fetch(`/api/posts/${post.id}/comment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: comment }),
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          onComment(post.id, data.comment);
+          setComment('');
+          setIsCommenting(false);
+        } else {
+          console.error('Failed to add comment:', data.message);
+        }
+      } catch (error) {
+        console.error('Error adding comment:', error);
+      }
     }
   }
 
@@ -92,12 +127,14 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
       </div>
 
       {/* Comments Section */}
-      {post.commentsCount > 0 && (
+      {post.commentsCount > 0 && post.comments && (
         <div className="px-4 py-2 bg-gray-50">
           <h4 className="font-semibold mb-2">Comments</h4>
           {post.comments.map((comment) => (
             <div key={comment.id} className="mb-2">
-              <p className="text-sm"><strong>{comment.author}</strong>: {comment.content}</p>
+              <p className="text-sm">
+                <strong>{comment.author}</strong>: {comment.content}
+              </p>
               <p className="text-xs text-gray-500">{comment.timestamp}</p>
             </div>
           ))}

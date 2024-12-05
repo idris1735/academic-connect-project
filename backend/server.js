@@ -40,6 +40,7 @@ const errorHandler = require('./middleware/errorHandler');
 server.use('/auth', authRoutes);
 server.use('/user', checkAuth, userRoutes);
 server.use('/api/posts', checkAuth, postRoutes);
+server.use('/api/users', checkAuth, userRoutes);
 
 app.prepare().then(() => {
     
