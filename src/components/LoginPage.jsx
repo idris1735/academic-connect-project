@@ -58,7 +58,8 @@ export default function LoginPage() {
         });
         setShowToast(true);
         window.location.href = data.redirectTo;
-      } else {
+      } 
+       else {
         setToastDetails({
           title: 'Login failed',
           description: 'Please check your email and password and try again.',

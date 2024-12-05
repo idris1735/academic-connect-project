@@ -17,7 +17,7 @@ const checkAuth = async (req, res, next) => {
     // Protect all other routes (like /feeds)
     if (!sessionCookie) {
         console.log('Unauthorized access to:', req.path);
-        return res.status(401).json({ message: 'Unauthorized: Please log in' });
+        return res.status(401).redirect('/login');
     }
 
     try {
@@ -27,7 +27,15 @@ const checkAuth = async (req, res, next) => {
         return next();
     } catch (error) {
         console.error('Session verification failed:', error.message);
-        return res.status(401).json({ message: 'Unauthorized: Invalid session', error: error.message });
+        // Destroy the session
+        req.session.destroy((err) => {
+            if (err) {
+            console.error('Failed to destroy session:', err.message);
+            // Handle session destruction error if necessary
+            }
+            // Redirect to login page after session is destroyed
+            return res.redirect('/login');
+        });
     }
 };
 

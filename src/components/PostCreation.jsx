@@ -3,6 +3,19 @@
 import { useState, useRef } from 'react'
 import { MessageSquare, Users2, Briefcase, Image, FileText, Film, X, Paperclip } from 'lucide-react'
 
+// import { MessageSquare, Users2, Briefcase, Image } from "lucide-react"
+import { Result } from 'postcss'
+import { ca, se } from 'date-fns/locale'
+
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+} from '@/components/ui/toast'
+
 export default function PostCreation({ onPostCreate }) {
   const [content, setContent] = useState('')
   const [attachment, setAttachment] = useState(null)
@@ -10,27 +23,103 @@ export default function PostCreation({ onPostCreate }) {
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
 
-  const handleSubmit = (e) => {
+  const [showToast, setShowToast] = useState(false);
+  const [toastDetails, setToastDetails] = useState({
+    title: "",
+    description: "",
+    variant: "default",
+  });
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (content.trim()) {
-      onPostCreate(content, attachment, category)
-      setContent('')
-      setAttachment(null)
-      setError('')
+      try {
+        // Create FormData object to handle file upload
+        // const formData = new FormData()
+        // formData.append('content', content)
+        // formData.append('category', category)
+        
+        // // Append file if it exists
+        // if (attachment) {
+        //   formData.append('attachment', attachment)
+        // }
+
+        // const fetchResponse = await fetch('/api/posts/create_post', {
+        //   method: 'POST',
+        //   // Remove the Content-Type header to let the browser set it with boundary for FormData
+        //   body: formData,
+        // });
+          const fetchResponse = await fetch('/api/posts/create_post', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content, attachment, category}),
+        });
+      
+        const responseData = await fetchResponse.json();
+        if (fetchResponse.status === 200) {
+          onPostCreate(responseData.post);
+          setContent('');
+          setAttachment(null);
+          setCategory('research');
+          setError('')
+          setShowToast(true);
+          setToastDetails({
+            title: "Post created successfully",
+            description: "Your post has been created successfully.",
+            variant: "success",
+          });
+        } else {
+          setShowToast(true);
+          setToastDetails({
+            title: "Post creation failed",
+            description: responseData.message,
+            variant: "error",
+          });
+        }
+      } catch (error) {
+        console.error("Error creating post:", error.message);
+        setShowToast(true);
+        setToastDetails({
+          title: "Post creation failed",
+          description: "An unexpected error occurred. Please try again later.",
+          variant: "error",
+        });
+      }
+     
     } else {
-      setError('Please enter some content for your post.')
+      setError('Post content cannot be empty.')
     }
+  }
+
+  const handleFileUpload = async (file, type) => {
+    if (!file) return;
+    
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size should not exceed 10MB.')
+      return
+    }
+
+    // Validate file type
+    if (type === 'image' && !file.type.startsWith('image/')) {
+      setError('Please select a valid image file.')
+      return
+    }
+    if (type === 'video' && !file.type.startsWith('video/')) {
+      setError('Please select a valid video file.')
+      return
+    }
+
+    setAttachment(file)
+    setError('')
   }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        setError('File size should not exceed 10MB.')
-        return
-      }
-      setAttachment(file)
-      setError('')
+      handleFileUpload(file)
     }
   }
 
@@ -82,7 +171,30 @@ export default function PostCreation({ onPostCreate }) {
     }
   }
 
+  const handleImageClick = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      handleFileUpload(file, 'image')
+    }
+    input.click()
+  }
+
+  const handleVideoClick = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'video/*'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      handleFileUpload(file, 'video')
+    }
+    input.click()
+  }
+
   return (
+
     <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       <form onSubmit={handleSubmit}>
         <div className="flex gap-4 mb-4">
@@ -98,6 +210,22 @@ export default function PostCreation({ onPostCreate }) {
           />
         </div>
         {renderAttachmentPreview()}
+
+        <ToastProvider>
+
+        {showToast && (
+          <Toast
+            variant={toastDetails.variant}
+            onOpenChange={(open) => setShowToast(open)}
+          >
+            <ToastTitle>{toastDetails.title}</ToastTitle>
+            <ToastDescription>{toastDetails.description}</ToastDescription>
+            <ToastClose />
+          </Toast>
+        )}
+
+        <ToastViewport />
+        </ToastProvider>
         <div className="flex justify-between items-center mb-4">
           <input
             type="file"
@@ -130,11 +258,19 @@ export default function PostCreation({ onPostCreate }) {
             <MessageSquare className="h-4 w-4" />
             Post
           </button>
-          <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
+          <button 
+            type="button" 
+            onClick={handleImageClick}
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+          >
             <Image className="h-4 w-4" />
             Image
           </button>
-          <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
+          <button 
+            type="button"
+            onClick={handleVideoClick} 
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+          >
             <Film className="h-4 w-4" />
             Video
           </button>
@@ -151,4 +287,3 @@ export default function PostCreation({ onPostCreate }) {
     </div>
   )
 }
-
