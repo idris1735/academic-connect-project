@@ -1,115 +1,635 @@
 'use client'
 
-import { useState } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from '@/components/ui/input'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Calendar } from '@/components/ui/calendar'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Send, FileText, Users } from 'lucide-react'
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Monitor, Plus, Send, Download, Paperclip, Menu, CalendarIcon, Clock, UserPlus } from 'lucide-react'
+import { useToast, Toaster } from "@/components/ui/toast"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-export default function ResearchRoom({ room }) {
-  const [activeTab, setActiveTab] = useState('discussion')
+export default function ResearchRoom({ room, onToggleSidebar }) {
+  const [messages, setMessages] = useState([
+    { id: 1, text: "Hello everyone! Welcome to the AI in Healthcare research room.", sender: "Dr. Afolabi Akorede", timestamp: "09:00" },
+    { id: 2, text: "Thanks for having me. I'm excited to collaborate on this project.", sender: "You", timestamp: "09:02" }
+  ])
   const [newMessage, setNewMessage] = useState('')
+  const [isInCall, setIsInCall] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const [isVideoOn, setIsVideoOn] = useState(true)
+  const [isScreenSharing, setIsScreenSharing] = useState(false)
+  const [resources, setResources] = useState([])
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [selectedTime, setSelectedTime] = useState('')
+  const [activityName, setActivityName] = useState('')
+  const [scheduledActivities, setScheduledActivities] = useState([])
+  const [selectedMembers, setSelectedMembers] = useState([])
+  const [allUsers, setAllUsers] = useState([
+    { id: 1, name: 'Dr. Afolabi Akorede', avatar: 'https://picsum.photos/seed/afolabi/200' },
+    { id: 2, name: 'Prof. Mohamed Aden Ighe', avatar: 'https://picsum.photos/seed/mohamed/200' },
+    { id: 3, name: 'Dr. Naledi Dikgale', avatar: 'https://picsum.photos/seed/naledi/200' },
+    { id: 4, name: 'Habeeb Efiamotu Musa', avatar: 'https://picsum.photos/seed/habeeb/200' },
+    { id: 5, name: 'Dr. Marvin Nyalik', avatar: 'https://picsum.photos/seed/marvin/200' },
+  ])
+  const localVideoRef = useRef(null)
+  const remoteVideoRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const messagesEndRef = useRef(null)
+  const { toast } = useToast()
 
-  const handleSend = (e) => {
-    e.preventDefault()
-    // Implement send message logic here
-    console.log('Sending message:', newMessage)
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() === '') return
+    const newMsg = {
+      id: Date.now(),
+      text: newMessage,
+      sender: 'You',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+    setMessages([...messages, newMsg])
     setNewMessage('')
   }
 
-  if (!room) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-gray-500">Select a research room to view</p>
-      </div>
-    )
+  const handleFileUpload = (event) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const newResource = {
+        id: Date.now(),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: URL.createObjectURL(file),
+        sender: 'You',
+        timestamp: new Date()
+      }
+      setResources([...resources, newResource])
+      const newMsg = {
+        id: Date.now(),
+        text: `Shared a file: ${file.name}`,
+        sender: 'You',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        resource: newResource
+      }
+      setMessages([...messages, newMsg])
+      toast({
+        title: "File Uploaded",
+        description: `${file.name} has been added to resources.`
+      })
+    }
+  }
+
+  const handleScheduleActivity = () => {
+    if (!activityName || !selectedTime) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const newActivity = {
+      id: Date.now(),
+      name: activityName,
+      date: selectedDate,
+      time: selectedTime
+    }
+
+    setScheduledActivities([...scheduledActivities, newActivity])
+
+    toast({
+      title: "Activity Scheduled",
+      description: `${activityName} scheduled for ${selectedDate.toDateString()} at ${selectedTime}.`
+    })
+    setActivityName('')
+    setSelectedTime('')
+  }
+
+  const handleInviteUser = (user) => {
+    if (selectedMembers.some(member => member.id === user.id)) {
+      setSelectedMembers(selectedMembers.filter(member => member.id !== user.id))
+    } else {
+      setSelectedMembers([...selectedMembers, user])
+    }
+  }
+
+  const handleSendInvitations = () => {
+    selectedMembers.forEach(member => {
+      toast({
+        title: "Invitation Sent",
+        description: `Invitation sent to ${member.name}.`
+      })
+    })
+    setSelectedMembers([])
+  }
+
+  const handleStartCall = (isVideoCall) => {
+    navigator.mediaDevices.getUserMedia({ video: isVideoCall, audio: true })
+      .then(stream => {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream
+        }
+        setIsInCall(true)
+        setIsVideoOn(isVideoCall)
+        
+        // Simulate remote user joining the call
+        setTimeout(() => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream.clone()
+          }
+        }, 1000)
+      })
+      .catch(error => {
+        console.error('Error accessing media devices:', error)
+        toast({
+          title: "Error",
+          description: "Failed to start call. Please check your camera and microphone permissions.",
+          variant: "destructive",
+        })
+      })
+  }
+
+  const toggleMute = () => {
+    const stream = localVideoRef.current?.srcObject
+    if (stream) {
+      stream.getAudioTracks().forEach(track => track.enabled = !isMuted)
+      setIsMuted(!isMuted)
+    }
+  }
+
+  const toggleVideo = () => {
+    const stream = localVideoRef.current?.srcObject
+    if (stream) {
+      stream.getVideoTracks().forEach(track => track.enabled = !isVideoOn)
+      setIsVideoOn(!isVideoOn)
+    }
+  }
+
+  const toggleScreenShare = () => {
+    if (isScreenSharing) {
+      stopScreenSharing()
+    } else {
+      startScreenSharing()
+    }
+  }
+
+  const startScreenSharing = () => {
+    navigator.mediaDevices.getDisplayMedia({ video: true })
+      .then(stream => {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream
+        }
+        setIsScreenSharing(true)
+      })
+      .catch(error => {
+        console.error('Error starting screen share:', error)
+        toast({
+          title: "Error",
+          description: "Failed to start screen sharing.",
+          variant: "destructive",
+        })
+      })
+  }
+
+  const stopScreenSharing = () => {
+    const stream = localVideoRef.current?.srcObject
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+    }
+    setIsScreenSharing(false)
+    handleStartCall(isVideoOn)
+  }
+
+  const tileClassName = ({ date, view }) => {
+    if (view === 'month') {
+      const hasActivity = scheduledActivities.some(
+        activity => activity.date.toDateString() === date.toDateString()
+      )
+      return hasActivity ? 'bg-blue-100 text-blue-600 font-bold' : null
+    }
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b">
-        <h2 className="text-2xl font-bold">{room.name}</h2>
-        <p className="text-sm text-gray-500">{room.members} members</p>
+    <div className="flex flex-col h-full bg-gray-50">
+      <div className="flex items-center justify-between p-4 bg-white border-b">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="md:hidden mr-2"
+            onClick={onToggleSidebar}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h2 className="text-xl font-semibold">{room?.name || 'Research Room'}</h2>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex md:hidden"
+            onClick={() => handleStartCall(true)}
+          >
+            <Video className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex md:hidden"
+            onClick={() => handleStartCall(false)}
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="hidden md:flex"
+            onClick={() => handleStartCall(true)}
+          >
+            <Video className="h-4 w-4 mr-2" />
+            Video Call
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="hidden md:flex"
+            onClick={() => handleStartCall(false)}
+          >
+            <Mic className="h-4 w-4 mr-2" />
+            Voice Call
+          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Invite
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite Members</DialogTitle>
+              </DialogHeader>
+              <Command>
+                <CommandInput placeholder="Search members..." />
+                <CommandEmpty>No members found.</CommandEmpty>
+                <CommandGroup>
+                  {allUsers.map((user) => (
+                    <CommandItem
+                      key={user.id}
+                      onSelect={() => handleInviteUser(user)}
+                    >
+                      <div className={cn(
+                        "flex items-center",
+                        selectedMembers.some(member => member.id === user.id) ? "opacity-50" : ""
+                      )}>
+                        <Avatar className="h-6 w-6 mr-2">
+                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span>{user.name}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+              <Button onClick={handleSendInvitations} className="mt-4">Send Invitations</Button>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-        <TabsList className="justify-start p-2 bg-gray-100">
-          <TabsTrigger value="discussion">Discussion</TabsTrigger>
-          <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
+      <Tabs defaultValue="chat" className="flex-1">
+        <TabsList className="w-full justify-start px-4 h-12 bg-white border-b">
+          <TabsTrigger value="chat" className="data-[state=active]:bg-gray-100">Chat</TabsTrigger>
+          <TabsTrigger value="resources" className="data-[state=active]:bg-gray-100">Resources</TabsTrigger>
+          <TabsTrigger value="schedule" className="data-[state=active]:bg-gray-100">Schedule</TabsTrigger>
+          <TabsTrigger value="members" className="data-[state=active]:bg-gray-100">Members</TabsTrigger>
         </TabsList>
-        <TabsContent value="discussion" className="flex-grow flex flex-col">
-          <ScrollArea className="flex-grow p-4">
-            {/* Add discussion messages here */}
-          </ScrollArea>
 
-          <form onSubmit={handleSend} className="p-4 border-t">
-            <div className="flex space-x-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-grow"
-              />
-              <Button type="submit" className="bg-[#6366F1] hover:bg-[#5457E5] text-white">
-                <Send className="h-4 w-4" />
-                <span className="sr-only">Send message</span>
-              </Button>
-            </div>
-          </form>
-        </TabsContent>
-        <TabsContent value="resources" className="flex-grow p-4">
-          <h3 className="text-lg font-semibold mb-4">Shared Resources</h3>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-gray-500" />
-              <span>Research Paper Draft.pdf</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-gray-500" />
-              <span>Literature Review.docx</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-gray-500" />
-              <span>Data Analysis Results.xlsx</span>
+        <TabsContent value="chat" className="flex-1 p-0 m-0">
+          <div className="flex flex-col h-[calc(100vh-220px)]">
+            <ScrollArea className="flex-1 p-4 h-[calc(100vh-220px)]">
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex flex-col",
+                      message.sender === "You" ? "items-end" : "items-start"
+                    )}
+                  >
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-sm text-gray-500">{message.sender}</span>
+                      <span className="text-xs text-gray-400">{message.timestamp}</span>
+                    </div>
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg px-4 py-2",
+                        message.sender === "You"
+                          ? "bg-[#6366F1] text-white"
+                          : "bg-white text-gray-900"
+                      )}
+                    >
+                      <p className="text-sm">{message.text}</p>
+                      {message.resource && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-xs"
+                          onClick={() => window.open(message.resource.url, '_blank')}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download {message.resource.name}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="p-4 bg-white border-t">
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
+                />
+                <input
+                  type="file"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+                <Button onClick={handleSendMessage}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </TabsContent>
-        <TabsContent value="members" className="flex-grow p-4">
-          <h3 className="text-lg font-semibold mb-4">Room Members</h3>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/seed/member1/200" alt="Member 1" />
-                <AvatarFallback>M1</AvatarFallback>
-              </Avatar>
-              <span>Dr. Jane Smith</span>
+
+        <TabsContent value="resources" className="h-[calc(100vh-220px)] p-4 m-0">
+          <ScrollArea className="h-[calc(100vh-220px)]">
+            <div className="space-y-4">
+              {resources.map((resource) => (
+                <div
+                  key={resource.id}
+                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
+                >
+                  <div>
+                    <h4 className="font-medium">{resource.name}</h4>
+                    <p className="text-sm text-gray-500">
+                      Shared by {resource.sender} on {resource.timestamp.toLocaleString()}
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={() => window.open(resource.url, '_blank')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              ))}
+            </div></ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="schedule" className="h-[calc(100vh-220px)] p-4 m-0">
+          <ScrollArea className="h-[calc(100vh-220px)]">
+            <div className="max-w-4xl mx-auto space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Schedule New Activity</CardTitle>
+                  <CardDescription>Plan your research activities and meetings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="activity-name">Activity Name</Label>
+                      <Input
+                        id="activity-name"
+                        value={activityName}
+                        onChange={(e) => setActivityName(e.target.value)}
+                        placeholder="Enter activity name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="activity-time">Time</Label>
+                      <Input
+                        id="activity-time"
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Date</Label>
+                      <div className="border rounded-lg p-4 bg-white">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          className="mx-auto"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <Button onClick={handleScheduleActivity} className="w-full mt-6">
+                    Schedule Activity
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Scheduled Activities</CardTitle>
+                  <CardDescription>Your upcoming research activities and meetings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {scheduledActivities.map((activity) => (
+                      <div key={activity.id} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-center space-x-4">
+                          <div className="bg-blue-100 p-2 rounded-full">
+                            <CalendarIcon className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{activity.name}</h4>
+                            <p className="text-sm text-gray-500">
+                              {activity.date.toDateString()} at {activity.time}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {activity.time}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/seed/member2/200" alt="Member 2" />
-                <AvatarFallback>M2</AvatarFallback>
-              </Avatar>
-              <span>Prof. John Doe</span>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="members" className="h-[calc(100vh-220px)] p-4 m-0">
+          <ScrollArea className="h-[calc(100vh-220px)]">
+            <div className="space-y-4">
+              {room?.members && Array.isArray(room.members) ? (
+                room.members.map((member, index) => (
+                  <div
+                    key={member.id || index}
+                    className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
+                  >
+                    <div className="flex items-center">
+                      <Avatar className="h-10 w-10 mr-4">
+                        <AvatarImage src={member.avatar} alt={member.name} />
+                        <AvatarFallback>{member.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="font-medium">{member.name}</h4>
+                        <p className="text-sm text-gray-500">Member</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleInviteUser(member)}
+                      className={cn(
+                        selectedMembers.some(m => m.id === member.id) && "bg-green-100 text-green-600"
+                      )}
+                    >
+                      {selectedMembers.some(m => m.id === member.id) ? (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Invited
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Invite
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500">No members in this room.</p>
+              )}
             </div>
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/seed/member3/200" alt="Member 3" />
-                <AvatarFallback>M3</AvatarFallback>
-              </Avatar>
-              <span>Dr. Emily Johnson</span>
-            </div>
-          </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isInCall} onOpenChange={(open) => {
+        if (!open) {
+          // Stop the call when closing the dialog
+          const stream = localVideoRef.current?.srcObject
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop())
+          }
+          setIsInCall(false)
+          setIsVideoOn(true)
+          setIsMuted(false)
+          setIsScreenSharing(false)
+          toast({
+            title: "Call Ended",
+            description: "You have left the call.",
+          })
+        }
+      }}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>{isVideoOn ? "Video" : "Voice"} Call - {room?.name || 'Research Room'}</DialogTitle>
+          </DialogHeader>
+          <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+            {isVideoOn && <video ref={remoteVideoRef} className="w-full h-full object-cover" />}
+            {isVideoOn && (
+              <div className="absolute bottom-4 right-4 w-1/4 aspect-video">
+                <video
+                  ref={localVideoRef}
+                  className="w-full h-full object-cover rounded-lg border-2 border-white"
+                  muted
+                  autoPlay
+                  playsInline
+                />
+              </div>
+            )}
+            {!isVideoOn && (
+              <div className="flex items-center justify-center h-full">
+                <Avatar className="h-32 w-32">
+                  <AvatarFallback>You</AvatarFallback>
+                </Avatar>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-center space-x-4 mt-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full h-12 w-12"
+              onClick={toggleMute}
+            >
+              {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="rounded-full h-12 w-12"
+              onClick={() => setIsInCall(false)}
+            >
+              <PhoneOff className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full h-12 w-12"
+              onClick={toggleVideo}
+            >
+              {isVideoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full h-12 w-12"
+              onClick={toggleScreenShare}
+            >
+              <Monitor className="h-5 w-5" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Toaster />
     </div>
   )
 }
-
-
-
-
 
 
