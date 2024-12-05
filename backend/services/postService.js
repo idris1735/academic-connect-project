@@ -9,7 +9,7 @@ exports.createPost = async (req, res) => {
   console.log(req.body)
   const {content, attachment, category} = req.body;
   user = req.user;
-  // console.log('User:', user);
+  console.log('User:', user);
   // console.log('Post:', content, attachment, category);
 
   // TODO: If there's an mage, save to storgage and get the URL
@@ -36,13 +36,14 @@ exports.createPost = async (req, res) => {
         content: content,
         updatedAt: FieldValue.serverTimestamp(),
       });
-
+      
+      const name = await getUserNameByUid(user.uid)
       const fullPost = {
         ...postData,
         content,
         attachment,
         userInfo: {
-          author: user.name,
+          author: name,
           // TODO ; fill with other necessary user info
         }
       };
