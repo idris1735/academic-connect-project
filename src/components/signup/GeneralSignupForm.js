@@ -1,303 +1,255 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { useRouter } from 'next/navigation'
-import { auth, db } from '@/app/firebase-config'
-import {
-  ToastProvider,
-  ToastViewport,
-  Toast,
-  ToastTitle,
-  ToastDescription,
-  ToastClose,
-} from '@/components/ui/toast'
 
-const GeneralSignupForm = ({ preSignupData, userType }) => {
-  const router = useRouter()
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
+    email: preSignupData.email || '',
     password: '',
     confirmPassword: '',
+    dateOfBirth: '',
     country: '',
-    ...preSignupData, // Include preloaded data dynamically
+    termsAccepted: false,
+    ...preSignupData,
   })
-  const [error, setError] = useState('')
-  const [countries, setCountries] = useState([])
-  const [showPassword, setShowPassword] = useState(false)
 
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
 
-  const [showToast, setShowToast] = useState(false);
-  const [toastDetails, setToastDetails] = useState({
-    title: "",
-    description: "",
-    variant: "default",
-  });
+  const handleSelectChange = (name) => (value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
-  // Dummy country list to avoid API dependency
-  useEffect(() => {
-    const dummyCountries = [
-      { name: 'United States', code: 'US' },
-      { name: 'United Kingdom', code: 'GB' },
-      { name: 'Canada', code: 'CA' },
-      { name: 'Australia', code: 'AU' },
-      { name: 'India', code: 'IN' },
-      { name: 'Nigeria', code: 'NG' },
-      { name: 'Germany', code: 'DE' },
-    ]
-    setCountries(dummyCountries)
-  }, [])
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    // Log formData for debugging
-    console.log('Form Data:', formData);
-  
-    // Validate email
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-  
-    // Validate password match
+  const handleSubmit = (e) => {
+    e.preventDefault()
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
+      alert("Passwords don't match")
+      return
     }
-  
-    try {
-      const res = await fetch('/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-  
-      const result = await res.json(); // Parse JSON response
-  
-      if (res.status === 200) {
-        setToastDetails({
-          title: 'Sign up successful',
-          description: 'Your account has been created successfully.',
-          variant: 'default',
-        });
-        setShowToast(true);
-        console.log('Sign up successful:', result);
-        window.location.href = result.redirectTo;
-      } else {
-        setToastDetails({
-          title: 'Sign up failed',
-          description: result.error || 'An unknown error occurred',
-          variant: 'destructive',
-        });
-        setShowToast(true);
-        console.error('Sign up error:', result.error);
-      }
-    } catch (error) {
-      setToastDetails({
-        title: 'Sign up failed',
-        description: error.message || 'Network error occurred',
-        variant: 'destructive',
-      });
-      setShowToast(true);
-      console.error('Sign up error:', error);
-    }
-  };
-  
-  //   try {
-  //     const userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       formData.email,
-  //       formData.password
-  //     )
-  //     const user = userCredential.user
+    onComplete(formData)
+  }
 
-  //     // Update profile with first and last name
-  //     await updateProfile(user, {
-  //       displayName: `${formData.firstName} ${formData.lastName}`,
-  //     })
-
-  //     // Save user details to Firestore
-  //     await setDoc(doc(db, 'users', user.uid), {
-  //       firstName: formData.firstName,
-  //       lastName: formData.lastName,
-  //       email: formData.email,
-  //       userType: userType,
-  //       country: formData.country,
-  //       createdAt: serverTimestamp(),
-  //       [userType]: preSignupData,
-  //     })
-
-  //     // Redirect to dashboard
-  //     router.push('/feeds')
-  //   } catch (error) {
-  //     console.error('Signup Error:', error)
-  //     setError(error.message)
-  //   }
-  // }
+  const isFormValid =
+    formData.firstName &&
+    formData.lastName &&
+    formData.email &&
+    formData.password &&
+    formData.confirmPassword &&
+    formData.dateOfBirth &&
+    formData.country &&
+    formData.termsAccepted
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className='max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8'
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className='w-full max-w-md mx-auto'
     >
+      <Card className='relative overflow-hidden'>
+        <CardHeader>
+          <Button
+            variant='ghost'
+            className='absolute left-2 top-2'
+            onClick={onBack}
+          >
+            <ArrowLeft className='h-4 w-4' />
+            <span className='sr-only'>Go back</span>
+          </Button>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className='space-y-2'
+          >
+            <CardTitle>Complete Your Registration</CardTitle>
+            <p className='text-sm text-muted-foreground'>
+              Fill in the details below to complete your registration.
+            </p>
+          </motion.div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className='space-y-6'>
+            {/* Name Fields */}
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='firstName'>First Name</Label>
+                <Input
+                  id='firstName'
+                  name='firstName'
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder='Enter your first name'
+                  required
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='lastName'>Last Name</Label>
+                <Input
+                  id='lastName'
+                  name='lastName'
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder='Enter your last name'
+                  required
+                />
+              </div>
+            </div>
 
-  <ToastProvider>
+            {/* Email */}
+            <div className='space-y-2'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                name='email'
+                type='email'
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder='Enter your email address'
+                required
+                disabled={!!preSignupData.email}
+              />
+            </div>
 
-  {showToast && (
-    <Toast
-      variant={toastDetails.variant}
-      onOpenChange={(open) => setShowToast(open)}
-    >
-      <ToastTitle>{toastDetails.title}</ToastTitle>
-      <ToastDescription>{toastDetails.description}</ToastDescription>
-      <ToastClose />
-    </Toast>
-  )}
+            {/* Password */}
+            <div className='space-y-2'>
+              <Label htmlFor='password'>Password</Label>
+              <Input
+                id='password'
+                name='password'
+                type='password'
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder='Create a password'
+                required
+              />
+            </div>
 
-  <ToastViewport />
-  </ToastProvider>
-      <h2 className='text-2xl font-semibold mb-6 text-gray-800 dark:text-white'>
-        Create Your Account
-      </h2>
-      <form onSubmit={handleSubmit} className='space-y-4'>
-        <div>
-          <label
-            htmlFor='firstName'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            First Name
-          </label>
-          <input
-            type='text'
-            id='firstName'
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            value={formData.firstName}
-            onChange={(e) =>
-              setFormData({ ...formData, firstName: e.target.value })
-            }
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor='lastName'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            Last Name
-          </label>
-          <input
-            type='text'
-            id='lastName'
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            value={formData.lastName}
-            onChange={(e) =>
-              setFormData({ ...formData, lastName: e.target.value })
-            }
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor='email'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            Email
-          </label>
-          <input
-            type='email'
-            id='email'
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor='password'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            Password
-          </label>
-          <div className='relative'>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              id='password'
-              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              required
-            />
-            <button
-              type='button'
-              className='absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5'
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
-          </div>
-        </div>
-        <div>
-          <label
-            htmlFor='confirmPassword'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            Confirm Password
-          </label>
-          <input
-            type='password'
-            id='confirmPassword'
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            value={formData.confirmPassword}
-            onChange={(e) =>
-              setFormData({ ...formData, confirmPassword: e.target.value })
-            }
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor='country'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            Country
-          </label>
-          <select
-            id='country'
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            value={formData.country}
-            onChange={(e) =>
-              setFormData({ ...formData, country: e.target.value })
-            }
-            required
-          >
-            <option value=''>Select a country</option>
-            {countries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {error && <p className='text-red-500 text-sm'>{error}</p>}
-        <button
-          type='submit'
-          className='w-full bg-indigo-600 text-white rounded-md py-2 px-4 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-200'
-        >
-          Create Account
-        </button>
-      </form>
+            {/* Confirm Password */}
+            <div className='space-y-2'>
+              <Label htmlFor='confirmPassword'>Confirm Password</Label>
+              <Input
+                id='confirmPassword'
+                name='confirmPassword'
+                type='password'
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                placeholder='Confirm your password'
+                required
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div className='space-y-2'>
+              <Label htmlFor='dateOfBirth'>Date of Birth</Label>
+              <Input
+                id='dateOfBirth'
+                name='dateOfBirth'
+                type='date'
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            {/* Country Selector */}
+            <div className='space-y-2'>
+              <Label htmlFor='country'>Country</Label>
+              <Select
+                onValueChange={handleSelectChange('country')}
+                value={formData.country}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select your country' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='us'>United States</SelectItem>
+                  <SelectItem value='uk'>United Kingdom</SelectItem>
+                  <SelectItem value='ca'>Canada</SelectItem>
+                  <SelectItem value='au'>Australia</SelectItem>
+                  <SelectItem value='ng'>Nigeria</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Dynamic Fields for User Types */}
+            {userType === 'individual' && (
+              <div className='space-y-2'>
+                <Label htmlFor='occupation'>Occupation</Label>
+                <Input
+                  id='occupation'
+                  name='occupation'
+                  value={formData.occupation}
+                  onChange={handleInputChange}
+                  placeholder='Enter your occupation'
+                  required
+                />
+              </div>
+            )}
+            {(userType === 'corporate' || userType === 'institution') && (
+              <div className='space-y-2'>
+                <Label htmlFor='jobTitle'>Job Title</Label>
+                <Input
+                  id='jobTitle'
+                  name='jobTitle'
+                  value={formData.jobTitle}
+                  onChange={handleInputChange}
+                  placeholder='Enter your job title'
+                  required
+                />
+              </div>
+            )}
+
+            {/* Terms and Conditions */}
+            <div className='flex items-center space-x-2'>
+              <Input
+                id='termsAccepted'
+                name='termsAccepted'
+                type='checkbox'
+                checked={formData.termsAccepted}
+                onChange={handleInputChange}
+                required
+              />
+              <Label htmlFor='termsAccepted'>
+                I agree to the{' '}
+                <a href='/terms' className='text-primary hover:underline'>
+                  Terms and Conditions
+                </a>
+              </Label>
+            </div>
+
+            {/* Buttons */}
+            <div className='flex justify-between pt-4'>
+              <Button type='button' variant='outline' onClick={onBack}>
+                Back
+              </Button>
+              <Button type='submit' disabled={!isFormValid}>
+                Complete Registration
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </motion.div>
   )
 }

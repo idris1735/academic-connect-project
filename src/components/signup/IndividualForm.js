@@ -1,23 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Loader2, Briefcase, BookOpen } from 'lucide-react'
+import {
+  Loader2,
+  User,
+  Mail,
+  Lock,
+  BookOpen,
+  Upload,
+  ArrowLeft,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Textarea } from '@/components/ui/textarea'
 
-const IndividualForm = ({ onComplete }) => {
+const IndividualForm = ({ onComplete, onBack }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState({
-    userType: 'individual', // Adding userType to identify this form's data
+    fullName: '',
+    email: '',
+    password: '',
     occupation: '',
-    interests: '',
+    researchInterests: '',
+    researchWorks: [],
   })
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      setFormData((prev) => ({
+        ...prev,
+        researchWorks: Array.from(e.target.files),
+      }))
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -33,6 +58,14 @@ const IndividualForm = ({ onComplete }) => {
     onComplete(formData)
     setIsLoading(false)
   }
+
+  const isFormValid =
+    formData.fullName &&
+    formData.email &&
+    formData.password &&
+    formData.occupation &&
+    formData.researchInterests &&
+    formData.researchWorks.length >= 2
 
   return (
     <motion.div
@@ -51,13 +84,21 @@ const IndividualForm = ({ onComplete }) => {
         )}
 
         <CardHeader>
+          <Button
+            variant='ghost'
+            className='absolute left-2 top-2'
+            onClick={onBack}
+          >
+            <ArrowLeft className='h-4 w-4' />
+            <span className='sr-only'>Go back</span>
+          </Button>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className='space-y-2'
           >
             <h2 className='text-2xl font-bold tracking-tight'>
-              Individual Information
+              Individual Registration
             </h2>
             <p className='text-sm text-muted-foreground'>
               Tell us about yourself and your research interests
@@ -67,59 +108,96 @@ const IndividualForm = ({ onComplete }) => {
 
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-6'>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className='space-y-2'
-            >
-              <Label htmlFor='occupation' className='text-sm font-medium'>
-                Occupation
-              </Label>
-              <div className='relative'>
-                <div className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
-                  <Briefcase className='h-4 w-4' />
-                </div>
-                <Input
-                  type='text'
-                  id='occupation'
-                  placeholder='Enter your current occupation'
-                  className='pl-9'
-                  value={formData.occupation}
-                  onChange={(e) =>
-                    setFormData({ ...formData, occupation: e.target.value })
-                  }
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-            </motion.div>
+            {/* Full Name */}
+            <div className='space-y-2'>
+              <Label htmlFor='fullName'>Full Name</Label>
+              <Input
+                id='fullName'
+                name='fullName'
+                value={formData.fullName}
+                onChange={handleInputChange}
+                placeholder='Enter your full name'
+                required
+                disabled={isLoading}
+              />
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className='space-y-2'
-            >
-              <Label htmlFor='interests' className='text-sm font-medium'>
-                Research Interests
-              </Label>
-              <div className='relative'>
-                <div className='absolute left-3 top-3 text-muted-foreground'>
-                  <BookOpen className='h-4 w-4' />
-                </div>
-                <Textarea
-                  id='interests'
-                  placeholder='Describe your research interests and areas of focus'
-                  className='min-h-[120px] pl-9 resize-none'
-                  value={formData.interests}
-                  onChange={(e) =>
-                    setFormData({ ...formData, interests: e.target.value })
-                  }
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-            </motion.div>
+            {/* Email */}
+            <div className='space-y-2'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                name='email'
+                type='email'
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder='Enter your email address'
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Password */}
+            <div className='space-y-2'>
+              <Label htmlFor='password'>Password</Label>
+              <Input
+                id='password'
+                name='password'
+                type='password'
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder='Create a password'
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Occupation */}
+            <div className='space-y-2'>
+              <Label htmlFor='occupation'>Occupation</Label>
+              <Input
+                id='occupation'
+                name='occupation'
+                value={formData.occupation}
+                onChange={handleInputChange}
+                placeholder='Enter your current occupation'
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Research Interests */}
+            <div className='space-y-2'>
+              <Label htmlFor='researchInterests'>Research Interests</Label>
+              <Textarea
+                id='researchInterests'
+                name='researchInterests'
+                value={formData.researchInterests}
+                onChange={handleInputChange}
+                placeholder='Describe your research interests'
+                rows={3}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Research Works */}
+            <div className='space-y-2'>
+              <Label htmlFor='researchWorks'>Research Works</Label>
+              <Input
+                id='researchWorks'
+                name='researchWorks'
+                type='file'
+                onChange={handleFileChange}
+                accept='.pdf,.doc,.docx'
+                multiple
+                required
+                disabled={isLoading}
+              />
+              <p className='text-sm text-muted-foreground'>
+                Upload at least two research works (PDF, DOC, or DOCX)
+              </p>
+            </div>
           </form>
         </CardContent>
 
@@ -127,7 +205,7 @@ const IndividualForm = ({ onComplete }) => {
           <Button
             onClick={handleSubmit}
             className='w-full'
-            disabled={isLoading}
+            disabled={!isFormValid || isLoading}
           >
             {isLoading ? (
               <>

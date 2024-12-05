@@ -1,17 +1,13 @@
-'use client'
-
-import { useState } from 'react'
-import { useRouter } from 'next/navigation' // Import useRouter
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import UserTypeSelection from '@/components/signup/UserTypeSelection'
-import CorporateForm from '@/components/signup/CorporateForm'
-import InstitutionForm from '@/components/signup/InstitutionForm'
-import IndividualForm from '@/components/signup/IndividualForm'
-import GeneralSignupForm from '@/components/signup/GeneralSignupForm'
+import UserTypeSelection from './UserTypeSelection'
+import CorporateForm from './CorporateForm'
+import InstitutionForm from './InstitutionForm'
+import IndividualForm from './IndividualForm'
+import GeneralSignupForm from './GeneralSignupForm'
 
-const SignupPage = () => {
-  const [step, setStep] = useState(1) // Maintain step-based navigation
-  const router = useRouter() // Initialize router
+const SignupFlow = () => {
+  const [step, setStep] = useState(1)
   const [userType, setUserType] = useState(null)
   const [subOption, setSubOption] = useState(null)
   const [formData, setFormData] = useState({})
@@ -34,14 +30,10 @@ const SignupPage = () => {
   const handleFinalSubmit = async (data) => {
     const finalData = { ...formData, ...data }
     console.log('Final submission data:', finalData)
+    // Typically, you would send the data to your backend
+    // await submitToBackend(finalData)
     alert('Registration completed successfully!')
     // Reset the form or redirect to a success page
-    setStep(1)
-    setUserType(null)
-    setSubOption(null)
-    setFormData({})
-    // Navigate to feeds page
-    router.push('/feeds')
   }
 
   const renderStep = () => {
@@ -91,8 +83,8 @@ const SignupPage = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100'>
-      <div className='container mx-auto px-4 py-8'>
+    <div className='min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-md w-full space-y-8'>
         <AnimatePresence mode='wait'>
           <motion.div
             key={step}
@@ -109,4 +101,4 @@ const SignupPage = () => {
   )
 }
 
-export default SignupPage
+export default SignupFlow

@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ExternalLink } from 'lucide-react'
 
-
 const HomePage = () => {
   const [showLearnMore, setShowLearnMore] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -25,6 +24,8 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
+  const [isJoinLoading, setIsJoinLoading] = useState(false)
+  const [isLoginLoading, setIsLoginLoading] = useState(false)
 
   // Simulate initial loading
   useEffect(() => {
@@ -100,6 +101,24 @@ const HomePage = () => {
     </div>
   )
 
+  const handleJoinClick = () => {
+    setIsJoinLoading(true)
+    // Simulate an async operation
+    setTimeout(() => {
+      setIsJoinLoading(false)
+      // Add your join logic here
+    }, 2000)
+  }
+
+  const handleLoginClick = () => {
+    setIsLoginLoading(true)
+    // Simulate an async operation
+    setTimeout(() => {
+      setIsLoginLoading(false)
+      // Add your login logic here
+    }, 2000)
+  }
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-indigo-50 to-white text-gray-800'>
       {/* Enhanced Header with Blur Effect and Hamburger Menu */}
@@ -113,13 +132,27 @@ const HomePage = () => {
               <Button
                 variant='outline'
                 className='text-indigo-600 border-indigo-600 hover:bg-indigo-100 hover:text-indigo-700'
+                onClick={handleLoginClick}
+                disabled={isLoginLoading}
               >
-                Log in
+                {isLoginLoading ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Log in'
+                )}
               </Button>
             </Link>
             <Link href='/signup'>
-              <Button className='bg-indigo-600 hover:bg-indigo-700 text-white'>
-                Join for free
+              <Button
+                className='bg-indigo-600 hover:bg-indigo-700 text-white'
+                onClick={handleJoinClick}
+                disabled={isJoinLoading}
+              >
+                {isJoinLoading ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Join for free'
+                )}
               </Button>
             </Link>
           </div>

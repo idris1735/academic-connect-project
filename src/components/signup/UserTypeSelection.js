@@ -4,18 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Building2, GraduationCap, User, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 const UserTypeSelection = ({ onSelect }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedType, setSelectedType] = useState(null)
+  const [selectedSubOption, setSelectedSubOption] = useState(null)
 
-  const handleSelect = async (typeId) => {
+  const handleSelect = async (typeId, subOption = null) => {
     setSelectedType(typeId)
+    setSelectedSubOption(subOption)
     setIsLoading(true)
     // Simulate loading state
     await new Promise((resolve) => setTimeout(resolve, 800))
     setIsLoading(false)
-    onSelect(typeId)
+    onSelect(typeId, subOption)
   }
 
   const userTypes = [
@@ -24,12 +28,14 @@ const UserTypeSelection = ({ onSelect }) => {
       title: 'Government/Corporate',
       description: 'For organizations and government bodies',
       icon: Building2,
+      subOptions: ['Admin', 'Employee'],
     },
     {
       id: 'institution',
       title: 'Educational Institution',
       description: 'For schools, universities, and research centers',
       icon: GraduationCap,
+      subOptions: ['Admin', 'Staff Member'],
     },
     {
       id: 'individual',
@@ -97,7 +103,6 @@ const UserTypeSelection = ({ onSelect }) => {
                     ${
                       isLoading && selectedType === type.id ? 'opacity-80' : ''
                     }`}
-                  onClick={() => !isLoading && handleSelect(type.id)}
                 >
                   <div className='p-6 space-y-4'>
                     <motion.div
@@ -117,31 +122,43 @@ const UserTypeSelection = ({ onSelect }) => {
                       {type.description}
                     </p>
 
-                    <button
-                      disabled={isLoading}
-                      className={`w-full mt-4 relative inline-flex items-center justify-center px-4 py-3 text-sm font-medium
-                        transition-colors rounded-lg
-                        ${
-                          selectedType === type.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-primary/10 hover:bg-primary/20 text-primary'
-                        }
-                        disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {isLoading && selectedType === type.id ? (
-                        <>
-                          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                          Processing...
-                        </>
-                      ) : (
-                        `Continue as ${type.title}`
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Decorative corner accent */}
-                  <div className='absolute top-0 right-0 w-20 h-20 transform translate-x-10 -translate-y-10'>
-                    <div className='absolute transform rotate-45 bg-primary/5 w-full h-full' />
+                    {type.subOptions ? (
+                      <div className='mt-4 space-y-2'>
+                        {type.subOptions.map((subOption) => (
+                          <Button
+                            key={subOption}
+                            variant='outline'
+                            className='w-full justify-start text-left'
+                            onClick={() => handleSelect(type.id, subOption)}
+                            disabled={isLoading}
+                          >
+                            {subOption}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <button
+                        disabled={isLoading}
+                        className={`w-full mt-4 relative inline-flex items-center justify-center px-4 py-3 text-sm font-medium
+                          transition-colors rounded-lg
+                          ${
+                            selectedType === type.id
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-primary/10 hover:bg-primary/20 text-primary'
+                          }
+                          disabled:opacity-50 disabled:cursor-not-allowed`}
+                        onClick={() => handleSelect(type.id)}
+                      >
+                        {isLoading && selectedType === type.id ? (
+                          <>
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            Processing...
+                          </>
+                        ) : (
+                          `Continue as ${type.title}`
+                        )}
+                      </button>
+                    )}
                   </div>
                 </Card>
               </motion.div>
@@ -157,12 +174,12 @@ const UserTypeSelection = ({ onSelect }) => {
         >
           <p className='text-sm text-muted-foreground'>
             Already have an account?{' '}
-            <button
-              onClick={() => onSelect('login')}
+            <Link
+              href='/login'
               className='text-primary hover:text-primary/80 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-sm'
             >
               Sign in
-            </button>
+            </Link>
           </p>
         </motion.div>
       </div>

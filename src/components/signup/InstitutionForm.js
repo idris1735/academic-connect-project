@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Loader2,
@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Microscope,
   CheckCircle2,
+  ArrowLeft,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,13 +29,23 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-const InstitutionForm = ({ onComplete }) => {
+const InstitutionForm = ({ onComplete, onBack, subOption }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState({
     institutionName: '',
     institutionType: '',
     researchFocus: '',
+    adminName: '',
+    officialEmail: '',
+    password: '',
+    logo: null,
+    address: '',
+    website: '',
+    accessCode: '',
+    staffName: '',
+    staffEmail: '',
+    staffRole: '',
   })
 
   const institutionTypes = [
@@ -62,17 +73,31 @@ const InstitutionForm = ({ onComplete }) => {
     },
   ]
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name) => (value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData((prev) => ({ ...prev, logo: e.target.files[0] }))
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate form submission with progress
+    // Simulate progress
     for (let i = 0; i <= 100; i += 20) {
       setProgress(i)
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500))
     onComplete(formData)
     setIsLoading(false)
   }
@@ -80,7 +105,10 @@ const InstitutionForm = ({ onComplete }) => {
   const isFormValid =
     formData.institutionName &&
     formData.institutionType &&
-    formData.researchFocus
+    formData.researchFocus &&
+    (subOption === 'Admin'
+      ? formData.adminName && formData.officialEmail && formData.password
+      : formData.staffName && formData.staffEmail && formData.staffRole)
 
   return (
     <motion.div
@@ -99,6 +127,14 @@ const InstitutionForm = ({ onComplete }) => {
         )}
 
         <CardHeader>
+          <Button
+            variant='ghost'
+            className='absolute left-2 top-2'
+            onClick={onBack}
+          >
+            <ArrowLeft className='h-4 w-4' />
+            <span className='sr-only'>Go back</span>
+          </Button>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -107,86 +143,56 @@ const InstitutionForm = ({ onComplete }) => {
             <div className='flex items-center space-x-2'>
               <GraduationCap className='h-6 w-6 text-primary' />
               <h2 className='text-2xl font-bold tracking-tight'>
-                Educational Institution
+                {subOption === 'Admin'
+                  ? 'Institution Admin Registration'
+                  : 'Institution Staff Registration'}
               </h2>
             </div>
             <p className='text-sm text-muted-foreground'>
-              Please provide details about your institution to help us customize
-              your experience
+              {subOption === 'Admin'
+                ? 'Provide details for registering your institution as an admin'
+                : 'Provide details to join your institution as a staff member'}
             </p>
           </motion.div>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-6'>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className='space-y-2'
-            >
-              <Label htmlFor='institutionName' className='text-sm font-medium'>
-                Institution Name
-              </Label>
-              <div className='relative'>
-                <div className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
-                  <Building className='h-4 w-4' />
-                </div>
-                <Input
-                  type='text'
-                  id='institutionName'
-                  placeholder='Enter your institution name'
-                  className='pl-9'
-                  value={formData.institutionName}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      institutionName: e.target.value,
-                    })
-                  }
-                  disabled={isLoading}
-                  required
-                />
-                {formData.institutionName && (
-                  <CheckCircle2 className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500' />
-                )}
-              </div>
-            </motion.div>
+            {/* Institution Name */}
+            <div className='space-y-2'>
+              <Label htmlFor='institutionName'>Institution Name</Label>
+              <Input
+                id='institutionName'
+                name='institutionName'
+                value={formData.institutionName}
+                onChange={handleInputChange}
+                placeholder='Enter institution name'
+                required
+                disabled={isLoading}
+              />
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className='space-y-2'
-            >
-              <Label htmlFor='institutionType' className='text-sm font-medium'>
-                Institution Type
-              </Label>
+            {/* Institution Type */}
+            <div className='space-y-2'>
+              <Label htmlFor='institutionType'>Institution Type</Label>
               <TooltipProvider>
                 <Select
                   disabled={isLoading}
                   value={formData.institutionType}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, institutionType: value })
-                  }
+                  onValueChange={handleSelectChange('institutionType')}
                 >
                   <SelectTrigger id='institutionType' className='w-full'>
-                    <div className='flex items-center'>
-                      <GraduationCap className='mr-2 h-4 w-4 text-muted-foreground' />
-                      <SelectValue placeholder='Select institution type' />
-                    </div>
+                    <SelectValue placeholder='Select institution type' />
                   </SelectTrigger>
                   <SelectContent>
                     {institutionTypes.map((type) => (
                       <Tooltip key={type.value}>
                         <TooltipTrigger asChild>
-                          <SelectItem
-                            value={type.value}
-                            className='cursor-pointer'
-                          >
+                          <SelectItem value={type.value}>
                             {type.label}
                           </SelectItem>
                         </TooltipTrigger>
-                        <TooltipContent side='right' className='max-w-[200px]'>
+                        <TooltipContent side='right'>
                           <p>{type.description}</p>
                         </TooltipContent>
                       </Tooltip>
@@ -194,82 +200,87 @@ const InstitutionForm = ({ onComplete }) => {
                   </SelectContent>
                 </Select>
               </TooltipProvider>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className='space-y-2'
-            >
-              <Label htmlFor='researchFocus' className='text-sm font-medium'>
-                Primary Research Focus
-              </Label>
-              <div className='relative'>
-                <div className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
-                  <Microscope className='h-4 w-4' />
-                </div>
+            {/* Dynamic Fields for Admin/Staff */}
+            {subOption === 'Admin' ? (
+              <>
                 <Input
-                  type='text'
-                  id='researchFocus'
-                  placeholder='e.g., Computer Science, Biology, Engineering'
-                  className='pl-9'
-                  value={formData.researchFocus}
-                  onChange={(e) =>
-                    setFormData({ ...formData, researchFocus: e.target.value })
-                  }
-                  disabled={isLoading}
+                  id='adminName'
+                  name='adminName'
+                  value={formData.adminName}
+                  onChange={handleInputChange}
+                  placeholder='Admin Name'
                   required
+                  disabled={isLoading}
                 />
-                {formData.researchFocus && (
-                  <CheckCircle2 className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500' />
-                )}
-              </div>
-            </motion.div>
+                <Input
+                  id='officialEmail'
+                  name='officialEmail'
+                  type='email'
+                  value={formData.officialEmail}
+                  onChange={handleInputChange}
+                  placeholder='Admin Email'
+                  required
+                  disabled={isLoading}
+                />
+                <Input
+                  id='password'
+                  name='password'
+                  type='password'
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder='Password'
+                  required
+                  disabled={isLoading}
+                />
+              </>
+            ) : (
+              <>
+                <Input
+                  id='staffName'
+                  name='staffName'
+                  value={formData.staffName}
+                  onChange={handleInputChange}
+                  placeholder='Staff Name'
+                  required
+                  disabled={isLoading}
+                />
+                <Input
+                  id='staffEmail'
+                  name='staffEmail'
+                  type='email'
+                  value={formData.staffEmail}
+                  onChange={handleInputChange}
+                  placeholder='Staff Email'
+                  required
+                  disabled={isLoading}
+                />
+                <Input
+                  id='staffRole'
+                  name='staffRole'
+                  value={formData.staffRole}
+                  onChange={handleInputChange}
+                  placeholder='Staff Role'
+                  required
+                  disabled={isLoading}
+                />
+              </>
+            )}
           </form>
         </CardContent>
 
         <CardFooter className='flex flex-col gap-4'>
-          <Button
-            onClick={handleSubmit}
-            className='w-full relative overflow-hidden group'
-            disabled={isLoading || !isFormValid}
-          >
+          <Button type='submit' className='w-full' disabled={!isFormValid}>
             {isLoading ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Processing...
               </>
             ) : (
-              <>
-                Continue
-                <motion.div
-                  className='absolute inset-0 bg-primary/10'
-                  initial={false}
-                  animate={{
-                    x: isFormValid ? '100%' : '0%',
-                  }}
-                  transition={{ duration: 0.5 }}
-                />
-              </>
+              'Continue'
             )}
           </Button>
-          <div className='text-xs text-center space-y-2'>
-            <p className='text-muted-foreground'>
-              Your institution will be verified to ensure data quality
-            </p>
-            <motion.div
-              className='flex items-center justify-center space-x-1 text-primary'
-              animate={{ opacity: isFormValid ? 1 : 0.5 }}
-            >
-              <CheckCircle2 className='h-3 w-3' />
-              <span>
-                {isFormValid
-                  ? 'All fields completed'
-                  : 'Please complete all fields'}
-              </span>
-            </motion.div>
-          </div>
         </CardFooter>
       </Card>
     </motion.div>
