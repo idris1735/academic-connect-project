@@ -32,7 +32,16 @@ const individualProfileData = {
       date: "1 hour ago",
       tags: ["Dental", "Health"]
     }
-  ]
+  ],
+  posts: [
+    {
+      id: 1,
+      title: "My Research Findings",
+      content: "Discussion about recent discoveries...",
+      date: "2 days ago"
+    }
+  ],
+  profileViews: 245,
 }
 
 export default function IndividualProfilePreview() {

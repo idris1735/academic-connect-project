@@ -7,7 +7,7 @@ const { getUserNameByUid } = require('../utils/user');
 
 exports.createPost = async (req, res) => {
   console.log(req.body)
-  const {content, attachment, category} = req.body;
+  const {content, attachment, category, discussion} = req.body;
   user = req.user;
   console.log('User:', user);
   // console.log('Post:', content, attachment, category);
@@ -25,6 +25,7 @@ exports.createPost = async (req, res) => {
         postCat: category,
         likesCount: 0,
         commentsCount: 0,
+        discussion: discussion || null
       }
       await postRef.set(postData);
 
@@ -42,16 +43,17 @@ exports.createPost = async (req, res) => {
         ...postData,
         content,
         attachment,
+        discussion,
         userInfo: {
           author: name,
           // TODO ; fill with other necessary user info
         }
       };
-      console.log(fullPost)
+      console.log('Full post with discussion:', fullPost);
       return res.status(200).json({ message: 'Post created successfully', post: fullPost });
 
     } catch (error) {
-      console.error('Error during image upload:', error);
+      console.error('Error during post creation:', error);
       res.status(500).json({ message: 'Post creation failed, please, try again', error: error.message });
     }
   }
@@ -141,6 +143,7 @@ exports.getPosts = async (req, res) => {
         comments,
         attachment: postData.attachment || null,
         category: postData.postCat,
+        discussion: postData.discussion,
         userInfo: {
           author: userName,
         },

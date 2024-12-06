@@ -45,7 +45,7 @@ export function ProfileHeader({ data, isOrganization }) {
             </div>
           </div>
           <div className="mt-6 flex justify-center space-x-4">
-            <Button className="bg-[#6366F1] hover:bg-[#5355CC]">Follow</Button>
+            <Button className="bg-[#6366F1] hover:bg-[#5355CC]">Connect</Button>
             <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10">
               Message
             </Button>

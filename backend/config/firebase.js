@@ -14,9 +14,8 @@ admin.initializeApp({
 
 
 const firebaseConfig = {
-  // feel in the confug values
-};
-
+  
+}
 
 // Initialize Firebase
 let app;

@@ -5,16 +5,23 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Button } from './ui/button'
+import { Settings, Trash2 } from 'lucide-react'
+import { useDispatch, useSelector } from 'react-redux'
+import { toggleEditMode } from '@/redux/features/profileSlice'
+import { ProfileEditForm } from './ProfileEditForm'
+import { PasswordChangeForm } from './PasswordChangeForm'
 
 export function ProfileTabs({ data, isOrganization }) {
   const [activeTab, setActiveTab] = useState("overview")
+  const dispatch = useDispatch()
+  const isEditing = useSelector((state) => state.profile.isEditing)
 
   const tabItems = [
     { value: "overview", label: "Overview" },
     { value: "publications", label: "Publications" },
     { value: "peer-reviews", label: "Peer Reviews" },
-    { value: "comments", label: "Comments" },
-    { value: "grants", label: "Grants" },
+    { value: "posts", label: "Posts" },
+    { value: "settings", label: "Settings" },
     ...(isOrganization ? [{ value: "members", label: "Members" }] : [])
   ]
 
@@ -98,7 +105,66 @@ export function ProfileTabs({ data, isOrganization }) {
             </Card>
           </TabsContent>
         )}
-        {/* Other tab contents remain the same */}
+        <TabsContent value="posts">
+          <Card className="border-none shadow-lg">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Your Posts</h3>
+              <div className="space-y-6">
+                {data.posts?.map((post, index) => (
+                  <div key={index} className="flex items-start space-x-4 bg-gray-50 p-4 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{post.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">{post.content}</p>
+                      <p className="text-xs text-gray-400 mt-2">{post.date}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeletePost(post.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="settings">
+          <Card className="border-none shadow-lg">
+            <CardContent className="p-6">
+              <div className="space-y-8">
+                {isEditing ? (
+                  <ProfileEditForm />
+                ) : (
+                  <>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Settings</h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Profile Views</span>
+                          <span className="text-sm font-medium">{data.profileViews || 0}</span>
+                        </div>
+                        <Button 
+                          className="w-full bg-[#6366F1] hover:bg-[#5355CC]"
+                          onClick={() => dispatch(toggleEditMode())}
+                        >
+                          Edit Profile
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+                      <PasswordChangeForm />
+                    </div>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   )
