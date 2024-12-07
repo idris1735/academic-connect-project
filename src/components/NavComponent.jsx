@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { dummyNotifications } from '@/lib/dummyNotifications'
+import { fetchWithErrorHandling } from '@/lib/api'
 
 // Dummy data for testing
 const dummyUsers = [
@@ -54,6 +55,8 @@ export default function NavComponent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [users, setUsers] = useState([])
+  const [filteredUsers, setFilteredUsers] = useState([])
 
   useEffect(() => {
     // For testing with dummy data
@@ -79,6 +82,37 @@ export default function NavComponent() {
     return () => clearInterval(interval) // Cleanup on unmount
   }, [])
 
+  // Fetch users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetchWithErrorHandling('/api/users/get_profiles')
+        if (response) {
+          setUsers(response.profiles)
+          console.log(response.profiles)
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error)
+        setUsers([])
+      }
+    }
+
+    fetchUsers()
+  }, [])
+
+  // Filter users based on search query
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const filtered = users.filter(user =>
+        user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      setFilteredUsers(filtered)
+    } else {
+      setFilteredUsers([])
+    }
+  }, [searchQuery, users])
+
   // Add navItems definition
   const navItems = [
     { icon: Home, label: 'Home', href: '/feeds' },
@@ -93,11 +127,11 @@ export default function NavComponent() {
     { icon: User, label: 'Profile', href: '/profile/individual' },
   ]
 
-  // Filter users based on search query
-  const filteredUsers = dummyUsers.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // // Filter users based on search query
+  // const filteredUsers = dummyUsers.filter(user =>
+  //   user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //   user.occupation.toLowerCase().includes(searchQuery.toLowerCase())
+  // )
 
   // Handle user selection
   const handleSelectUser = (userId) => {
@@ -147,17 +181,17 @@ export default function NavComponent() {
                     <div className="max-h-[60vh] overflow-auto">
                       {filteredUsers.map((user) => (
                         <div
-                          key={user.id}
-                          onClick={() => handleSelectUser(user.id)}
+                          key={user.pid}
+                          onClick={() => handleSelectUser(user.pid)}
                           className="flex items-center space-x-3 p-2 hover:bg-indigo-50 cursor-pointer"
                         >
                           <Avatar className="h-8 w-8 shrink-0">
-                            <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>{user.name[0]}</AvatarFallback>
+                            <AvatarImage src={user.avatar} alt={user.displayName} />
+                            <AvatarFallback>{user.displayName[0]}</AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col min-w-0">
-                            <span className="font-medium text-sm truncate">{user.name}</span>
-                            <span className="text-xs text-gray-500 truncate">{user.title}</span>
+                            <span className="font-medium text-sm truncate">{user.displayName}</span>
+                            <span className="text-xs text-gray-500 truncate">{user.occupation}</span>
                           </div>
                         </div>
                       ))}

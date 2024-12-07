@@ -13,31 +13,34 @@ const checkAuth = async (req, res, next) => {
         return next();
     }
 
-    // Protect all other routes (like /feeds)
+    // Protect all other routes
     if (!sessionCookie) {
         console.log('Unauthorized access to:', req.path);
-        return res.status(401).redirect('/login?error=session_expired');
+        return res.status(401).redirect('/login');
     }
 
     try {
         const decodedToken = await admin.auth().verifySessionCookie(sessionCookie, true);
+        console.log('Authenticated user:', decodedToken.email);
+        console.log(req.path);
         req.user = decodedToken;
         return next();
     } catch (error) {
         console.error('Session verification failed:', error.message);
         
-        // Clear the session cookie
-        res.clearCookie('session');
-        
-        // Handle network-related errors specifically
-        if (error.code === 'EAI_AGAIN') {
-            return res.redirect('/login?error=verification_failed');
+        // Check specifically for internet connection error
+        if (error.message.includes('getaddrinfo EAI_AGAIN') || error.code === 'EAI_AGAIN') {
+            // Send a 503 status with a specific error code for connection issues
+            return res.status(503).json({
+                error: 'network_error',
+                message: 'Please check your internet connection and try again'
+            });
         }
 
-        // Handle other session verification errors
-        return res.redirect('/login?error=session_invalid');
+        // For other session errors, redirect to login
+        res.clearCookie('session');
+        return res.redirect('/login');
     }
 };
 
 module.exports = checkAuth;
-
