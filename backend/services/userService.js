@@ -50,19 +50,3 @@ exports.updateUserProfile = async (req, res) => {
     return res.status(500).json({ message: 'Failed to update profile' });
   }
 };
-
-exports.getProfiles = async (req, res) => {
-  const profiles = await db.collection('profiles').get();
-  const profileList = [];
-  for (const profile of profiles.docs) {
-    profileList.push({
-      pid: profile.id,
-      occupation: profile.data().occupation || '',
-      displayName: profile.data().displayName || profile.data().firstName + ' ' + profile.data().lastName || '',
-      avatar: profile.data().avatar || '',
-      email: profile.data().email || ''
-    });
-  }
-
-  return res.status(200).json({ profiles: profileList });
-};

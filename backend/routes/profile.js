@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const profileService = require('../services/profileService');
-const checkAuth = require('../middleware/auth');
 
-router.get('/individual', checkAuth, profileService.getProfile);
+
+router.get('/individual', profileService.getProfileIndividual);
+router.get('/get_profiles', profileService.getProfiles);
+router.get('/activities/:uid', profileService.getProfileActivities);
 
 module.exports = router;

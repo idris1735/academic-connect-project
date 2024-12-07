@@ -1,16 +1,15 @@
 const { db } = require('../config/firebase');
-const { getUserNameByUid } = require('../utils/user');
+const { getUserNameByUid, getRecentActivity, formatActivityForDisplay } = require('../utils/user');
 
-exports.getProfile = async (req, res) => {
+exports.getProfileIndividual = async (req, res) => {
   try {
-    // Get userId from request body instead of params
-    const  userId  = req.user.uid
+    const userId = req.user.uid
     
     if (!userId) {
       return res.status(400).json({ message: 'User ID not found in request body' });
     }
 
-    // Get base profile data
+    // Get base profile data without activities
     const profileRef = db.collection('profiles').doc(userId);
     const profileDoc = await profileRef.get();
 
@@ -25,42 +24,23 @@ exports.getProfile = async (req, res) => {
     const userTypeDoc = await userTypeRef.get();
     const userTypeData = userTypeDoc.exists ? userTypeDoc.data() : {};
 
-    // Temporarily remove the recent activity query until index is created
-    let recentActivity = [];
-    
-    // Try to get recent activity if index exists
-    try {
-      const recentActivityRef = await db.collection('posts')
-        .where('uid', '==', userId)
-        .limit(5)  // Remove orderBy for now
-        .get();
+    // Ensure stats object exists with default values
+    const stats = {
+      posts: profileData.stats?.posts || 0,
+      upvotes: profileData.stats?.upvotes || 0,
+      publications: profileData.stats?.publications || 0,
+      citations: profileData.stats?.citations || 0,
+      hIndex: profileData.stats?.hIndex || 0,
+      i10Index: profileData.stats?.i10Index || 0,
+      followers: profileData.stats?.followers || 0,
+      following: profileData.stats?.following || 0,
+      reputation: profileData.stats?.reputation || 0
+    };
 
-      recentActivity.push(...recentActivityRef.docs.map(doc => {
-        const post = doc.data();
-        return {
-          type: "comment",
-          content: post.content,
-          date: post.timeStamp?.toDate().toISOString() || new Date().toISOString(),
-          tags: post.tags || []
-        };
-      }));
-    } catch (activityError) {
-      console.warn('Could not fetch recent activity:', activityError);
-      // Continue without recent activity
-    }
-
-    recentActivity = [
-      {
-        type: "comment",
-        content: "This is a test comment",
-        date: new Date().toISOString(),
-        tags: ["test", "comment"]
-      }
-    ]
-
-    // Combine all data
+    // Combine all data (removed recentActivity)
     const fullProfileData = {
       name: `${profileData.firstName} ${profileData.lastName}`,
+      uid: userId,
       verified: true,
       institution: profileData.institution || "Not specified",
       department: profileData.department || userTypeData.department || "Not specified",
@@ -72,18 +52,8 @@ exports.getProfile = async (req, res) => {
         twitter: profileData.socialLinks?.twitter || "#",
         website: profileData.socialLinks?.website || "#"
       },
-      stats: {
-        upvotes: profileData.stats?.upvotes || 0,
-        publications: profileData.stats?.publications || 0,
-        citations: profileData.stats?.citations || 0,
-        hIndex: profileData.stats?.hIndex || 0,
-        i10Index: profileData.stats?.i10Index || 0
-      },
-      reputation: {
-        
-      },
-      recentActivity: recentActivity,
-      // Additional fields from profile document
+      reputation: profileData.reputation || [],
+      stats, // Use the guaranteed stats object
       email: profileData.email,
       photoURL: profileData.photoURL,
       bio: profileData.bio || "",
@@ -92,7 +62,9 @@ exports.getProfile = async (req, res) => {
       dateOfBirth: profileData.dateOfBirth,
       userType: profileData.userType
     };
-
+    // In your browser console or component
+    console.log('Profile Data:', fullProfileData);
+    console.log('Stats:', fullProfileData.stats);
     res.status(200).json(fullProfileData);
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -101,4 +73,40 @@ exports.getProfile = async (req, res) => {
       error: error.message 
     });
   }
+};
+
+// New endpoint just for activities
+exports.getProfileActivities = async (req, res) => {
+  try {
+    const userId = req.params.uid || req.user.uid;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID not found' });
+    }
+
+    const activities = await getRecentActivity(userId);
+    res.status(200).json(activities);
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch activities', 
+      error: error.message 
+    });
+  }
+};
+
+exports.getProfiles = async (req, res) => {
+  const profiles = await db.collection('profiles').get();
+  const profileList = [];
+  for (const profile of profiles.docs) {
+    profileList.push({
+      pid: profile.id,
+      occupation: profile.data().occupation || '',
+      displayName: profile.data().displayName || profile.data().firstName + ' ' + profile.data().lastName || '',
+      avatar: profile.data().avatar || '',
+      email: profile.data().email || ''
+    });
+  }
+
+  return res.status(200).json({ profiles: profileList });
 };

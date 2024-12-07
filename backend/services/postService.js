@@ -96,60 +96,67 @@ exports.createPost = async (req, res) => {
 };
 
 exports.getPosts = async (req, res) => {
-  try {
-    // Fetch all posts from the 'posts' collection
-    const postsSnapshot = await db.collection('posts')
-    .where('uid', '==', req.user.uid)
-    .get();
-  
-    // If there are no posts, return an empty list
-    if (postsSnapshot.empty) {
-      return res.status(200).json({ message: 'No posts found', posts: [] });
+  const uid = req.params.uid;
+  if (!uid) {
+    try {
+      // Fetch all posts from the 'posts' collection
+      const postsSnapshot = await db.collection('posts')
+      .where('uid', '==', req.user.uid)
+      .get();
+    
+      // If there are no posts, return an empty list
+      if (postsSnapshot.empty) {
+        return res.status(200).json({ message: 'No posts found', posts: [] });
+      }
+
+      const posts = [];
+
+      for (const postDoc of postsSnapshot.docs) {
+        const postData = postDoc.data();
+
+        // Fetch post content
+        const postContentSnapshot = await postDoc.ref.collection('postContent').get();
+        const postContents = postContentSnapshot.docs.map((doc) => doc.data());
+        
+        // Fetch comments
+        const commentsSnapshot = await postDoc.ref.collection('comments')
+          .orderBy('timestamp', 'desc')
+          .limit(10)
+          .get();
+        
+        const comments = commentsSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString()
+        }));
+
+        content = postContents[0].content;
+        const userName = await getUserNameByUid(postData.uid);
+        
+        const fullPost = {
+          ...postData,
+          content,
+          comments,
+          attachment: postData.attachment || null,
+          category: postData.postCat,
+          discussion: postData.discussion,
+          userInfo: {
+            author: userName,
+          },
+        };
+
+        posts.push(fullPost);
+      }
+
+      return res.status(200).json({ message: 'Posts retrieved successfully', posts });
+
+    } catch (error) {
+      console.error('Error retrieving posts:', error);
+      return res.status(500).json({ message: 'Failed to retrieve posts', error: error.message });
     }
-
-    const posts = [];
-
-    for (const postDoc of postsSnapshot.docs) {
-      const postData = postDoc.data();
-
-      // Fetch post content
-      const postContentSnapshot = await postDoc.ref.collection('postContent').get();
-      const postContents = postContentSnapshot.docs.map((doc) => doc.data());
-      
-      // Fetch comments
-      const commentsSnapshot = await postDoc.ref.collection('comments')
-        .orderBy('timestamp', 'desc')
-        .limit(10)
-        .get();
-      
-      const comments = commentsSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString()
-      }));
-
-      content = postContents[0].content;
-      const userName = await getUserNameByUid(postData.uid);
-      
-      const fullPost = {
-        ...postData,
-        content,
-        comments,
-        attachment: postData.attachment || null,
-        category: postData.postCat,
-        discussion: postData.discussion,
-        userInfo: {
-          author: userName,
-        },
-      };
-
-      posts.push(fullPost);
-    }
-
-    return res.status(200).json({ message: 'Posts retrieved successfully', posts });
-
-  } catch (error) {
-    console.error('Error retrieving posts:', error);
-    return res.status(500).json({ message: 'Failed to retrieve posts', error: error.message });
+  } else {
+    // Fetch posts for a specific user
+    
+    
   }
 };
 

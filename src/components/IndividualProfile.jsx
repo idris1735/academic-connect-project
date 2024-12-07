@@ -3,6 +3,7 @@ import { StatsSection } from "./StatsSection"
 import { ProfileTabs } from "./ProfileTabs"
 
 export function IndividualProfilePage({ data }) {
+  console.log('Profile Data:', data);
   if (!data) {
     return <div>Loading...</div>;
   }
