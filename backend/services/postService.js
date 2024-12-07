@@ -1,106 +1,99 @@
 const e = require('express');
-const db = require('../config/database');
+// const db = require('../config/database');
 const { Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
 const { getDocs, collection, where } = require("firebase/firestore");
 const { query } = require('firebase/firestore');
 const { getUserNameByUid } = require('../utils/user');
+const { admin, db, storage } = require('../config/firebase');
+const { v4: uuidv4 } = require('uuid');
 
 exports.createPost = async (req, res) => {
-  console.log(req.body)
-  const {content, attachment, category, discussion} = req.body;
-  user = req.user;
-  console.log('User:', user);
-  // console.log('Post:', content, attachment, category);
+  try {
+    const { content, category } = req.body;
+    const user = req.user;
+    let attachmentUrl = null;
 
-  // TODO: If there's an mage, save to storgage and get the URL
-  if (attachment == null){
-    try{
-      const postRef = db.collection('posts').doc();
-      const postID = postRef.id;
+    // Handle file upload if there's an attachment
+    if (req.file) {
+      const bucket = storage.bucket();
+      const fileExtension = req.file.originalname.split('.').pop();
+      const fileName = `posts/${uuidv4()}.${fileExtension}`;
       
-      postData = {
-        id: postID,
-        uid: user.uid,
-        timeStamp: FieldValue.serverTimestamp(),
-        postCat: category,
-        likesCount: 0,
-        commentsCount: 0,
-        discussion: discussion || null
-      }
-      await postRef.set(postData);
-
-      const PostContentRef = postRef.collection('postContent').doc();
-      const postContentID = PostContentRef.id;
-      await PostContentRef.set({
-        id: postContentID,
-        uid: user.uid,
-        content: content,
-        updatedAt: FieldValue.serverTimestamp(),
+      // Create a new blob in the bucket
+      const blob = bucket.file(fileName);
+      const blobStream = blob.createWriteStream({
+        metadata: {
+          contentType: req.file.mimetype,
+        },
       });
-      
-      const name = await getUserNameByUid(user.uid)
-      const fullPost = {
-        ...postData,
-        content,
-        attachment,
-        discussion,
-        userInfo: {
-          author: name,
-          // TODO ; fill with other necessary user info
-        }
-      };
-      console.log('Full post with discussion:', fullPost);
-      return res.status(200).json({ message: 'Post created successfully', post: fullPost });
 
-    } catch (error) {
-      console.error('Error during post creation:', error);
-      res.status(500).json({ message: 'Post creation failed, please, try again', error: error.message });
+      // Return a promise to handle the upload
+      await new Promise((resolve, reject) => {
+        blobStream.on('error', (error) => {
+          console.error('Error uploading file:', error);
+          reject(error);
+        });
+
+        blobStream.on('finish', async () => {
+          // Make the file publicly accessible
+          await blob.makePublic();
+          
+          // Get the public URL
+          attachmentUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+          resolve();
+        });
+
+        blobStream.end(req.file.buffer);
+      });
     }
+
+    // Create the post document
+    const postRef = db.collection('posts').doc();
+    const postID = postRef.id;
+    
+    const postData = {
+      id: postID,
+      uid: user.uid,
+      timeStamp: admin.firestore.FieldValue.serverTimestamp(),
+      postCat: category,
+      likesCount: 0,
+      commentsCount: 0,
+      attachment: attachmentUrl,
+    };
+
+    await postRef.set(postData);
+
+    const PostContentRef = postRef.collection('postContent').doc();
+    const postContentID = PostContentRef.id;
+    await PostContentRef.set({
+      id: postContentID,
+      uid: user.uid,
+      content: content,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    
+    const name = await getUserNameByUid(user.uid);
+    const fullPost = {
+      ...postData,
+      content,
+      userInfo: {
+        author: name,
+      }
+    };
+
+    return res.status(200).json({ 
+      message: 'Post created successfully', 
+      post: fullPost 
+    });
+
+  } catch (error) {
+    console.error('Error creating post:', error);
+    return res.status(500).json({ 
+      message: 'Failed to create post', 
+      error: error.message 
+    });
   }
-
-  else{ 
-    console.log('Image:', attachment);
-
-  //   try {
-
-  //     // Create a Post document
-  //     const postRef = db.collection('Post').doc();
-  //     // const postRef = db.collection('posts').doc();
-  //     await postRef.set({
-  //       postID: postRef.id,
-  //       uid: user.uid,
-  //       imgURL: image,
-  //       timeStamp: FieldValue.serverTimestamp(),
-  //       postCat: category,
-  //     });
-
-  //     const post = postRef.collection('post').doc();
-  //     await post.set({
-  //       postID: post.id,
-  //       uid: user.uid,
-  //       content: content,
-  //       timeStamp: FieldValue.serverTimestamp(),
-
-  //       // TODO: Add image URL and other important fields
-  //     });
-
-  //     const comment = postRef.collection('comment').doc();
-      
-  //     const like = postRef.collection('like').doc();
-
-  //     //TODO add media collection once storage is implemented
-
-  //     return res.status(200).json({ message: 'Post created successfully', post: post });
-  //     } catch (error) {
-  //         console.error('Error during post creation:', error);
-  //         res.status(500).json({ message: 'Post creation failed', error: error.message });
-  //     }
-  }
- }
-
-
-
-//  const { FieldValue } = require('firebase-admin/firestore');
+};
 
 exports.getPosts = async (req, res) => {
   try {

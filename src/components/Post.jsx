@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ThumbsUp, MessageSquare, Share2, MessageCircle, Send } from "lucide-react"
+import { ThumbsUp, MessageSquare, Share2, MessageCircle, FileText, Film, Image as ImageIcon, Send } from "lucide-react"
 import Link from 'next/link'
 
 // Add time formatting function
@@ -85,6 +85,63 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
     }
   }
 
+  const renderAttachment = () => {
+    if (!post.attachment) return null;
+
+    // Helper function to get file type from URL or mimetype
+    const getFileType = (url) => {
+      if (url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) return 'image';
+      if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+      return 'document';
+    };
+
+    const fileType = getFileType(post.attachment);
+
+    switch (fileType) {
+      case 'image':
+        return (
+          <div className="mb-4">
+            <img 
+              src={post.attachment} 
+              alt="Post attachment" 
+              className="w-full h-auto rounded-lg"
+              loading="lazy"
+            />
+          </div>
+        );
+      case 'video':
+        return (
+          <div className="mb-4">
+            <video 
+              src={post.attachment} 
+              controls 
+              className="w-full h-auto rounded-lg"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        );
+      case 'document':
+        return (
+          <div className="mb-4">
+            <a 
+              href={post.attachment}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <FileText className="h-5 w-5 text-gray-500" />
+              <span className="text-sm text-gray-700 truncate">
+                View Attachment
+              </span>
+            </a>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
       {/* Post Content */}
@@ -113,15 +170,9 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
 
         {/* Post Content */}
         <p className="mb-4">{post.content}</p>
-        {post.image && (
-          <div className="mb-4">
-            <img 
-              src={post.image} 
-              alt="Post content" 
-              className="w-full h-auto rounded-lg"
-            />
-          </div>
-        )}
+        
+        {/* Attachment */}
+        {renderAttachment()}
       </div>
 
       {/* Action Buttons */}

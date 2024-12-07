@@ -46,56 +46,130 @@ exports.googleLogin = async (req, res) => {
 };
 
 exports.signup = async (req, res) => {
-  const { email, password, firstName, lastName, country, userType, occupation, interests } = req.body;
-
   try {
+    const { 
+      email, 
+      password, 
+      firstName, 
+      lastName, 
+      country, 
+      userType,
+      dateOfBirth,
+      occupation,
+    } = req.body;
+
+    // Create the user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Update the user's display name
     await updateProfile(user, {
       displayName: `${firstName} ${lastName}`,
     });
 
-    const userRef = db.collection('users').doc(user.uid);
-    await userRef.set({
+    // Base user data
+    const baseUserData = {
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      lastLogin: FieldValue.serverTimestamp(),
+      displayName: `${firstName} ${lastName}`,
+      photoURL: user.photoURL || null,
+      lastLogin: null,
+      dateCreated: FieldValue.serverTimestamp(),
       country,
       userType,
-    });
+    };
 
-    const profileRef = db.collection('profiles').doc(user.uid);
-    await profileRef.set({
+    // Base profile data
+    const baseProfileData = {
       pid: user.uid,
       email: user.email,
       firstName,
       lastName,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
+      displayName: `${firstName} ${lastName}`,
+      photoURL: user.photoURL || null,
       bio: '',
       country,
       dateJoined: FieldValue.serverTimestamp(),
+      dateOfBirth,
       userType,
-      occupation: userType === 'individual' ? occupation : undefined,
-      interests: userType === 'individual' ? interests : undefined,
-    });
+      occupation,
+    };
 
-    if (userType === 'individual') {
-      const individualRef = db.collection('userType').doc('individual');
-      await individualRef.set({
-        uid: user.uid,
-        occupation,
-        interests,
-      });
+    // Handle specific user type data
+    switch(userType) {
+      case 'individual':
+
+        const { occupation, researchInterests } = req.body;
+        
+        // Add individual-specific fields to profile
+        baseProfileData.occupation = occupation;
+        baseProfileData.researchInterests = researchInterests;
+
+        // Create individual type document
+        const individualRef = db.collection('userTypes').doc('individual');
+        await individualRef.set({
+          uid: user.uid,
+          occupation,
+          researchInterests,
+          dateOfBirth
+        });
+        break;
+
+      case 'institution':
+        const { institutionName, institutionType } = req.body;
+        
+        // Add institution-specific fields to profile
+        baseProfileData.institutionName = institutionName;
+        baseProfileData.institutionType = institutionType;
+
+        // Create institution type document
+        const institutionRef = db.collection('userTypes').doc(user.uid);
+        await institutionRef.set({
+          uid: user.uid,
+          institutionName,
+          institutionType,
+          dateOfBirth
+        });
+        break;
+
+      case 'corporate':
+        const { companyName, industry } = req.body;
+        
+        // Add corporate-specific fields to profile
+        baseProfileData.companyName = companyName;
+        baseProfileData.industry = industry;
+
+        // Create corporate type document
+        const corporateRef = db.collection('userTypes').doc(user.uid);
+        await corporateRef.set({
+          uid: user.uid,
+          companyName,
+          industry,
+          dateOfBirth
+        });
+        break;
     }
 
+    // Save base user and profile data
+    const userRef = db.collection('users').doc(user.uid);
+    await userRef.set(baseUserData);
+
+    const profileRef = db.collection('profiles').doc(user.uid);
+    await profileRef.set(baseProfileData);
+
+    // Create session cookie
     const idToken = await user.getIdToken();
     await createCookieSession(req, res, idToken, user);
 
-    res.status(200).json({ message: 'Signup successful', redirectTo: '/feeds' });
+    res.status(200).json({ 
+      message: 'Signup successful', 
+      redirectTo: '/feeds',
+      user: {
+        uid: user.uid,
+        email: user.email,
+        displayName: `${firstName} ${lastName}`,
+      }
+    });
   } catch (error) {
     console.error('Error during signup:', error);
     res.status(400).json({ message: 'Signup failed', error: error.message });

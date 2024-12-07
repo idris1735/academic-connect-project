@@ -22,6 +22,7 @@ const IndividualForm = ({ onComplete, onBack }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState({
+    
     fullName: '',
     email: '',
     password: '',

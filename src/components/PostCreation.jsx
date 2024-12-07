@@ -23,27 +23,25 @@ export default function PostCreation({ onPostCreate }) {
             }
           : null;
 
-        const postData = {
-          content,
-          attachment,
-          category,
-          discussion: discussionData,
-          postCat: category,
-          timeStamp: new Date().toISOString(),
-          likesCount: 0,
-          commentsCount: 0,
-          comments: []
-        }
-
         console.log('Submitting post with data:', postData);
+
+        // Create FormData object to handle file upload
+        const formData = new FormData()
+        formData.append('content', content)
+        formData.append('category', category)
+        formData.append('discussion', discussionData)
+       
+
+        // Append file if it exists
+        if (attachment) {
+          formData.append('attachment', attachment)
+        }
 
         const fetchResponse = await fetch('/api/posts/create_post', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(postData),
-        })
+          // Remove the Content-Type header to let the browser set it with boundary for FormData
+          body: formData,
+        });
       
         const responseData = await fetchResponse.json()
         if (fetchResponse.status === 200) {

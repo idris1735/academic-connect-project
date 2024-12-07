@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Users, Bell, MessageSquare, User, Menu, X, Search } from 'lucide-react'
@@ -8,6 +8,7 @@ import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
+import { dummyNotifications } from '@/lib/dummyNotifications'
 
 // Dummy data for testing
 const dummyUsers = [
@@ -52,13 +53,43 @@ export default function NavComponent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    // For testing with dummy data
+    // const unreadNotifications = dummyNotifications.filter(n => !n.read).length
+    // setUnreadCount(unreadNotifications)
+
+    // Real API implementation (commented out)
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/notifications/get_notifications')
+        if (!response.ok) throw new Error('Failed to fetch notifications')
+        const data = await response.json()
+        const unreadCount = data.notifications.filter(n => !n.read).length
+        setUnreadCount(unreadCount)
+      } catch (error) {
+        console.error('Error fetching unread count:', error)
+        setUnreadCount(0) // Fallback to 0 on error
+      }
+    }
+    
+    fetchUnreadCount()
+    const interval = setInterval(fetchUnreadCount, 30000) // Poll every 30 seconds
+    return () => clearInterval(interval) // Cleanup on unmount
+  }, [])
 
   // Add navItems definition
   const navItems = [
     { icon: Home, label: 'Home', href: '/feeds' },
     { icon: Users, label: 'Network', href: '/network' },
     { icon: MessageSquare, label: 'Messages', href: '/messages' },
-    { icon: Bell, label: 'Notifications', href: '/notifications' },
+    { 
+      icon: Bell, 
+      label: 'Notifications', 
+      href: '/notifications',
+      count: unreadCount > 0 ? unreadCount : null 
+    },
     { icon: User, label: 'Profile', href: '/profile/individual' },
   ]
 
@@ -149,7 +180,14 @@ export default function NavComponent() {
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <item.icon className="h-6 w-6 mb-1" />
+                <div className="relative">
+                  <item.icon className="h-6 w-6 mb-1" />
+                  {item.count && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {item.count}
+                    </span>
+                  )}
+                </div>
                 <span>{item.label}</span>
               </Link>
             ))}
