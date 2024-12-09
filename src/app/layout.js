@@ -7,6 +7,7 @@ import MessagingPopup from '@/components/MessagingPopup'
 import './globals.css'
 import { Provider } from 'react-redux'
 import { store } from '@/redux/store'
+import PropTypes from 'prop-types'
 
 export default function RootLayout({ children }) {
   const isLoading = useNavigationLoading()
@@ -27,3 +28,6 @@ export default function RootLayout({ children }) {
   )
 }
 
+RootLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+}
