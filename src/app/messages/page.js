@@ -75,6 +75,7 @@ export default function MessagesPage() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <NavComponent />
+      <main className="container mx-auto px-4 ">
       <div className="flex flex-1 overflow-hidden">
         <MessageSidebar
           onSelectDM={(dm) => handleSelectItem(dm, 'messages')}
@@ -118,6 +119,7 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+      </main>
     </div>
   )
 }

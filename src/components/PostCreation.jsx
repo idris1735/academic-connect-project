@@ -1,93 +1,70 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { MessageSquare, Users2, Briefcase, Image, FileText, Film, X, Paperclip } from 'lucide-react'
-
-// import { MessageSquare, Users2, Briefcase, Image } from "lucide-react"
-import { Result } from 'postcss'
-import { ca, se } from 'date-fns/locale'
-
-import {
-  ToastProvider,
-  ToastViewport,
-  Toast,
-  ToastTitle,
-  ToastDescription,
-  ToastClose,
-} from '@/components/ui/toast'
+import { MessageSquare, Users2, Briefcase, Image, FileText, Film, X, Paperclip, MessageCircle } from 'lucide-react'
 
 export default function PostCreation({ onPostCreate }) {
   const [content, setContent] = useState('')
   const [attachment, setAttachment] = useState(null)
   const [category, setCategory] = useState('research')
+  const [isDiscussionMode, setIsDiscussionMode] = useState(false)
+  const [discussionName, setDiscussionName] = useState('')
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
-
-  const [showToast, setShowToast] = useState(false);
-  const [toastDetails, setToastDetails] = useState({
-    title: "",
-    description: "",
-    variant: "default",
-  });
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (content.trim()) {
       try {
-        // Create FormData object to handle file upload
-        // const formData = new FormData()
-        // formData.append('content', content)
-        // formData.append('category', category)
-        
-        // // Append file if it exists
-        // if (attachment) {
-        //   formData.append('attachment', attachment)
-        // }
+        const discussionData = isDiscussionMode && discussionName.trim() 
+          ? {
+              name: discussionName.trim(),
+              id: Date.now().toString()
+            }
+          : null;
 
-        // const fetchResponse = await fetch('/api/posts/create_post', {
-        //   method: 'POST',
-        //   // Remove the Content-Type header to let the browser set it with boundary for FormData
-        //   body: formData,
-        // });
-          const fetchResponse = await fetch('/api/posts/create_post', {
+        console.log('Submitting post with data:', postData);
+
+        // Create FormData object to handle file upload
+        const formData = new FormData()
+        formData.append('content', content)
+        formData.append('category', category)
+        formData.append('discussion', discussionData)
+       
+
+        // Append file if it exists
+        if (attachment) {
+          formData.append('attachment', attachment)
+        }
+
+        const fetchResponse = await fetch('/api/posts/create_post', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content, attachment, category}),
+          // Remove the Content-Type header to let the browser set it with boundary for FormData
+          body: formData,
         });
       
-        const responseData = await fetchResponse.json();
+        const responseData = await fetchResponse.json()
         if (fetchResponse.status === 200) {
-          onPostCreate(responseData.post);
-          setContent('');
-          setAttachment(null);
-          setCategory('research');
+          const completePost = {
+            ...responseData.post,
+            discussion: discussionData,
+            timestamp: new Date().toISOString()
+          }
+          console.log('Complete post with discussion:', completePost);
+          onPostCreate(completePost)
+          setContent('')
+          setAttachment(null)
+          setCategory('research')
+          setIsDiscussionMode(false)
+          setDiscussionName('')
           setError('')
-          setShowToast(true);
-          setToastDetails({
-            title: "Post created successfully",
-            description: "Your post has been created successfully.",
-            variant: "success",
-          });
         } else {
-          setShowToast(true);
-          setToastDetails({
-            title: "Post creation failed",
-            description: responseData.message,
-            variant: "error",
-          });
+          setError(responseData.message)
         }
       } catch (error) {
-        console.error("Error creating post:", error.message);
-        setShowToast(true);
-        setToastDetails({
-          title: "Post creation failed",
-          description: "An unexpected error occurred. Please try again later.",
-          variant: "error",
-        });
+        console.error("Error creating post:", error)
+        setError('Failed to create post')
       }
-     
     } else {
       setError('Post content cannot be empty.')
     }
@@ -193,8 +170,14 @@ export default function PostCreation({ onPostCreate }) {
     input.click()
   }
 
-  return (
+  const toggleDiscussionMode = () => {
+    setIsDiscussionMode(!isDiscussionMode)
+    if (!isDiscussionMode) {
+      setDiscussionName('')
+    }
+  }
 
+  return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       <form onSubmit={handleSubmit}>
         <div className="flex gap-4 mb-4">
@@ -209,23 +192,21 @@ export default function PostCreation({ onPostCreate }) {
             aria-label="Post content"
           />
         </div>
-        {renderAttachmentPreview()}
 
-        <ToastProvider>
-
-        {showToast && (
-          <Toast
-            variant={toastDetails.variant}
-            onOpenChange={(open) => setShowToast(open)}
-          >
-            <ToastTitle>{toastDetails.title}</ToastTitle>
-            <ToastDescription>{toastDetails.description}</ToastDescription>
-            <ToastClose />
-          </Toast>
+        {isDiscussionMode && (
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Enter discussion name..."
+              value={discussionName}
+              onChange={(e) => setDiscussionName(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+            />
+          </div>
         )}
 
-        <ToastViewport />
-        </ToastProvider>
+        {renderAttachmentPreview()}
+
         <div className="flex justify-between items-center mb-4">
           <input
             type="file"
@@ -252,7 +233,9 @@ export default function PostCreation({ onPostCreate }) {
             <option value="publication">Publication</option>
           </select>
         </div>
+
         {error && <p className="text-red-500 mb-2">{error}</p>}
+        
         <div className="flex justify-between">
           <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]">
             <MessageSquare className="h-4 w-4" />
@@ -274,13 +257,17 @@ export default function PostCreation({ onPostCreate }) {
             <Film className="h-4 w-4" />
             Video
           </button>
-          <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
-            <Users2 className="h-4 w-4" />
-            Research
-          </button>
-          <button type="button" className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
-            <Briefcase className="h-4 w-4" />
-            Job
+          <button 
+            type="button" 
+            onClick={toggleDiscussionMode}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+              isDiscussionMode 
+                ? 'bg-indigo-100 text-indigo-600' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Discussion
           </button>
         </div>
       </form>

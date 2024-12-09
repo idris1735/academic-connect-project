@@ -25,8 +25,13 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
     dateOfBirth: '',
     country: '',
     termsAccepted: false,
+    userType: userType,
+   
     ...preSignupData,
   })
+
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -40,13 +45,39 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
+      setError("Passwords don't match")
+      setIsLoading(false)
       return
     }
-    onComplete(formData)
+
+    try {
+      const response = await fetch('/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        onComplete(data.redirectTo)
+      } else {
+        setError(data.error)
+      }
+    } catch (error) {
+      console.error('Signup error:', error)
+      setError('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const isFormValid =
@@ -90,6 +121,12 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-6'>
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                {error}
+              </div>
+            )}
+            
             {/* Name Fields */}
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
@@ -240,11 +277,19 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
 
             {/* Buttons */}
             <div className='flex justify-between pt-4'>
-              <Button type='button' variant='outline' onClick={onBack}>
+              <Button 
+                type='button' 
+                variant='outline' 
+                onClick={onBack}
+                disabled={isLoading}
+              >
                 Back
               </Button>
-              <Button type='submit' disabled={!isFormValid}>
-                Complete Registration
+              <Button 
+                type='submit' 
+                disabled={!isFormValid || isLoading}
+              >
+                {isLoading ? 'Creating Account...' : 'Complete Registration'}
               </Button>
             </div>
           </form>

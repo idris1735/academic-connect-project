@@ -1,11 +1,23 @@
 import { CheckCircle, Instagram, Linkedin, Twitter, Globe, Building2, User, MapPin } from 'lucide-react'
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { formatDistanceToNow } from 'date-fns'
 
 export function ProfileHeader({ data, isOrganization }) {
   if (!data) {
     return <div>Loading...</div>;
   }
+
+  const formatMemberSince = (dateString) => {
+    try {
+      const date = new Date(dateString)
+      return formatDistanceToNow(date, { addSuffix: false })
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return dateString // Return original string if formatting fails
+    }
+  }
+
   return (
     <div className="relative">
       <div className="h-48 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]"></div>
@@ -41,11 +53,11 @@ export function ProfileHeader({ data, isOrganization }) {
             </div>
             <div className="flex items-center justify-center text-gray-600 text-sm">
               <User className="h-4 w-4 mr-1" />
-              <span>Member for {data.memberSince}</span>
+              <span>Member for {formatMemberSince(data.memberSince)}</span>
             </div>
           </div>
           <div className="mt-6 flex justify-center space-x-4">
-            <Button className="bg-[#6366F1] hover:bg-[#5355CC]">Follow</Button>
+            <Button className="bg-[#6366F1] hover:bg-[#5355CC]">Connect</Button>
             <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10">
               Message
             </Button>

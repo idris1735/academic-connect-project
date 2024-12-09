@@ -31,6 +31,9 @@ server.use(
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const postRoutes = require('./routes/posts');
+const profileRoutes = require('./routes/profile');
+const networkRoutes = require('./routes/network');
+const notificationRoutes = require('./routes/notification');
 
 // Import middleware
 const checkAuth = require('./middleware/auth');
@@ -41,7 +44,9 @@ server.use('/auth', authRoutes);
 server.use('/user', checkAuth, userRoutes);
 server.use('/api/posts', checkAuth, postRoutes);
 server.use('/api/users', checkAuth, userRoutes);
-
+server.use('/api/profile', checkAuth, profileRoutes);
+server.use('/api/network', checkAuth, networkRoutes);
+server.use('/api/notifications', checkAuth, notificationRoutes);
 app.prepare().then(() => {
     
     server.get('/login', (req, res)=>{
@@ -51,10 +56,6 @@ app.prepare().then(() => {
         }
         return app.render(req, res, '/login');
     })
-
-  server.get('/feeds', checkAuth, (req, res) => {
-    return app.render(req, res, '/feeds', { user: req.session.user });
-  });
 
   server.get('*', checkAuth, (req, res) => {
     return handle(req, res);

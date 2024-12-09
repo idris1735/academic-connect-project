@@ -4,7 +4,8 @@ const userService = require('../services/userService');
 
 
 router.get('/profile', userService.getUserProfile);
-router.put('/profile', userService.updateUserProfile);
+router.put('/update_profile', userService.updateUserProfile);
+
 
 module.exports = router;
 

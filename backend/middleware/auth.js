@@ -7,14 +7,13 @@ const checkAuth = async (req, res, next) => {
     // Allow unprotected routes
     if (
         PUBLIC_ROUTES.includes(req.path) ||
-        AUTH_ROUTES.includes(req.path) || req.path.startsWith('/_next')
+        AUTH_ROUTES.includes(req.path) || 
+        req.path.startsWith('/_next')
     ) {
-        // console.log('Unprotected route:', req.path);
-        // console.log(PUBLIC_ROUTES.some(routes => req.path.startsWith(routes)));
         return next();
     }
 
-    // Protect all other routes (like /feeds)
+    // Protect all other routes
     if (!sessionCookie) {
         console.log('Unauthorized access to:', req.path);
         return res.status(401).redirect('/login');
@@ -22,22 +21,26 @@ const checkAuth = async (req, res, next) => {
 
     try {
         const decodedToken = await admin.auth().verifySessionCookie(sessionCookie, true);
-        req.user = decodedToken; // Attach user info to the request
         console.log('Authenticated user:', decodedToken.email);
+        console.log(req.path);
+        req.user = decodedToken;
         return next();
     } catch (error) {
         console.error('Session verification failed:', error.message);
-        // Destroy the session
-        req.session.destroy((err) => {
-            if (err) {
-            console.error('Failed to destroy session:', err.message);
-            // Handle session destruction error if necessary
-            }
-            // Redirect to login page after session is destroyed
-            return res.redirect('/login');
-        });
+        
+        // Check specifically for internet connection error
+        if (error.message.includes('getaddrinfo EAI_AGAIN') || error.code === 'EAI_AGAIN') {
+            // Send a 503 status with a specific error code for connection issues
+            return res.status(503).json({
+                error: 'network_error',
+                message: 'Please check your internet connection and try again'
+            });
+        }
+
+        // For other session errors, redirect to login
+        res.clearCookie('session');
+        return res.redirect('/login');
     }
 };
 
 module.exports = checkAuth;
-
