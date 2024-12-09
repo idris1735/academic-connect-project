@@ -8,6 +8,14 @@ const nextConfig = {
     })
     return config
   },
+  rewrites: async () => {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ]
+  },
 }
 
 export default nextConfig
