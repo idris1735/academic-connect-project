@@ -1,4 +1,4 @@
-const { db } = require('../config/firebase');
+const { db } = require('../config/database');
 const { getUserNameByUid, getRecentActivity, formatActivityForDisplay } = require('../utils/user');
 
 exports.getProfileIndividual = async (req, res) => {

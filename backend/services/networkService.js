@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const { db } = require('../config/database');
 const { createNotification } = require('./notificationService');
 
 exports.sendConnectionRequest = async (req, res) => {

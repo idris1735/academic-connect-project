@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const { db } = require('../config/database');
 
 exports.createNotification = async (userId, notification) => {
   try {
