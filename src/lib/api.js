@@ -1,4 +1,6 @@
 'use client'
+import * as React from 'react'
+import * as ReactDOM from 'react-dom/client'
 import {
   Toast,
   ToastProvider,
@@ -6,7 +8,7 @@ import {
   ToastDescription,
   ToastClose,
   ToastViewport,
-} from "@/components/ui/toast"
+} from '@/components/ui/toast'
 
 // Create a standalone toast function using DOM
 const showToast = (title, description, variant = 'destructive') => {
@@ -22,7 +24,9 @@ const showToast = (title, description, variant = 'destructive') => {
   const toastRoot = document.createElement('div')
   toastContainer.appendChild(toastRoot)
 
-  // Render the toast component
+  // Create and render the toast using createRoot
+  const root = ReactDOM.createRoot(toastRoot)
+
   const ToastComponent = () => {
     const [show, setShow] = React.useState(true)
 
@@ -31,12 +35,13 @@ const showToast = (title, description, variant = 'destructive') => {
         setShow(false)
         // Remove the toast element after animation
         setTimeout(() => {
+          root.unmount() // Properly unmount the root
           toastContainer.removeChild(toastRoot)
           if (toastContainer.childNodes.length === 0) {
             document.body.removeChild(toastContainer)
           }
         }, 300)
-      }, 5000) // Toast will show for 5 seconds
+      }, 5000)
 
       return () => clearTimeout(timer)
     }, [])
@@ -55,15 +60,15 @@ const showToast = (title, description, variant = 'destructive') => {
     )
   }
 
-  ReactDOM.render(<ToastComponent />, toastRoot)
+  root.render(<ToastComponent />)
 }
 
 // Utility function to handle specific API errors
 export const handleApiError = (response) => {
   if (response.status === 503) {
     showToast(
-      "Connection Error",
-      "Please check your internet connection and try again"
+      'Connection Error',
+      'Please check your internet connection and try again'
     )
     return true
   }
@@ -74,21 +79,20 @@ export const handleApiError = (response) => {
 export const fetchWithErrorHandling = async (url, options = {}) => {
   try {
     const response = await fetch(url, options)
-    
+
     if (!response.ok) {
       if (handleApiError(response)) {
         return null
       }
       throw new Error('Network response was not ok')
     }
-    
+
     return await response.json()
   } catch (error) {
     console.error('API Error:', error)
     throw error
   }
 }
-
 
 // Example utilisation
 // import { fetchWithErrorHandling } from '@/lib/api'

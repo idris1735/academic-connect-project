@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import NavComponent from '../../components/NavComponent'
 import ProfileSlidebar from '../../components/ProfileSlidebar'
 import PostCreation from '../../components/PostCreation'
@@ -9,7 +10,16 @@ import RightSidebar from '../../components/RightSidebar'
 import SearchBar from '../../components/SearchBar'
 import { MapPin, Clock } from 'lucide-react'
 
-export default function Feeds() {
+export default function FeedsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <FeedsContent />
+    </Suspense>
+  )
+}
+
+function FeedsContent() {
+  const searchParams = useSearchParams()
   const [posts, setPosts] = useState([])
   const [filter, setFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')

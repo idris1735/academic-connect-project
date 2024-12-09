@@ -1,12 +1,14 @@
 // src/app/login/page.js
+import { Suspense } from 'react'
 import LoginPage from '@/components/LoginPage'
 
-
-
 export default function Login() {
-  return <LoginPage />
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPage />
+    </Suspense>
+  )
 }
-
 
 // 'use client'
 
@@ -16,10 +18,10 @@ export default function Login() {
 
 // export default function LoginPage() {
 //     const searchParams = useSearchParams()
-    
+
 //     useEffect(() => {
 //         const error = searchParams.get('error')
-        
+
 //         if (error === 'verification_failed') {
 //             toast.error('Error verifying session, please log in again')
 //         } else if (error === 'session_expired') {

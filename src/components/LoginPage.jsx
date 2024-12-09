@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -26,6 +26,7 @@ import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline' // Import icons
 import { Loader2 } from 'lucide-react' // Import Loader2 icon
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,6 +40,25 @@ export default function LoginPage() {
     variant: 'default',
   })
   const [showPassword, setShowPassword] = useState(false)
+
+  // Add this useEffect to handle error messages
+  React.useEffect(() => {
+    const error = searchParams.get('error')
+
+    if (error) {
+      setToastDetails({
+        title: 'Error',
+        description:
+          error === 'verification_failed'
+            ? 'Error verifying session, please log in again'
+            : error === 'session_expired'
+            ? 'Session expired, please log in again'
+            : 'Invalid session, please log in again',
+        variant: 'destructive',
+      })
+      setShowToast(true)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
