@@ -12,10 +12,10 @@ import {
   Search,
   X,
   Menu,
+  Loader2, ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, ExternalLink } from 'lucide-react'
 
 const HomePage = () => {
   const [showLearnMore, setShowLearnMore] = useState(false)
@@ -46,7 +46,7 @@ const HomePage = () => {
       setIsSearching(true)
       try {
         const response = await fetch(
-          `https://api.crossref.org/works?query=${searchQuery}&rows=5`
+          `https://api.crossref.org/works?query=${searchQuery}&rows=5`,
         )
         const data = await response.json()
         setSearchResults(data.message.items || [])
@@ -135,11 +135,13 @@ const HomePage = () => {
                 onClick={handleLoginClick}
                 disabled={isLoginLoading}
               >
-                {isLoginLoading ? (
+                {isLoginLoading
+                  ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
-                ) : (
-                  'Log in'
-                )}
+                    )
+                  : (
+                      'Log in'
+                    )}
               </Button>
             </Link>
             <Link href='/signup'>
@@ -148,11 +150,13 @@ const HomePage = () => {
                 onClick={handleJoinClick}
                 disabled={isJoinLoading}
               >
-                {isJoinLoading ? (
+                {isJoinLoading
+                  ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
-                ) : (
-                  'Join for free'
-                )}
+                    )
+                  : (
+                      'Join for free'
+                    )}
               </Button>
             </Link>
           </div>
@@ -366,11 +370,13 @@ const HomePage = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <div className='absolute left-3 top-1/2 -translate-y-1/2'>
-                {isSearching ? (
+                {isSearching
+                  ? (
                   <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
-                ) : (
+                    )
+                  : (
                   <Search className='h-4 w-4 text-gray-500' />
-                )}
+                    )}
               </div>
             </div>
 
@@ -407,7 +413,7 @@ const HomePage = () => {
                                   : 'Unknown Author'}
                                 {result.published &&
                                   ` • ${new Date(
-                                    result.published['date-parts'][0]
+                                    result.published['date-parts'][0],
                                   ).getFullYear()}`}
                               </p>
                             </div>

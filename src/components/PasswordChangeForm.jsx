@@ -27,7 +27,7 @@ export function PasswordChangeForm() {
       setError('Passwords do not match')
       return
     }
-    
+
     try {
       await dispatch(changePassword({
         currentPassword: passwordData.currentPassword,
@@ -85,4 +85,4 @@ export function PasswordChangeForm() {
       </Button>
     </form>
   )
-} 
+}

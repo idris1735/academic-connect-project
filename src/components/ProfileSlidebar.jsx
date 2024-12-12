@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Pencil } from "lucide-react"
-
+import { Pencil } from 'lucide-react'
 
 import {
   ToastProvider,
@@ -20,15 +19,14 @@ export default function ProfileSidebar() {
     name: '',
     title: '',
     views: 0,
-    connections: 0
+    connections: 0,
   })
-  const [showToast, setShowToast] = useState(false);
+  const [showToast, setShowToast] = useState(false)
   const [toastDetails, setToastDetails] = useState({
-    title: "",
-    description: "",
-    variant: "default",
-  });
-
+    title: '',
+    description: '',
+    variant: 'default',
+  })
 
   useEffect(() => {
     fetchProfile()
@@ -38,24 +36,24 @@ export default function ProfileSidebar() {
     try {
       const response = await fetch('/api/users/profile')
       const data = await response.json()
-      
+
       if (response.ok) {
         setProfile(data.profile)
       } else {
-        setShowToast(true);
+        setShowToast(true)
         setToastDetails({
-          title: "Error",
-          description: data.message || "Failed to fetch profile",
-          variant: "destructive",
+          title: 'Error',
+          description: data.message || 'Failed to fetch profile',
+          variant: 'destructive',
         })
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
-      setShowToast(true);
+      setShowToast(true)
       setToastDetails({
-        title: "Error",
-        description: "Failed to fetch profile",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch profile',
+        variant: 'destructive',
       })
     } finally {
       setIsLoading(false)
@@ -84,24 +82,24 @@ export default function ProfileSidebar() {
       if (response.ok) {
         setIsEditing(false)
         toast({
-          title: "Success",
-          description: "Profile updated successfully",
+          title: 'Success',
+          description: 'Profile updated successfully',
         })
       } else {
-        setShowToast(true);
+        setShowToast(true)
         setToastDetails({
-          title: "Error",
-          description: data.message || "Failed to update profile",
-          variant: "destructive",
+          title: 'Error',
+          description: data.message || 'Failed to update profile',
+          variant: 'destructive',
         })
       }
     } catch (error) {
       console.error('Error updating profile:', error)
-      setShowToast(true);
+      setShowToast(true)
       setToastDetails({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update profile',
+        variant: 'destructive',
       })
     }
   }
@@ -159,7 +157,8 @@ export default function ProfileSidebar() {
         <ToastViewport />
         </ToastProvider>
         <div className="pt-12 pb-6 px-4 text-center">
-          {isEditing ? (
+          {isEditing
+            ? (
             <div className="space-y-2">
               <input
                 name="name"
@@ -174,13 +173,13 @@ export default function ProfileSidebar() {
                 className="w-full px-3 py-2 border rounded-md text-center focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
               />
               <div className="flex gap-2 justify-center">
-                <button 
+                <button
                   onClick={handleSave}
                   className="px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]"
                 >
                   Save
                 </button>
-                <button 
+                <button
                   onClick={handleCancel}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                 >
@@ -188,11 +187,12 @@ export default function ProfileSidebar() {
                 </button>
               </div>
             </div>
-          ) : (
+              )
+            : (
             <>
               <h2 className="text-xl font-bold">{profile.name}</h2>
               <p className="text-sm text-gray-500">{profile.title}</p>
-              <button 
+              <button
                 onClick={handleEdit}
                 className="mt-2 flex items-center gap-2 px-4 py-2 text-[#6366F1] hover:bg-gray-100 rounded-md mx-auto"
               >
@@ -200,7 +200,7 @@ export default function ProfileSidebar() {
                 Edit Profile
               </button>
             </>
-          )}
+              )}
           <div className="mt-4 border-t pt-4">
             <p className="text-sm">
               <span className="font-bold">{profile.views}</span> profile views

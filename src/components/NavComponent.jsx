@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Users, Bell, MessageSquare, User, Menu, X, Search } from 'lucide-react'
-import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
 import { dummyNotifications } from '@/lib/dummyNotifications'
 import { fetchWithErrorHandling } from '@/lib/api'
 
@@ -17,32 +17,32 @@ const dummyUsers = [
     id: '1',
     name: 'Dr. Afolabi Akorede',
     title: 'Professor of Computer Science',
-    avatar: 'https://picsum.photos/seed/afolabi/200'
+    avatar: 'https://picsum.photos/seed/afolabi/200',
   },
   {
     id: '2',
     name: 'Prof. Mohamed Aden',
     title: 'Research Lead, AI & Healthcare',
-    avatar: 'https://picsum.photos/seed/mohamed/200'
+    avatar: 'https://picsum.photos/seed/mohamed/200',
   },
   {
     id: '3',
     name: 'Dr. Naledi Dikgale',
     title: 'Associate Professor, Data Science',
-    avatar: 'https://picsum.photos/seed/naledi/200'
+    avatar: 'https://picsum.photos/seed/naledi/200',
   },
   {
     id: '4',
     name: 'Habeeb Musa',
     title: 'PhD Candidate, Machine Learning',
-    avatar: 'https://picsum.photos/seed/habeeb/200'
+    avatar: 'https://picsum.photos/seed/habeeb/200',
   },
   {
     id: '5',
     name: 'Dr. Marvin Nyalik',
     title: 'Senior Researcher, Robotics',
-    avatar: 'https://picsum.photos/seed/marvin/200'
-  }
+    avatar: 'https://picsum.photos/seed/marvin/200',
+  },
 ]
 
 // ... previous imports and dummy data remain the same ...
@@ -76,7 +76,7 @@ export default function NavComponent() {
         setUnreadCount(0) // Fallback to 0 on error
       }
     }
-    
+
     fetchUnreadCount()
     const interval = setInterval(fetchUnreadCount, 30000) // Poll every 30 seconds
     return () => clearInterval(interval) // Cleanup on unmount
@@ -105,7 +105,7 @@ export default function NavComponent() {
     if (searchQuery.trim()) {
       const filtered = users.filter(user =>
         user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       setFilteredUsers(filtered)
     } else {
@@ -118,11 +118,11 @@ export default function NavComponent() {
     { icon: Home, label: 'Home', href: '/feeds' },
     { icon: Users, label: 'Network', href: '/network' },
     { icon: MessageSquare, label: 'Messages', href: '/messages' },
-    { 
-      icon: Bell, 
-      label: 'Notifications', 
+    {
+      icon: Bell,
+      label: 'Notifications',
       href: '/notifications',
-      count: unreadCount > 0 ? unreadCount : null 
+      count: unreadCount > 0 ? unreadCount : null,
     },
     { icon: User, label: 'Profile', href: '/profile/individual' },
   ]
@@ -145,7 +145,6 @@ export default function NavComponent() {
     setSearchQuery(e.target.value)
     setIsSearchOpen(true)
   }
-
 
   // ... previous state declarations and navItems remain the same ...
 
@@ -173,11 +172,13 @@ export default function NavComponent() {
               {/* Search Results Dropdown */}
               {searchQuery && (
                 <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
-                  {filteredUsers.length === 0 ? (
+                  {filteredUsers.length === 0
+                    ? (
                     <div className="text-center py-4 text-gray-500">
                       No researchers found
                     </div>
-                  ) : (
+                      )
+                    : (
                     <div className="max-h-[60vh] overflow-auto">
                       {filteredUsers.map((user) => (
                         <div
@@ -196,7 +197,7 @@ export default function NavComponent() {
                         </div>
                       ))}
                     </div>
-                  )}
+                      )}
                 </div>
               )}
             </div>
@@ -234,11 +235,13 @@ export default function NavComponent() {
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
             >
               <span className="sr-only">Open main menu</span>
-              {isMenuOpen ? (
+              {isMenuOpen
+                ? (
                 <X className="block h-6 w-6" aria-hidden="true" />
-              ) : (
+                  )
+                : (
                 <Menu className="block h-6 w-6" aria-hidden="true" />
-              )}
+                  )}
             </button>
           </div>
         </div>

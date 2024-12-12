@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense } from 'react'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+
 import MessageSidebar from '@/components/MessageSidebar'
 import MessageView from '@/components/MessageView'
 import ResearchRoom from '@/components/ResearchRoom'
@@ -100,11 +100,13 @@ function MessagesContent() {
           />
           <div className='flex-1 w-full md:w-auto'>
             <div className='h-full overflow-y-auto bg-white'>
-              {!selectedItem ? (
+              {!selectedItem
+                ? (
                 <div className='flex items-center justify-center h-full text-gray-500'>
                   Select a conversation to start messaging
                 </div>
-              ) : (
+                  )
+                : (
                 <>
                   {activeView === 'messages' && (
                     <MessageView
@@ -126,7 +128,7 @@ function MessagesContent() {
                     />
                   )}
                 </>
-              )}
+                  )}
             </div>
           </div>
         </div>

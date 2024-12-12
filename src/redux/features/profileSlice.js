@@ -6,7 +6,7 @@ export const updateProfile = createAsyncThunk(
   async (profileData) => {
     // Add API call here
     return profileData
-  }
+  },
 )
 
 export const changePassword = createAsyncThunk(
@@ -14,7 +14,7 @@ export const changePassword = createAsyncThunk(
   async ({ currentPassword, newPassword }) => {
     // Add API call here
     return true
-  }
+  },
 )
 
 export const deletePost = createAsyncThunk(
@@ -22,7 +22,7 @@ export const deletePost = createAsyncThunk(
   async (postId) => {
     // Add API call here
     return postId
-  }
+  },
 )
 
 const profileSlice = createSlice({
@@ -33,7 +33,7 @@ const profileSlice = createSlice({
     error: null,
     isEditing: false,
     activities: null,
-    activitiesLastFetched: null
+    activitiesLastFetched: null,
   },
   reducers: {
     setProfileData: (state, action) => {
@@ -45,7 +45,7 @@ const profileSlice = createSlice({
     setActivities: (state, action) => {
       state.activities = action.payload.activities
       state.activitiesLastFetched = action.payload.timestamp
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -65,7 +65,7 @@ const profileSlice = createSlice({
       // Delete Post
       .addCase(deletePost.fulfilled, (state, action) => {
         state.profileData.posts = state.profileData.posts.filter(
-          post => post.id !== action.payload
+          post => post.id !== action.payload,
         )
       })
   },

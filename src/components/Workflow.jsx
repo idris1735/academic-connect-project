@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Plus, User, Menu } from 'lucide-react'
-import { useToast } from "@/components/ui/use-toast"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from '@/components/ui/use-toast'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const initialColumns = {
   todo: {
@@ -79,11 +79,11 @@ export default function Workflow({ workflow, onToggleSidebar }) {
   const assignTask = (taskId, user) => {
     setTasks({
       ...tasks,
-      [taskId]: { ...tasks[taskId], assignee: user }
+      [taskId]: { ...tasks[taskId], assignee: user },
     })
     toast({
-      title: "Task Assigned",
-      description: `Task assigned to ${user.name}`
+      title: 'Task Assigned',
+      description: `Task assigned to ${user.name}`,
     })
     setSelectedTaskId(null)
   }
@@ -92,8 +92,8 @@ export default function Workflow({ workflow, onToggleSidebar }) {
     <div className="p-4 bg-white h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="md:hidden mr-2"
             onClick={onToggleSidebar}
@@ -127,14 +127,16 @@ export default function Workflow({ workflow, onToggleSidebar }) {
                       <Dialog open={selectedTaskId === taskId} onOpenChange={(open) => setSelectedTaskId(open ? taskId : null)}>
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            {tasks[taskId].assignee ? (
+                            {tasks[taskId].assignee
+                              ? (
                               <Avatar className="h-6 w-6">
                                 <AvatarImage src={tasks[taskId].assignee.avatar} />
                                 <AvatarFallback>{tasks[taskId].assignee.name[0]}</AvatarFallback>
                               </Avatar>
-                            ) : (
+                                )
+                              : (
                               <User className="h-4 w-4" />
-                            )}
+                                )}
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -190,4 +192,3 @@ export default function Workflow({ workflow, onToggleSidebar }) {
     </div>
   )
 }
-

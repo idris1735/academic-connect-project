@@ -24,12 +24,7 @@ import {
   ToastClose,
 } from '@/components/ui/toast'
 import { countries } from 'countries-list'
-import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline'; // Import icons
-
-
-
-
-
+import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline' // Import icons
 
 export default function SignupForm() {
   const router = useRouter()
@@ -46,12 +41,12 @@ export default function SignupForm() {
     agreeTerms: false,
   })
 
-  const [showToast, setShowToast] = useState(false);
+  const [showToast, setShowToast] = useState(false)
   const [toastDetails, setToastDetails] = useState({
-    title: "",
-    description: "",
-    variant: "default",
-  });
+    title: '',
+    description: '',
+    variant: 'default',
+  })
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -79,24 +74,21 @@ export default function SignupForm() {
     setStep(2)
   }
 
-  const [showPassword, setShowPassword] = useState(false);
-  
+  const [showPassword, setShowPassword] = useState(false)
 
- 
   const handleSignup = async () => {
     if (!formData.agreeTerms) {
       setToastDetails({
-        title: "Terms not accepted",
-        description: "Please agree to the Terms of Service and Privacy Policy.",
-        variant: "destructive",
-      });
-      setShowToast(true);
-      console.log("terms not accepted")
+        title: 'Terms not accepted',
+        description: 'Please agree to the Terms of Service and Privacy Policy.',
+        variant: 'destructive',
+      })
+      setShowToast(true)
+      console.log('terms not accepted')
       return
     }
 
     try {
-
       res = await fetch('/signup', {
         method: 'POST',
         headers: {
@@ -104,32 +96,31 @@ export default function SignupForm() {
         },
         body: JSON.stringify(formData),
       })
-      
+
       if (res.status === 200) {
         setToastDetails({
-          title: "Sign up successful",
-          description: "Your account has been created successfully.",
-          variant: "default",
-        });
-        setShowToast(true);
-        console.log("Sign up successful")
-      }
-      else{
+          title: 'Sign up successful',
+          description: 'Your account has been created successfully.',
+          variant: 'default',
+        })
+        setShowToast(true)
+        console.log('Sign up successful')
+      } else {
         setToastDetails({
-          title: "Sign up failed",
+          title: 'Sign up failed',
           description: res.json().error,
-          variant: "destructive",
-        });
-        setShowToast(true);
+          variant: 'destructive',
+        })
+        setShowToast(true)
         console.error('Sign up error:', error)
       }
     } catch (error) {
       setToastDetails({
-        title: "Sign up failed",
+        title: 'Sign up failed',
         description: error.message,
-        variant: "destructive",
-      });
-      setShowToast(true);
+        variant: 'destructive',
+      })
+      setShowToast(true)
       console.error('Sign up error:', error)
     }
   }
@@ -252,14 +243,14 @@ export default function SignupForm() {
                   required
                 />
               </div>
-            
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"} // Toggle between 'text' and 'password'
+                    type={showPassword ? 'text' : 'password'} // Toggle between 'text' and 'password'
                     value={formData.password}
                     onChange={handleInputChange}
                     required

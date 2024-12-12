@@ -122,7 +122,8 @@ const UserTypeSelection = ({ onSelect }) => {
                       {type.description}
                     </p>
 
-                    {type.subOptions ? (
+                    {type.subOptions
+                      ? (
                       <div className='mt-4 space-y-2'>
                         {type.subOptions.map((subOption) => (
                           <Button
@@ -136,7 +137,8 @@ const UserTypeSelection = ({ onSelect }) => {
                           </Button>
                         ))}
                       </div>
-                    ) : (
+                        )
+                      : (
                       <button
                         disabled={isLoading}
                         className={`w-full mt-4 relative inline-flex items-center justify-center px-4 py-3 text-sm font-medium
@@ -149,16 +151,18 @@ const UserTypeSelection = ({ onSelect }) => {
                           disabled:opacity-50 disabled:cursor-not-allowed`}
                         onClick={() => handleSelect(type.id)}
                       >
-                        {isLoading && selectedType === type.id ? (
+                        {isLoading && selectedType === type.id
+                          ? (
                           <>
                             <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                             Processing...
                           </>
-                        ) : (
+                            )
+                          : (
                           `Continue as ${type.title}`
-                        )}
+                            )}
                       </button>
-                    )}
+                        )}
                   </div>
                 </Card>
               </motion.div>

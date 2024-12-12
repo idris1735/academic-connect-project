@@ -85,9 +85,9 @@ export function ProfileEditForm() {
         <Button type="submit" className="bg-[#6366F1] hover:bg-[#5355CC]">
           Save Changes
         </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => dispatch(toggleEditMode())}
         >
           Cancel
@@ -95,4 +95,4 @@ export function ProfileEditForm() {
       </div>
     </form>
   )
-} 
+}

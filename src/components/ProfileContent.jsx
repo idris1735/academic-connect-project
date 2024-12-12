@@ -1,31 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import PublicationsList from "./PublicationsList"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import PublicationsList from './PublicationsList'
 
 export default function ProfileContent() {
   const researchInterests = [
-    "Machine Learning",
-    "Natural Language Processing",
-    "Computer Vision",
-    "Deep Learning",
-    "Artificial Intelligence"
+    'Machine Learning',
+    'Natural Language Processing',
+    'Computer Vision',
+    'Deep Learning',
+    'Artificial Intelligence',
   ]
 
   const currentProjects = [
     {
-      title: "Neural Architecture Search",
-      description: "Developing efficient methods for automated machine learning model design"
+      title: 'Neural Architecture Search',
+      description: 'Developing efficient methods for automated machine learning model design',
     },
     {
-      title: "Cross-lingual Transfer Learning",
-      description: "Improving language models' performance across multiple languages"
+      title: 'Cross-lingual Transfer Learning',
+      description: 'Improving language models\' performance across multiple languages',
     },
     {
-      title: "Sustainable AI",
-      description: "Research on energy-efficient deep learning architectures"
-    }
+      title: 'Sustainable AI',
+      description: 'Research on energy-efficient deep learning architectures',
+    },
   ]
 
   return (
@@ -35,7 +35,7 @@ export default function ProfileContent() {
         <TabsTrigger value="publications">Publications</TabsTrigger>
         <TabsTrigger value="projects">Projects</TabsTrigger>
       </TabsList>
-      
+
       <TabsContent value="about">
         <Card>
           <CardHeader>
@@ -50,7 +50,7 @@ export default function ProfileContent() {
                 foundations and practical implementations of AI systems.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-2">Research Interests</h3>
               <div className="flex flex-wrap gap-2">
@@ -62,7 +62,7 @@ export default function ProfileContent() {
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       <TabsContent value="publications">
         <Card>
           <CardHeader>
@@ -75,7 +75,7 @@ export default function ProfileContent() {
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       <TabsContent value="projects">
         <Card>
           <CardHeader>

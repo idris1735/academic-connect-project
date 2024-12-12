@@ -1,37 +1,37 @@
-import { FileText } from "lucide-react"
+import { FileText } from 'lucide-react'
 
 export default function PublicationsList() {
   const publications = [
     {
-      title: "Efficient Neural Architecture Search via Parameter Sharing",
-      journal: "Nature Machine Intelligence",
+      title: 'Efficient Neural Architecture Search via Parameter Sharing',
+      journal: 'Nature Machine Intelligence',
       year: 2023,
-      citations: 145
+      citations: 145,
     },
     {
-      title: "Cross-lingual Language Model Pretraining",
-      conference: "NeurIPS",
+      title: 'Cross-lingual Language Model Pretraining',
+      conference: 'NeurIPS',
       year: 2023,
-      citations: 89
+      citations: 89,
     },
     {
-      title: "Energy-efficient Training of Deep Neural Networks",
-      journal: "Journal of Machine Learning Research",
+      title: 'Energy-efficient Training of Deep Neural Networks',
+      journal: 'Journal of Machine Learning Research',
       year: 2022,
-      citations: 234
+      citations: 234,
     },
     {
-      title: "Scalable Methods for Distributed Machine Learning",
-      conference: "ICML",
+      title: 'Scalable Methods for Distributed Machine Learning',
+      conference: 'ICML',
       year: 2022,
-      citations: 167
+      citations: 167,
     },
     {
-      title: "Advances in Natural Language Processing for Scientific Text",
-      journal: "Computational Linguistics",
+      title: 'Advances in Natural Language Processing for Scientific Text',
+      journal: 'Computational Linguistics',
       year: 2021,
-      citations: 312
-    }
+      citations: 312,
+    },
   ]
 
   return (

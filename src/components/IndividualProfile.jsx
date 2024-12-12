@@ -1,11 +1,11 @@
-import { ProfileHeader } from "./ProfileHeader"
-import { StatsSection } from "./StatsSection"
-import { ProfileTabs } from "./ProfileTabs"
+import { ProfileHeader } from './ProfileHeader'
+import { StatsSection } from './StatsSection'
+import { ProfileTabs } from './ProfileTabs'
 
 export function IndividualProfilePage({ data }) {
-  console.log('Profile Data:', data);
+  console.log('Profile Data:', data)
   if (!data) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   return (
@@ -16,4 +16,3 @@ export function IndividualProfilePage({ data }) {
     </div>
   )
 }
-

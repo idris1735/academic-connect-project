@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 import { Trophy, BookOpen, Quote, Hash } from 'lucide-react'
 
 export function StatsSection({ data }) {
   if (!data) {
-    return null;
+    return null
   }
 
   const stats = [
@@ -40,9 +40,9 @@ export function StatsSection({ data }) {
                 <span className="font-medium text-gray-700">{field}</span>
                 <span className="text-[#6366F1]">{Math.round(value * 100)}%</span>
               </div>
-              <Progress 
-                value={value * 100} 
-                className="h-2 bg-gray-100" 
+              <Progress
+                value={value * 100}
+                className="h-2 bg-gray-100"
               />
             </div>
           ))}
@@ -51,4 +51,3 @@ export function StatsSection({ data }) {
     </div>
   )
 }
-

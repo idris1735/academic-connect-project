@@ -4,15 +4,15 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Video, Mic, MicOff, VideoOff, PhoneOff, Monitor, Send, Calendar, Menu } from 'lucide-react'
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from '@/components/ui/use-toast'
 
 export default function MessageView({ conversation, onToggleSidebar, isSidebarOpen }) {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello!", sender: conversation?.name, timestamp: "13:03" },
-    { id: 2, text: "Hi there!", sender: "You", timestamp: "13:03" }
+    { id: 1, text: 'Hello!', sender: conversation?.name, timestamp: '13:03' },
+    { id: 2, text: 'Hi there!', sender: 'You', timestamp: '13:03' },
   ])
   const [newMessage, setNewMessage] = useState('')
   const [isInCall, setIsInCall] = useState(false)
@@ -25,11 +25,11 @@ export default function MessageView({ conversation, onToggleSidebar, isSidebarOp
 
   const handleSendMessage = () => {
     if (newMessage.trim() === '') return
-    setMessages([...messages, { 
-      id: Date.now(), 
-      text: newMessage, 
-      sender: "You",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    setMessages([...messages, {
+      id: Date.now(),
+      text: newMessage,
+      sender: 'You',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }])
     setNewMessage('')
   }
@@ -45,9 +45,9 @@ export default function MessageView({ conversation, onToggleSidebar, isSidebarOp
       .catch(error => {
         console.error('Error accessing media devices:', error)
         toast({
-          title: "Error",
-          description: "Failed to start call. Please check your camera and microphone permissions.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to start call. Please check your camera and microphone permissions.',
+          variant: 'destructive',
         })
       })
   }
@@ -56,8 +56,8 @@ export default function MessageView({ conversation, onToggleSidebar, isSidebarOp
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="md:hidden mr-2"
             onClick={onToggleSidebar}
@@ -91,19 +91,19 @@ export default function MessageView({ conversation, onToggleSidebar, isSidebarOp
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.sender === "You" ? "justify-end" : "justify-start"}`}
+              className={`flex ${message.sender === 'You' ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`flex max-w-[70%] ${
-                  message.sender === "You"
-                    ? "bg-[#6366F1] text-white rounded-l-lg rounded-br-lg"
-                    : "bg-gray-100 text-gray-900 rounded-r-lg rounded-bl-lg"
+                  message.sender === 'You'
+                    ? 'bg-[#6366F1] text-white rounded-l-lg rounded-br-lg'
+                    : 'bg-gray-100 text-gray-900 rounded-r-lg rounded-bl-lg'
                 } px-4 py-2`}
               >
                 <div>
                   <div className="text-sm">{message.text}</div>
                   <div className={`text-xs mt-1 ${
-                    message.sender === "You" ? "text-indigo-100" : "text-gray-500"
+                    message.sender === 'You' ? 'text-indigo-100' : 'text-gray-500'
                   }`}>
                     {message.timestamp}
                   </div>
@@ -164,6 +164,3 @@ export default function MessageView({ conversation, onToggleSidebar, isSidebarOp
     </div>
   )
 }
-
-
-

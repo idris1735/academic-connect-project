@@ -1,9 +1,9 @@
-"use client"
+'use client'
 import { useState, Suspense, useEffect } from 'react'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Button } from './ui/button'
 import { Settings, Trash2, MessageSquare, ThumbsUp, Loader2 } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -21,7 +21,7 @@ const RecentActivities = ({ data }) => {
     const fetchActivities = async () => {
       // Only fetch if we don't have data or it's older than 5 minutes
       const shouldFetch = !activitiesLastFetched || Date.now() - activitiesLastFetched > 5 * 60 * 1000
-      
+
       if (!activities || shouldFetch) {
         try {
           setIsLoading(true)
@@ -31,8 +31,8 @@ const RecentActivities = ({ data }) => {
             type: 'profile/setActivities',
             payload: {
               activities: activitiesData,
-              timestamp: Date.now()
-            }
+              timestamp: Date.now(),
+            },
           })
         } catch (error) {
           console.error('Error fetching activities:', error)
@@ -58,8 +58,8 @@ const RecentActivities = ({ data }) => {
       case 'post':
         return (
           <p className="text-sm text-gray-600 mt-1">{activity.content}</p>
-        );
-      
+        )
+
       case 'comment':
         return (
           <div className="mt-1">
@@ -74,8 +74,8 @@ const RecentActivities = ({ data }) => {
               </p>
             </div>
           </div>
-        );
-      
+        )
+
       case 'like':
         return (
           <div className="mt-1">
@@ -89,12 +89,12 @@ const RecentActivities = ({ data }) => {
               </p>
             </div>
           </div>
-        );
-      
+        )
+
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -107,11 +107,13 @@ const RecentActivities = ({ data }) => {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900">
-              {data.name} 
+              {data.name}
               <span className="text-[#6366F1] font-normal ml-2">
-                {activity.type === 'post' ? 'created a post' : 
-                 activity.type === 'comment' ? 'commented' : 
-                 'liked a post'}
+                {activity.type === 'post'
+                  ? 'created a post'
+                  : activity.type === 'comment'
+                    ? 'commented'
+                    : 'liked a post'}
               </span>
             </p>
             {renderActivityContent(activity)}
@@ -132,17 +134,17 @@ const RecentActivities = ({ data }) => {
 }
 
 export function ProfileTabs({ data, isOrganization }) {
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState('overview')
   const dispatch = useDispatch()
   const isEditing = useSelector((state) => state.profile.isEditing)
 
   const tabItems = [
-    { value: "overview", label: "Overview" },
-    { value: "publications", label: "Publications" },
-    { value: "peer-reviews", label: "Peer Reviews" },
-    { value: "posts", label: "Posts" },
-    { value: "settings", label: "Settings" },
-    ...(isOrganization ? [{ value: "members", label: "Members" }] : [])
+    { value: 'overview', label: 'Overview' },
+    { value: 'publications', label: 'Publications' },
+    { value: 'peer-reviews', label: 'Peer Reviews' },
+    { value: 'posts', label: 'Posts' },
+    { value: 'settings', label: 'Settings' },
+    ...(isOrganization ? [{ value: 'members', label: 'Members' }] : []),
   ]
 
   return (
@@ -164,8 +166,8 @@ export function ProfileTabs({ data, isOrganization }) {
         </div>
         <TabsList className="hidden md:grid w-full" style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}>
           {tabItems.map((item) => (
-            <TabsTrigger 
-              key={item.value} 
+            <TabsTrigger
+              key={item.value}
               value={item.value}
               className="data-[state=active]:bg-[#6366F1] data-[state=active]:text-white"
             >
@@ -226,9 +228,9 @@ export function ProfileTabs({ data, isOrganization }) {
                       <p className="text-sm text-gray-600 mt-1">{post.content}</p>
                       <p className="text-xs text-gray-400 mt-2">{post.date}</p>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleDeletePost(post.id)}
                       className="text-red-500 hover:text-red-700"
                     >
@@ -244,9 +246,11 @@ export function ProfileTabs({ data, isOrganization }) {
           <Card className="border-none shadow-lg">
             <CardContent className="p-6">
               <div className="space-y-8">
-                {isEditing ? (
+                {isEditing
+                  ? (
                   <ProfileEditForm />
-                ) : (
+                    )
+                  : (
                   <>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Settings</h3>
@@ -255,7 +259,7 @@ export function ProfileTabs({ data, isOrganization }) {
                           <span className="text-sm text-gray-600">Profile Views</span>
                           <span className="text-sm font-medium">{data.profileViews || 0}</span>
                         </div>
-                        <Button 
+                        <Button
                           className="w-full bg-[#6366F1] hover:bg-[#5355CC]"
                           onClick={() => dispatch(toggleEditMode())}
                         >
@@ -263,13 +267,13 @@ export function ProfileTabs({ data, isOrganization }) {
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
                       <PasswordChangeForm />
                     </div>
                   </>
-                )}
+                    )}
               </div>
             </CardContent>
           </Card>
@@ -278,4 +282,3 @@ export function ProfileTabs({ data, isOrganization }) {
     </div>
   )
 }
-

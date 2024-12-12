@@ -8,7 +8,7 @@ export default function NotificationsSidebar({ activeFilter, setActiveFilter }) 
     all: 0,
     projects: 0,
     connections: 0,
-    mentions: 0
+    mentions: 0,
   })
 
   useEffect(() => {
@@ -61,13 +61,11 @@ export default function NotificationsSidebar({ activeFilter, setActiveFilter }) 
         console.error('Error fetching notification counts:', error)
       }
     }
-    
+
     fetchNotificationCounts()
     const interval = setInterval(fetchNotificationCounts, 30000)
     return () => clearInterval(interval)
   }, [])
-
-  
 
   const filters = [
     { icon: Bell, label: 'All', value: 'all', count: counts.all },

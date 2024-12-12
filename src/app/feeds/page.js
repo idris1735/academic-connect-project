@@ -28,7 +28,7 @@ function FeedsContent() {
 
   // useEffect(() => {
   //   // Simulating API call to fetch posts
-   
+
   //   const fetchedPosts = [
   //     {
   //       id: 1,
@@ -70,10 +70,10 @@ function FeedsContent() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await fetch('/api/posts/get_posts');
-        const data = await response.json();
-        console.log(data.posts);
-  
+        const response = await fetch('/api/posts/get_posts')
+        const data = await response.json()
+        console.log(data.posts)
+
         // Enrich each post with additional information
         const enrichedPosts = data.posts.map((post) => ({
           ...post,
@@ -82,17 +82,16 @@ function FeedsContent() {
           connectionDegree: '1st',
           avatar: 'https://picsum.photos/seed/currentuser/200',
           timestamp: post.timestamp || new Date().toISOString(), // Use server timestamp or fallback
-        }));
-        console.log(enrichedPosts);
+        }))
+        console.log(enrichedPosts)
         // Update the state with enriched posts
-        setPosts(enrichedPosts);
+        setPosts(enrichedPosts)
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error('Error fetching posts:', error)
       }
-    };
-    fetchPosts();
-  }, []); // Dependency array is empty to run only once
-  
+    }
+    fetchPosts()
+  }, []) // Dependency array is empty to run only once
 
   // const addPost = async (content, image, category, location) => {
   //   const newPost = {
@@ -122,32 +121,31 @@ function FeedsContent() {
       connectionDegree: '1st',
       avatar: 'https://picsum.photos/seed/currentuser/200',
       // timestamp: new Date().toISOString(), // Fallback if `timestamp` isn't set
-    };
-  
+    }
+
     // Prepend the complete post to the list
-    setPosts([completePost, ...posts]);
-  };
-  
+    setPosts([completePost, ...posts])
+  }
 
   const handleLike = async (postId, newLikeCount) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? { ...post, likesCount: newLikeCount } 
-        : post
-    ));
-  };
+    setPosts(posts.map(post =>
+      post.id === postId
+        ? { ...post, likesCount: newLikeCount }
+        : post,
+    ))
+  }
 
   const handleComment = async (postId, newComment) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? { 
-            ...post, 
+    setPosts(posts.map(post =>
+      post.id === postId
+        ? {
+            ...post,
             commentsCount: (post.commentsCount || 0) + 1,
-            comments: [...(post.comments || []), newComment]
-          } 
-        : post
-    ));
-  };
+            comments: [...(post.comments || []), newComment],
+          }
+        : post,
+    ))
+  }
 
   const handleJoinRoom = (projectRoom) => {
     console.log(`Joining chat room: ${projectRoom}`)
@@ -155,16 +153,16 @@ function FeedsContent() {
   }
 
   const handleSearch = (query) => {
-    setSearchQuery(query);
+    setSearchQuery(query)
     // You can add additional search logic here if needed
   }
 
   const filteredPosts = posts
     .filter(post => filter === 'all' || post.category === filter)
     .filter(post => locationFilter === 'all' || post.location === locationFilter)
-    .filter(post => 
+    .filter(post =>
       post.userInfo.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+      post.content.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortBy === 'recent') {
@@ -192,19 +190,19 @@ function FeedsContent() {
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow space-y-4">
               <div className="flex flex-wrap gap-4">
-                <button 
+                <button
                   className={`px-4 py-2 rounded-full ${filter === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFilter('all')}
                 >
                   All Posts
                 </button>
-                <button 
+                <button
                   className={`px-4 py-2 rounded-full ${filter === 'research' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFilter('research')}
                 >
                   Research
                 </button>
-                <button 
+                <button
                   className={`px-4 py-2 rounded-full ${filter === 'publication' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
                   onClick={() => setFilter('publication')}
                 >
@@ -215,7 +213,7 @@ function FeedsContent() {
               <div className="flex flex-wrap gap-4 items-center">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  <select 
+                  <select
                     className="border rounded-md px-2 py-1"
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
@@ -229,7 +227,7 @@ function FeedsContent() {
 
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  <select 
+                  <select
                     className="border rounded-md px-2 py-1"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -243,10 +241,10 @@ function FeedsContent() {
 
             {/* Posts */}
             {filteredPosts.map(post => (
-              <Post 
-                key={post.id} 
-                post={post} 
-                onLike={handleLike} 
+              <Post
+                key={post.id}
+                post={post}
+                onLike={handleLike}
                 onComment={handleComment}
                 onJoinRoom={handleJoinRoom}
               />
@@ -258,4 +256,3 @@ function FeedsContent() {
     </div>
   )
 }
-

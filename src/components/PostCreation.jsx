@@ -16,21 +16,20 @@ export default function PostCreation({ onPostCreate }) {
     e.preventDefault()
     if (content.trim()) {
       try {
-        const discussionData = isDiscussionMode && discussionName.trim() 
+        const discussionData = isDiscussionMode && discussionName.trim()
           ? {
               name: discussionName.trim(),
-              id: Date.now().toString()
+              id: Date.now().toString(),
             }
-          : null;
+          : null
 
-        console.log('Submitting post with data:', postData);
+        console.log('Submitting post with data:', postData)
 
         // Create FormData object to handle file upload
         const formData = new FormData()
         formData.append('content', content)
         formData.append('category', category)
         formData.append('discussion', discussionData)
-       
 
         // Append file if it exists
         if (attachment) {
@@ -41,16 +40,16 @@ export default function PostCreation({ onPostCreate }) {
           method: 'POST',
           // Remove the Content-Type header to let the browser set it with boundary for FormData
           body: formData,
-        });
-      
+        })
+
         const responseData = await fetchResponse.json()
         if (fetchResponse.status === 200) {
           const completePost = {
             ...responseData.post,
             discussion: discussionData,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           }
-          console.log('Complete post with discussion:', completePost);
+          console.log('Complete post with discussion:', completePost)
           onPostCreate(completePost)
           setContent('')
           setAttachment(null)
@@ -62,7 +61,7 @@ export default function PostCreation({ onPostCreate }) {
           setError(responseData.message)
         }
       } catch (error) {
-        console.error("Error creating post:", error)
+        console.error('Error creating post:', error)
         setError('Failed to create post')
       }
     } else {
@@ -71,8 +70,8 @@ export default function PostCreation({ onPostCreate }) {
   }
 
   const handleFileUpload = async (file, type) => {
-    if (!file) return;
-    
+    if (!file) return
+
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       setError('File size should not exceed 10MB.')
@@ -235,34 +234,34 @@ export default function PostCreation({ onPostCreate }) {
         </div>
 
         {error && <p className="text-red-500 mb-2">{error}</p>}
-        
+
         <div className="flex justify-between">
           <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]">
             <MessageSquare className="h-4 w-4" />
             Post
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={handleImageClick}
             className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
           >
             <Image className="h-4 w-4" />
             Image
           </button>
-          <button 
+          <button
             type="button"
-            onClick={handleVideoClick} 
+            onClick={handleVideoClick}
             className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
           >
             <Film className="h-4 w-4" />
             Video
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={toggleDiscussionMode}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${
-              isDiscussionMode 
-                ? 'bg-indigo-100 text-indigo-600' 
+              isDiscussionMode
+                ? 'bg-indigo-100 text-indigo-600'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >

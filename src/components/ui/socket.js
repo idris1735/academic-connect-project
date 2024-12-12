@@ -10,7 +10,7 @@ class SocketService {
   connect() {
     this.socket = io(SOCKET_URL, {
       transports: ['websocket'],
-      autoConnect: false
+      autoConnect: false,
     })
 
     this.socket.on('connect', () => {
@@ -50,5 +50,3 @@ class SocketService {
 }
 
 export default new SocketService()
-
-
