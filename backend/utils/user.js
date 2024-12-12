@@ -1,5 +1,5 @@
 const e = require('express');
-const db = require('../config/database');
+const { db } = require('../config/database');
 
 
 exports.getUserNameByUid = async (uid) => {

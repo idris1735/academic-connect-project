@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const { db } = require('../config/database');
 
 exports.getUserProfile = async (req, res) => {
   try {

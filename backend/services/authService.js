@@ -2,7 +2,7 @@ const { auth } = require('../config/firebase');
 const admin = require('../config/firebase');
 const { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } = require('firebase/auth');
 const createCookieSession = require('../utils/cookieSession');
-const db = require('../config/database');
+const { db } = require('../config/database');
 const { Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
 
 exports.login = async (req, res) => {

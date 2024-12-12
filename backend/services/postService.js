@@ -1,10 +1,10 @@
 const e = require('express');
-// const db = require('../config/database');
+const { db } = require('../config/database');
 const { Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
 const { getDocs, collection, where } = require("firebase/firestore");
 const { query } = require('firebase/firestore');
 const { getUserNameByUid } = require('../utils/user');
-const { admin, db, storage } = require('../config/firebase');
+const { admin, storage } = require('../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 
 exports.createPost = async (req, res) => {
