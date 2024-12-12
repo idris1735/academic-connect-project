@@ -19,14 +19,7 @@ const firebaseConfig = {
   measurementId: "G-163HH48S44"
 };
 
-// Initialize Firebase Client
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
->>>>>>> 5adfbd7927e1bdd10ed70336f7682ae27b5c7e04
-}
+
 
 // Initialize Firebase
 let app

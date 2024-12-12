@@ -35,18 +35,6 @@ export default function IndividualProfilePreview() {
     fetchProfile();
   }, [userId]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <NavComponent />
-        <div className="flex flex-col justify-center items-center h-[calc(100vh-64px)]">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-900" />
-          <div className="mt-4 text-lg">Loading</div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100">

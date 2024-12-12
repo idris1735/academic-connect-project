@@ -28,39 +28,51 @@ export function ConnectionInvitations() {
     fetchInvitations()
   }, [])
 
-  const handleAccept = async (connectionId) => {
+  const handleAccept = async (connectionId, userId) => {
     try {
       const response = await fetch('/api/network/accept_connection_request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ connectionId }),
+        body: JSON.stringify({ 
+          connectionId,
+          userId,
+          action: 'accept'
+        }),
       })
       if (!response.ok) {
         throw new Error('Failed to accept invitation')
       }
       // Remove the invitation from the list
-      setInvitations(invitations.filter(inv => inv.connectionId !== connectionId))
+      setInvitations(prev => 
+        prev.filter(inv => inv.connectionId !== connectionId)
+      )
     } catch (error) {
       console.error('Error accepting invitation:', error)
     }
   }
 
-  const handleReject = async (connectionId) => {
+  const handleReject = async (connectionId, userId) => {
     try {
       const response = await fetch('/api/network/reject_connection_request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ connectionId }),
+        body: JSON.stringify({ 
+          connectionId,
+          userId,
+          action: 'reject'
+        }),
       })
       if (!response.ok) {
         throw new Error('Failed to reject invitation')
       }
       // Remove the invitation from the list
-      setInvitations(invitations.filter(inv => inv.connectionId !== connectionId))
+      setInvitations(prev => 
+        prev.filter(inv => inv.connectionId !== connectionId)
+      )
     } catch (error) {
       console.error('Error rejecting invitation:', error)
     }
@@ -103,7 +115,7 @@ export function ConnectionInvitations() {
                   <Button 
                     size="sm" 
                     className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full"
-                    onClick={() => handleAccept(invitation.connectionId)}
+                    onClick={() => handleAccept(invitation.connectionId, invitation.userId)}
                   >
                     <Check className="h-5 w-5" />
                   </Button>
@@ -111,7 +123,7 @@ export function ConnectionInvitations() {
                     size="sm" 
                     variant="outline" 
                     className="border-red-500 text-red-500 hover:bg-red-50 rounded-full"
-                    onClick={() => handleReject(invitation.connectionId)}
+                    onClick={() => handleReject(invitation.connectionId, invitation.userId)}
                   >
                     <X className="h-5 w-5" />
                   </Button>

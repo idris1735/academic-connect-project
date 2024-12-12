@@ -27,143 +27,150 @@ const formatTimeAgo = (timestamp) => {
   return `${years}y ago`
 }
 
-export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
+// Skeleton loading component
+const PostSkeleton = () => (
+  <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+    <div className="p-4">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="h-4 bg-gray-200 rounded w-full"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+        <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+      </div>
+    </div>
+    <div className="border-t px-4 py-2 flex justify-between">
+      <div className="h-8 bg-gray-200 rounded w-20"></div>
+      <div className="h-8 bg-gray-200 rounded w-20"></div>
+      <div className="h-8 bg-gray-200 rounded w-20"></div>
+    </div>
+  </div>
+)
+
+export default function Post({ post, isLoading }) {
   const [isCommenting, setIsCommenting] = useState(false)
   const [comment, setComment] = useState('')
+  const [showShareModal, setShowShareModal] = useState(false)
 
-  // Add console log to debug post data
-  console.log('Post data:', post)
+  // Use a better placeholder image from a reliable CDN
+  const avatarSrc = post.avatar || 'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
 
-  const handleLike = async () => {
-    try {
-      const response = await fetch(`/api/posts/${post.id}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+  // Format time in a consistent way
+  const formattedTime = post.timestamp ? formatTimeAgo(post.timestamp) : 'recently'
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        onLike(post.id, data.likesCount);
-      } else {
-        console.error('Failed to like post:', data.message);
-      }
-    } catch (error) {
-      console.error('Error liking post:', error);
+  // Show skeleton loading if post is loading
+  if (isLoading) {
+    return <PostSkeleton />
+  }
+
+  const renderAttachment = () => {
+    if (!post.attachment) return null
+
+    switch (post.attachment.type) {
+      case 'image':
+        return (
+          <div className="mb-4 relative">
+            <div className="aspect-w-16 aspect-h-9">
+              <img
+                src={post.attachment.url}
+                alt="Post attachment"
+                className="rounded-lg object-cover"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        )
+      case 'video':
+        return (
+          <div className="mb-4">
+            <video
+              controls
+              className="rounded-lg max-h-96 w-auto mx-auto"
+            >
+              <source src={post.attachment.url} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        )
+      case 'document':
+        return (
+          <div className="mb-4 flex items-center gap-2 p-4 bg-gray-50 rounded-lg">
+            <FileText className="h-6 w-6 text-gray-500" />
+            <a
+              href={post.attachment.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:underline"
+            >
+              {post.attachment.name || 'View Document'}
+            </a>
+          </div>
+        )
+      default:
+        return null
     }
+  }
+
+  const handleLike = () => {
+    // Implement like functionality
+    console.log('Like clicked')
   }
 
   const handleComment = () => {
     setIsCommenting(!isCommenting)
   }
 
-  const submitComment = async (e) => {
-    e.preventDefault();
-    if (comment.trim()) {
-      try {
-        const response = await fetch(`/api/posts/${post.id}/comment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content: comment }),
-        });
+  const submitComment = (e) => {
+    e.preventDefault()
+    if (!comment.trim()) return
 
-        const data = await response.json();
-        
-        if (response.ok) {
-          onComment(post.id, data.comment);
-          setComment('');
-        } else {
-          console.error('Failed to add comment:', data.message);
-        }
-      } catch (error) {
-        console.error('Error adding comment:', error);
-      }
-    }
+    // Implement comment submission
+    console.log('Comment submitted:', comment)
+    setComment('')
   }
 
-  const renderAttachment = () => {
-    if (!post.attachment) return null;
+  const handleShare = () => {
+    setShowShareModal(true)
+  }
 
-    // Helper function to get file type from URL or mimetype
-    const getFileType = (url) => {
-      if (url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) return 'image';
-      if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
-      return 'document';
-    };
-
-    const fileType = getFileType(post.attachment);
-
-    switch (fileType) {
-      case 'image':
-        return (
-          <div className="mb-4">
-            <img 
-              src={post.attachment} 
-              alt="Post attachment" 
-              className="w-full h-auto rounded-lg"
-              loading="lazy"
-            />
-          </div>
-        );
-      case 'video':
-        return (
-          <div className="mb-4">
-            <video 
-              src={post.attachment} 
-              controls 
-              className="w-full h-auto rounded-lg"
-            >
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        );
-      case 'document':
-        return (
-          <div className="mb-4">
-            <a 
-              href={post.attachment}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <FileText className="h-5 w-5 text-gray-500" />
-              <span className="text-sm text-gray-700 truncate">
-                View Attachment
-              </span>
-            </a>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const copyToClipboard = () => {
+    const shareableLink = window.location.href; // Customize this to the specific post URL if needed
+    navigator.clipboard.writeText(shareableLink)
+      .then(() => {
+        alert('Post link copied to clipboard!');
+        setShowShareModal(false); // Close the modal after copying
+      })
+      .catch((error) => console.error('Error copying to clipboard:', error));
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
-      {/* Post Content */}
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-4">
-        {/* Author Info */}
-        <div className="flex items-start gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-4">
           <div className="relative">
             <img
-              src={post.avatar}
-              alt={post.userInfo.author}
-              className="w-12 h-12 rounded-full"
+              src={avatarSrc}
+              alt={post.userInfo?.author || 'User'}
+              className="w-12 h-12 rounded-full bg-indigo-100"
+              onError={(e) => {
+                e.target.src = 'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
+              }}
             />
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-lg">{post.userInfo.author}</h3>
-              <span className="text-sm text-gray-500">{post.connectionDegree}</span>
+              <h3 className="font-bold text-lg">{post.userInfo?.author || 'Loading...'}</h3>
+              <span className="text-sm text-gray-500">{post.connectionDegree || ''}</span>
             </div>
-            <p className="text-sm text-gray-600">{post.authorTitle}</p>
+            <p className="text-sm text-gray-600">{post.authorTitle || 'Academic Researcher'}</p>
             <p className="text-sm text-gray-500">
-              {post.authorLocation} • {formatTimeAgo(post.timestamp)}
+              {post.authorLocation || 'Loading...'} • {formattedTime}
             </p>
           </div>
         </div>
@@ -196,14 +203,16 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
           <Link 
             href={`/messages?discussion=${post.discussion.id}`}
             className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
-            onClick={() => onJoinDiscussion && onJoinDiscussion(post.discussion.id)}
           >
             <MessageCircle className="h-5 w-5" />
             <span>Join Discussion</span>
           </Link>
         )}
         
-        <button className="flex items-center gap-2 text-gray-500 hover:text-indigo-500">
+        <button 
+          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
+          onClick={handleShare}
+        >
           <Share2 className="h-5 w-5" />
           <span>Share</span>
         </button>
@@ -215,7 +224,7 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
           {/* Comment Form */}
           <form onSubmit={submitComment} className="p-4 flex gap-3">
             <img
-              src={post.avatar} // Replace with current user's avatar
+              src={avatarSrc}
               alt="Your avatar"
               className="w-8 h-8 rounded-full"
             />
@@ -242,7 +251,7 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
             {post.comments && post.comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <img
-                  src={post.avatar} // Replace with comment author's avatar
+                  src={comment.avatar || avatarSrc}
                   alt={comment.author}
                   className="w-8 h-8 rounded-full"
                 />
@@ -262,6 +271,43 @@ export default function Post({ post, onLike, onComment, onJoinDiscussion }) {
           </div>
         </div>
       )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 shadow-lg">
+            <h2 className="text-lg font-bold mb-4">Share this post</h2>
+            <p className="mb-4">Copy the link below:</p>
+            <input
+              type="text"
+              readOnly
+              value={window.location.href} // Customize this to the specific post URL if needed
+              className="border rounded-md p-2 w-full"
+            />
+            <button
+              onClick={copyToClipboard}
+              className="mt-4 bg-indigo-600 text-white rounded-md px-4 py-2"
+            >
+              Copy Link
+            </button>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="mt-2 text-gray-500"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+// Add array of skeleton posts for initial loading
+export const PostSkeletons = ({ count = 3 }) => (
+  <div className="space-y-4">
+    {Array.from({ length: count }).map((_, index) => (
+      <PostSkeleton key={`skeleton-${index}`} />
+    ))}
+  </div>
+)
