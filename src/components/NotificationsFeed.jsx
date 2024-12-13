@@ -2,10 +2,12 @@
 import Image from 'next/image'
 import { ThumbsUp, MessageSquare, Users, Bell, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { dummyNotifications } from '@/lib/dummyNotifications'
+import { useSelector, useDispatch } from 'react-redux'
+import { addNotification } from '@/redux/features/notificationsSlice'
 
 export default function NotificationsFeed({ activeFilter }) {
-  const [notifications, setNotifications] = useState([])
+  const dispatch = useDispatch()
+  const notifications = useSelector((state) => state.notifications) || []
   const [loading, setLoading] = useState(true)
 
   const formatTimeAgo = (date) => {
@@ -30,17 +32,15 @@ export default function NotificationsFeed({ activeFilter }) {
   }
 
   useEffect(() => {
-    // // For testing with dummy data
-    // setNotifications(dummyNotifications)
-    // setLoading(false)
-
-    // Real API implementation (commented out)
     const fetchNotifications = async () => {
       try {
         const response = await fetch('/api/notifications/get_notifications')
         if (!response.ok) throw new Error('Failed to fetch notifications')
         const data = await response.json()
-        setNotifications(data.notifications)
+        
+        data.notifications.forEach(notification => {
+          dispatch(addNotification(notification))
+        })
       } catch (error) {
         console.error('Error fetching notifications:', error)
       } finally {
@@ -51,7 +51,7 @@ export default function NotificationsFeed({ activeFilter }) {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 30000) // Poll every 30 seconds
     return () => clearInterval(interval)
-  }, [])
+  }, [dispatch])
 
   const getIcon = (type) => {
     switch (type) {
@@ -119,6 +119,10 @@ export default function NotificationsFeed({ activeFilter }) {
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
     }
+  }
+
+  const addNotification = (notification) => {
+    setNotifications((prev) => [...prev, notification]);
   }
 
   if (loading) {

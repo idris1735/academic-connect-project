@@ -1,17 +1,13 @@
 {
   "name": "academic-connect-project",
   "version": "0.1.0",
-  "private": true,"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "export": "next build && next export",
-  "start": "next start",
-  "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
-  "lint:strict": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
-  "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix && prettier --write .",
-  "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
-  "check-format": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md,json}\""
-},
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": " nodemon backend/server.js",
+    "lint": "next lint"
+  },
   "dependencies": {
     "@heroicons/react": "^1.0.6",
     "@radix-ui/react-avatar": "^1.1.1",

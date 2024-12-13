@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input'
 import { dummyNotifications } from '@/lib/dummyNotifications'
 import { fetchWithErrorHandling } from '@/lib/api'
+import { useNavigationLoading } from '@/hooks/UseNavigationLoading'
 
 // Dummy data for testing
 const dummyUsers = [
@@ -57,6 +58,7 @@ export default function NavComponent() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [users, setUsers] = useState([])
   const [filteredUsers, setFilteredUsers] = useState([])
+  const isLoading = useNavigationLoading()
 
   useEffect(() => {
     // For testing with dummy data
@@ -146,6 +148,12 @@ export default function NavComponent() {
     setIsSearchOpen(true)
   }
 
+
+  // Add a click handler for navigation
+  const handleNavigation = (e, href) => {
+    e.preventDefault()
+    router.push(href)
+  }
   // ... previous state declarations and navItems remain the same ...
 
   return (
@@ -203,12 +211,13 @@ export default function NavComponent() {
             </div>
           </div>
 
-          {/* Navigation Items - Desktop */}
+          {/* Desktop Navigation Items */}
           <div className="hidden md:flex items-center space-x-4">
             {navItems.map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
+                onClick={(e) => handleNavigation(e, item.href)}
                 className={`flex flex-col items-center px-3 py-2 text-sm font-medium rounded-md ${
                   pathname === item.href
                     ? 'text-indigo-600 bg-blue-50'
@@ -224,7 +233,7 @@ export default function NavComponent() {
                   )}
                 </div>
                 <span>{item.label}</span>
-              </Link>
+              </a>
             ))}
           </div>
 
@@ -251,19 +260,22 @@ export default function NavComponent() {
       <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'}`}>
         <div className="pt-2 pb-3 space-y-1">
           {navItems.map((item) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                handleNavigation(e, item.href)
+                setIsMenuOpen(false)
+              }}
               className={`flex items-center px-3 py-2 text-base font-medium ${
                 pathname === item.href
                   ? 'text-indigo-600 bg-blue-50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
-              onClick={() => setIsMenuOpen(false)}
             >
               <item.icon className="h-6 w-6 mr-3" />
               <span>{item.label}</span>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
