@@ -235,6 +235,9 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-lg">{post.userInfo?.author || 'Loading...'}</h3>
               <span className="text-sm text-gray-500">{post.connectionDegree || ''}</span>
+              {post.category && (
+                <span className="text-sm text-indigo-600">• {post.category}</span>
+              )}
             </div>
             <p className="text-sm text-gray-600">{post.authorTitle || 'Academic Researcher'}</p>
             <p className="text-sm text-gray-500">

@@ -159,7 +159,7 @@ exports.getPosts = async (req, res) => {
         uid: postData.uid,
         content: content,
         timeStamp: postData.timeStamp?.toDate().toISOString(),
-        postCat: postData.postCat,
+        category: postData.postCat,
         likesCount: postData.likesCount || 0,
         commentsCount: postData.commentsCount || 0,
         comments: comments,

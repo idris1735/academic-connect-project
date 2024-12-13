@@ -14,58 +14,47 @@ export default function PostCreation({ onPostCreate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (content.trim()) {
-      try {
-        const discussionData = isDiscussionMode && discussionName.trim()
-          ? {
-              name: discussionName.trim(),
-              id: Date.now().toString(),
-            }
-          : null
-
-        console.log('Submitting post with data:', postData)
-
-        // Create FormData object to handle file upload
-        const formData = new FormData()
-        formData.append('content', content)
-        formData.append('category', category)
-        formData.append('discussion', discussionData)
-
-        // Append file if it exists
-        if (attachment) {
-          formData.append('attachment', attachment)
-        }
-
-        const fetchResponse = await fetch('/api/posts/create_post', {
-          method: 'POST',
-          // Remove the Content-Type header to let the browser set it with boundary for FormData
-          body: formData,
-        })
-
-        const responseData = await fetchResponse.json()
-        if (fetchResponse.status === 200) {
-          const completePost = {
-            ...responseData.post,
-            discussion: discussionData,
-            timestamp: new Date().toISOString(),
-          }
-          console.log('Complete post with discussion:', completePost)
-          onPostCreate(completePost)
-          setContent('')
-          setAttachment(null)
-          setCategory('research')
-          setIsDiscussionMode(false)
-          setDiscussionName('')
-          setError('')
-        } else {
-          setError(responseData.message)
-        }
-      } catch (error) {
-        console.error('Error creating post:', error)
-        setError('Failed to create post')
-      }
-    } else {
+    if (!content.trim()) {
       setError('Post content cannot be empty.')
+      return
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('content', content)
+      formData.append('category', category)
+      
+      if (attachment) {
+        formData.append('attachment', attachment)
+      }
+
+      const response = await fetch('/api/posts/create_post', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        onPostCreate(data.post)
+        
+        // Reset form
+        setContent('')
+        setAttachment(null)
+        setCategory('research')
+        setIsDiscussionMode(false)
+        setDiscussionName('')
+        setError('')
+        setContent('')
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      } else {
+        setError(data.message || 'Failed to create post')
+      }
+    } catch (error) {
+      console.error('Error creating post:', error)
+      setError('Failed to create post')
     }
   }
 
