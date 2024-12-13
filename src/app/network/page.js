@@ -1,7 +1,7 @@
 import NavComponent from '../../components/NavComponent'
-import { NetworkSidebar } from "@/components/NetworkSidebar";
-import {ConnectionInvitations} from '../../components/ConnectionInvitations'
-import {PeopleYouMayKnow }from '../../components/PeopleYouMayKnow'
+import { NetworkSidebar } from '@/components/NetworkSidebar'
+import { ConnectionInvitations } from '../../components/ConnectionInvitations'
+import { PeopleYouMayKnow } from '../../components/PeopleYouMayKnow'
 
 export default function NetworkPage() {
   return (

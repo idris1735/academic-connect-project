@@ -33,7 +33,9 @@ const profileSlice = createSlice({
     error: null,
     isEditing: false,
     activities: null,
-    activitiesLastFetched: null
+    activitiesLastFetched: null,
+    posts: null,
+    postsLastFetched: null
   },
   reducers: {
     setProfileData: (state, action) => {
@@ -45,6 +47,10 @@ const profileSlice = createSlice({
     setActivities: (state, action) => {
       state.activities = action.payload.activities
       state.activitiesLastFetched = action.payload.timestamp
+    },
+    setPosts: (state, action) => {
+      state.posts = action.payload.posts
+      state.postsLastFetched = action.payload.timestamp
     }
   },
   extraReducers: (builder) => {
@@ -71,5 +77,5 @@ const profileSlice = createSlice({
   },
 })
 
-export const { setProfileData, toggleEditMode, setActivities } = profileSlice.actions
+export const { setProfileData, toggleEditMode, setActivities, setPosts } = profileSlice.actions
 export default profileSlice.reducer

@@ -17,12 +17,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import PropTypes from 'prop-types'
 
 const IndividualForm = ({ onComplete, onBack }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState({
-    
     fullName: '',
     email: '',
     password: '',
@@ -208,14 +208,16 @@ const IndividualForm = ({ onComplete, onBack }) => {
             className='w-full'
             disabled={!isFormValid || isLoading}
           >
-            {isLoading ? (
+            {isLoading
+              ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Processing...
               </>
-            ) : (
-              'Continue'
-            )}
+                )
+              : (
+                  'Continue'
+                )}
           </Button>
           <p className='text-xs text-center text-muted-foreground'>
             Your information helps us personalize your research experience
@@ -224,6 +226,11 @@ const IndividualForm = ({ onComplete, onBack }) => {
       </Card>
     </motion.div>
   )
+}
+
+IndividualForm.propTypes = {
+  onComplete: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
 }
 
 export default IndividualForm

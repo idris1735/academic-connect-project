@@ -1,13 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { ThumbsUp, MessageSquare, Share2, MessageCircle, FileText, Film, Image as ImageIcon, Send } from "lucide-react"
+import {
+  ThumbsUp,
+  MessageSquare,
+  Share2,
+  MessageCircle,
+  FileText,
+  Film,
+  Image as ImageIcon,
+  Send,
+} from 'lucide-react'
 import Link from 'next/link'
+import PropTypes from 'prop-types'
+import Image from 'next/image'
 
 // Add time formatting function
 const formatTimeAgo = (timestamp) => {
   if (!timestamp) return 'just now'
-  
+
   const date = new Date(timestamp)
   if (isNaN(date.getTime())) return 'just now'
 
@@ -58,6 +69,7 @@ export default function Post({ post, isLoading }) {
   const [comment, setComment] = useState('')
   const [showShareModal, setShowShareModal] = useState(false)
 
+
   // Use a better placeholder image from a reliable CDN
   const avatarSrc = post.avatar || 'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
 
@@ -67,6 +79,59 @@ export default function Post({ post, isLoading }) {
   // Show skeleton loading if post is loading
   if (isLoading) {
     return <PostSkeleton />
+
+  // Add console log to debug post data
+  console.log('Post data:', post)
+
+  const handleLike = async () => {
+    try {
+      const response = await fetch(`/api/posts/${post.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        onLike(post.id, data.likesCount)
+      } else {
+        console.error('Failed to like post:', data.message)
+      }
+    } catch (error) {
+      console.error('Error liking post:', error)
+    }
+  }
+
+  const handleComment = () => {
+    setIsCommenting(!isCommenting)
+  }
+
+  const submitComment = async (e) => {
+    e.preventDefault()
+    if (comment.trim()) {
+      try {
+        const response = await fetch(`/api/posts/${post.id}/comment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: comment }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          onComment(post.id, data.comment)
+          setComment('')
+        } else {
+          console.error('Failed to add comment:', data.message)
+        }
+      } catch (error) {
+        console.error('Error adding comment:', error)
+      }
+    }
   }
 
   const renderAttachment = () => {
@@ -84,6 +149,7 @@ export default function Post({ post, isLoading }) {
                 loading="lazy"
               />
             </div>
+
           </div>
         )
       case 'video':
@@ -92,6 +158,13 @@ export default function Post({ post, isLoading }) {
             <video
               controls
               className="rounded-lg max-h-96 w-auto mx-auto"
+
+//           <div className='mb-4'>
+//             <video
+//               src={post.attachment}
+//               controls
+//               className='w-full h-auto rounded-lg'
+
             >
               <source src={post.attachment.url} type="video/mp4" />
               Your browser does not support the video tag.
@@ -100,6 +173,7 @@ export default function Post({ post, isLoading }) {
         )
       case 'document':
         return (
+
           <div className="mb-4 flex items-center gap-2 p-4 bg-gray-50 rounded-lg">
             <FileText className="h-6 w-6 text-gray-500" />
             <a
@@ -117,23 +191,6 @@ export default function Post({ post, isLoading }) {
     }
   }
 
-  const handleLike = () => {
-    // Implement like functionality
-    console.log('Like clicked')
-  }
-
-  const handleComment = () => {
-    setIsCommenting(!isCommenting)
-  }
-
-  const submitComment = (e) => {
-    e.preventDefault()
-    if (!comment.trim()) return
-
-    // Implement comment submission
-    console.log('Comment submitted:', comment)
-    setComment('')
-  }
 
   const handleShare = () => {
     setShowShareModal(true)
@@ -176,35 +233,36 @@ export default function Post({ post, isLoading }) {
         </div>
 
         {/* Post Content */}
-        <p className="mb-4">{post.content}</p>
-        
+        <p className='mb-4'>{post.content}</p>
+
         {/* Attachment */}
         {renderAttachment()}
       </div>
 
       {/* Action Buttons */}
-      <div className="border-t px-4 py-2 flex justify-between">
-        <button 
-          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
+      <div className='border-t px-4 py-2 flex justify-between'>
+        <button
+          className='flex items-center gap-2 text-gray-500 hover:text-indigo-500'
           onClick={handleLike}
         >
-          <ThumbsUp className="h-5 w-5" />
+          <ThumbsUp className='h-5 w-5' />
           <span>Like ({post.likesCount || 0})</span>
         </button>
-        <button 
-          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
+        <button
+          className='flex items-center gap-2 text-gray-500 hover:text-indigo-500'
           onClick={handleComment}
         >
-          <MessageSquare className="h-5 w-5" />
+          <MessageSquare className='h-5 w-5' />
           <span>Comment ({post.commentsCount || 0})</span>
         </button>
-        
+
         {post && post.discussion && (
-          <Link 
+          <Link
             href={`/messages?discussion=${post.discussion.id}`}
+
             className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
           >
-            <MessageCircle className="h-5 w-5" />
+            <MessageCircle className='h-5 w-5' />
             <span>Join Discussion</span>
           </Link>
         )}
@@ -220,33 +278,34 @@ export default function Post({ post, isLoading }) {
 
       {/* Comments Section */}
       {isCommenting && (
-        <div className="border-t bg-gray-50">
+        <div className='border-t bg-gray-50'>
           {/* Comment Form */}
-          <form onSubmit={submitComment} className="p-4 flex gap-3">
+          <form onSubmit={submitComment} className='p-4 flex gap-3'>
             <img
-              src={avatarSrc}
+              src={post.avatar || avatarSrc}
               alt="Your avatar"
               className="w-8 h-8 rounded-full"
             />
-            <div className="flex-1">
+            <div className='flex-1'>
               <input
-                type="text"
+                type='text'
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="w-full px-4 py-2 bg-white border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder='Add a comment...'
+                className='w-full px-4 py-2 bg-white border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500'
               />
             </div>
-            <button 
-              type="submit"
-              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full"
+            <button
+              type='submit'
+              className='p-2 text-indigo-600 hover:bg-indigo-50 rounded-full'
               disabled={!comment.trim()}
             >
-              <Send className="h-5 w-5" />
+              <Send className='h-5 w-5' />
             </button>
           </form>
 
           {/* Comments List */}
+
           <div className="px-4 pb-4 space-y-4">
             {post.comments && post.comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
@@ -266,8 +325,7 @@ export default function Post({ post, isLoading }) {
                     <button className="hover:text-gray-700">Reply</button>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}
@@ -303,6 +361,7 @@ export default function Post({ post, isLoading }) {
   )
 }
 
+
 // Add array of skeleton posts for initial loading
 export const PostSkeletons = ({ count = 3 }) => (
   <div className="space-y-4">
@@ -311,3 +370,32 @@ export const PostSkeletons = ({ count = 3 }) => (
     ))}
   </div>
 )
+Post.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    avatar: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    timestamp: PropTypes.string,
+    attachment: PropTypes.string,
+    likesCount: PropTypes.number,
+    commentsCount: PropTypes.number,
+    userInfo: PropTypes.shape({
+      author: PropTypes.string.isRequired,
+    }).isRequired,
+    comments: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        author: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        timestamp: PropTypes.string,
+      }),
+    ),
+    discussion: PropTypes.shape({
+      id: PropTypes.string.isRequired,
+    }),
+  }).isRequired,
+  onLike: PropTypes.func.isRequired,
+  onComment: PropTypes.func.isRequired,
+  onJoinDiscussion: PropTypes.func,
+}
+

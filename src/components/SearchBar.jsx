@@ -1,18 +1,18 @@
-import React from 'react';
-import { Search } from 'lucide-react';
+import React from 'react'
+import { Search } from 'lucide-react'
 
 const SearchBar = ({
-  placeholder = "Search...",
+  placeholder = 'Search...',
   value,
   onChange,
-  onSubmit
+  onSubmit,
 }) => {
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (onSubmit) {
-      onSubmit(e);
+      onSubmit(e)
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
@@ -27,8 +27,7 @@ const SearchBar = ({
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
       </div>
     </form>
-  );
-};
+  )
+}
 
-export default SearchBar;
-
+export default SearchBar

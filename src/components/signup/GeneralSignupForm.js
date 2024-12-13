@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import PropTypes from 'prop-types'
 
 const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
   const [formData, setFormData] = useState({
@@ -25,8 +26,8 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
     dateOfBirth: '',
     country: '',
     termsAccepted: false,
-    userType: userType,
-   
+    userType,
+
     ...preSignupData,
   })
 
@@ -51,7 +52,7 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
     setIsLoading(true)
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords don't match")
+      setError('Passwords don\'t match')
       setIsLoading(false)
       return
     }
@@ -122,11 +123,11 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-6'>
             {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+              <div className='p-3 text-sm text-red-500 bg-red-50 rounded-md'>
                 {error}
               </div>
             )}
-            
+
             {/* Name Fields */}
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
@@ -277,18 +278,15 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
 
             {/* Buttons */}
             <div className='flex justify-between pt-4'>
-              <Button 
-                type='button' 
-                variant='outline' 
+              <Button
+                type='button'
+                variant='outline'
                 onClick={onBack}
                 disabled={isLoading}
               >
                 Back
               </Button>
-              <Button 
-                type='submit' 
-                disabled={!isFormValid || isLoading}
-              >
+              <Button type='submit' disabled={!isFormValid || isLoading}>
                 {isLoading ? 'Creating Account...' : 'Complete Registration'}
               </Button>
             </div>
@@ -297,6 +295,26 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
       </Card>
     </motion.div>
   )
+}
+
+GeneralSignupForm.propTypes = {
+  onComplete: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
+  userType: PropTypes.oneOf(['individual', 'corporate', 'institution'])
+    .isRequired,
+  preSignupData: PropTypes.shape({
+    email: PropTypes.string,
+    firstName: PropTypes.string,
+    lastName: PropTypes.string,
+    dateOfBirth: PropTypes.string,
+    country: PropTypes.string,
+    occupation: PropTypes.string,
+    jobTitle: PropTypes.string,
+  }),
+}
+
+GeneralSignupForm.defaultProps = {
+  preSignupData: {},
 }
 
 export default GeneralSignupForm

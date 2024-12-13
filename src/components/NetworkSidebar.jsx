@@ -1,5 +1,5 @@
 'use client'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, UserPlus, Microscope, Calendar, BookOpen, Hash, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -8,7 +8,7 @@ export function NetworkSidebar() {
     connections: 0,
     groups: 0,
     conferences: 0,
-    publications: 0
+    publications: 0,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -27,7 +27,7 @@ export function NetworkSidebar() {
           connections: data.connections.length,
           groups: 0,
           conferences: 0,
-          publications: 0
+          publications: 0,
         })
       } catch (error) {
         console.error('Error fetching network data:', error)

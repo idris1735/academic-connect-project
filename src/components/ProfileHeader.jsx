@@ -1,11 +1,11 @@
 import { CheckCircle, Instagram, Linkedin, Twitter, Globe, Building2, User, MapPin } from 'lucide-react'
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
 
 export function ProfileHeader({ data, isOrganization }) {
   if (!data) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   const formatMemberSince = (dateString) => {
@@ -20,7 +20,7 @@ export function ProfileHeader({ data, isOrganization }) {
 
   return (
     <div className="relative">
-      <div className="h-48 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]"></div>
+      <div className="h-48 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]" />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="-mt-24 text-center">
           <Avatar className="h-32 w-32 rounded-full ring-4 ring-white inline-flex">
@@ -78,8 +78,3 @@ export function ProfileHeader({ data, isOrganization }) {
     </div>
   )
 }
-
-
-
-
-

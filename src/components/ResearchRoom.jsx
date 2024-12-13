@@ -6,20 +6,20 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calendar } from '@/components/ui/calendar'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Video, Mic, MicOff, VideoOff, PhoneOff, Monitor, Plus, Send, Download, Paperclip, Menu, CalendarIcon, Clock, UserPlus } from 'lucide-react'
-import { useToast, Toaster } from "@/components/ui/toast"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useToast, Toaster } from '@/components/ui/toast'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default function ResearchRoom({ room, onToggleSidebar }) {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello everyone! Welcome to the AI in Healthcare research room.", sender: "Dr. Afolabi Akorede", timestamp: "09:00" },
-    { id: 2, text: "Thanks for having me. I'm excited to collaborate on this project.", sender: "You", timestamp: "09:02" }
+    { id: 1, text: 'Hello everyone! Welcome to the AI in Healthcare research room.', sender: 'Dr. Afolabi Akorede', timestamp: '09:00' },
+    { id: 2, text: 'Thanks for having me. I\'m excited to collaborate on this project.', sender: 'You', timestamp: '09:02' },
   ])
   const [newMessage, setNewMessage] = useState('')
   const [isInCall, setIsInCall] = useState(false)
@@ -50,7 +50,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   }, [messages])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   const handleSendMessage = () => {
@@ -59,7 +59,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       id: Date.now(),
       text: newMessage,
       sender: 'You',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
     setMessages([...messages, newMsg])
     setNewMessage('')
@@ -75,7 +75,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         size: file.size,
         url: URL.createObjectURL(file),
         sender: 'You',
-        timestamp: new Date()
+        timestamp: new Date(),
       }
       setResources([...resources, newResource])
       const newMsg = {
@@ -83,12 +83,12 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         text: `Shared a file: ${file.name}`,
         sender: 'You',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        resource: newResource
+        resource: newResource,
       }
       setMessages([...messages, newMsg])
       toast({
-        title: "File Uploaded",
-        description: `${file.name} has been added to resources.`
+        title: 'File Uploaded',
+        description: `${file.name} has been added to resources.`,
       })
     }
   }
@@ -96,9 +96,9 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   const handleScheduleActivity = () => {
     if (!activityName || !selectedTime) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Please fill in all fields.',
+        variant: 'destructive',
       })
       return
     }
@@ -107,14 +107,14 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       id: Date.now(),
       name: activityName,
       date: selectedDate,
-      time: selectedTime
+      time: selectedTime,
     }
 
     setScheduledActivities([...scheduledActivities, newActivity])
 
     toast({
-      title: "Activity Scheduled",
-      description: `${activityName} scheduled for ${selectedDate.toDateString()} at ${selectedTime}.`
+      title: 'Activity Scheduled',
+      description: `${activityName} scheduled for ${selectedDate.toDateString()} at ${selectedTime}.`,
     })
     setActivityName('')
     setSelectedTime('')
@@ -131,8 +131,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   const handleSendInvitations = () => {
     selectedMembers.forEach(member => {
       toast({
-        title: "Invitation Sent",
-        description: `Invitation sent to ${member.name}.`
+        title: 'Invitation Sent',
+        description: `Invitation sent to ${member.name}.`,
       })
     })
     setSelectedMembers([])
@@ -146,7 +146,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         }
         setIsInCall(true)
         setIsVideoOn(isVideoCall)
-        
+
         // Simulate remote user joining the call
         setTimeout(() => {
           if (remoteVideoRef.current) {
@@ -157,9 +157,9 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       .catch(error => {
         console.error('Error accessing media devices:', error)
         toast({
-          title: "Error",
-          description: "Failed to start call. Please check your camera and microphone permissions.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to start call. Please check your camera and microphone permissions.',
+          variant: 'destructive',
         })
       })
   }
@@ -199,9 +199,9 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       .catch(error => {
         console.error('Error starting screen share:', error)
         toast({
-          title: "Error",
-          description: "Failed to start screen sharing.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to start screen sharing.',
+          variant: 'destructive',
         })
       })
   }
@@ -218,7 +218,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
       const hasActivity = scheduledActivities.some(
-        activity => activity.date.toDateString() === date.toDateString()
+        activity => activity.date.toDateString() === date.toDateString(),
       )
       return hasActivity ? 'bg-blue-100 text-blue-500 font-bold' : null
     }
@@ -228,8 +228,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     <div className="flex flex-col h-full bg-gray-50">
       <div className="flex items-center justify-between p-4 bg-white border-b">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="md:hidden mr-2"
             onClick={onToggleSidebar}
@@ -239,24 +239,24 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
           <h2 className="text-xl font-semibold">{room?.name || 'Research Room'}</h2>
         </div>
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             className="flex md:hidden"
             onClick={() => handleStartCall(true)}
           >
             <Video className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             className="flex md:hidden"
             onClick={() => handleStartCall(false)}
           >
             <Mic className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             className="hidden md:flex"
             onClick={() => handleStartCall(true)}
@@ -264,8 +264,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
             <Video className="h-4 w-4 mr-2" />
             Video Call
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             className="hidden md:flex"
             onClick={() => handleStartCall(false)}
@@ -294,8 +294,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                       onSelect={() => handleInviteUser(user)}
                     >
                       <div className={cn(
-                        "flex items-center",
-                        selectedMembers.some(member => member.id === user.id) ? "opacity-50" : ""
+                        'flex items-center',
+                        selectedMembers.some(member => member.id === user.id) ? 'opacity-50' : '',
                       )}>
                         <Avatar className="h-6 w-6 mr-2">
                           <AvatarImage src={user.avatar} alt={user.name} />
@@ -329,8 +329,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                   <div
                     key={message.id}
                     className={cn(
-                      "flex flex-col",
-                      message.sender === "You" ? "items-end" : "items-start"
+                      'flex flex-col',
+                      message.sender === 'You' ? 'items-end' : 'items-start',
                     )}
                   >
                     <div className="flex items-center space-x-2 mb-1">
@@ -339,10 +339,10 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                     </div>
                     <div
                       className={cn(
-                        "max-w-[80%] rounded-lg px-4 py-2",
-                        message.sender === "You"
-                          ? "bg-[#6366F1] text-white"
-                          : "bg-white text-gray-900"
+                        'max-w-[80%] rounded-lg px-4 py-2',
+                        message.sender === 'You'
+                          ? 'bg-[#6366F1] text-white'
+                          : 'bg-white text-gray-900',
                       )}
                     >
                       <p className="text-sm">{message.text}</p>
@@ -442,10 +442,10 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                         onSelect={setSelectedDate}
                         className="mx-auto"
                         modifiers={{
-                          booked: scheduledActivities.map(activity => activity.date)
+                          booked: scheduledActivities.map(activity => activity.date),
                         }}
                         modifiersClassNames={{
-                          booked: "bg-indigo-100 font-medium text-indigo-500 hover:bg-indigo-200"
+                          booked: 'bg-indigo-100 font-medium text-indigo-500 hover:bg-indigo-200',
                         }}
                       />
                     </div>
@@ -486,8 +486,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                           className="border-indigo-200 focus-visible:ring-indigo-500"
                         />
                       </div>
-                      <Button 
-                        onClick={handleScheduleActivity} 
+                      <Button
+                        onClick={handleScheduleActivity}
                         className="w-full bg-indigo-500 hover:bg-indigo-700 text-white transition-colors"
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -520,11 +520,11 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                           <div>
                             <h4 className="font-medium text-indigo-900">{activity.name}</h4>
                             <p className="text-sm text-indigo-500">
-                              {activity.date.toLocaleDateString('en-US', { 
+                              {activity.date.toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric'
+                                day: 'numeric',
                               })}
                             </p>
                           </div>
@@ -554,8 +554,9 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         <TabsContent value="members" className="h-[calc(100vh-220px)] p-4 m-0">
           <ScrollArea className="h-[calc(100vh-220px)]">
             <div className="space-y-4">
-              {room?.members && Array.isArray(room.members) ? (
-                room.members.map((member, index) => (
+              {room?.members && Array.isArray(room.members)
+                ? (
+                    room.members.map((member, index) => (
                   <div
                     key={member.id || index}
                     className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
@@ -574,26 +575,29 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                       variant="outline"
                       onClick={() => handleInviteUser(member)}
                       className={cn(
-                        selectedMembers.some(m => m.id === member.id) && "bg-green-100 text-green-500"
+                        selectedMembers.some(m => m.id === member.id) && 'bg-green-100 text-green-500',
                       )}
                     >
-                      {selectedMembers.some(m => m.id === member.id) ? (
+                      {selectedMembers.some(m => m.id === member.id)
+                        ? (
                         <>
                           <UserPlus className="h-4 w-4 mr-2" />
                           Invited
                         </>
-                      ) : (
+                          )
+                        : (
                         <>
                           <UserPlus className="h-4 w-4 mr-2" />
                           Invite
                         </>
-                      )}
+                          )}
                     </Button>
                   </div>
-                ))
-              ) : (
+                    ))
+                  )
+                : (
                 <p className="text-center text-gray-500">No members in this room.</p>
-              )}
+                  )}
             </div>
           </ScrollArea>
         </TabsContent>
@@ -611,14 +615,14 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
           setIsMuted(false)
           setIsScreenSharing(false)
           toast({
-            title: "Call Ended",
-            description: "You have left the call.",
+            title: 'Call Ended',
+            description: 'You have left the call.',
           })
         }
       }}>
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
-            <DialogTitle>{isVideoOn ? "Video" : "Voice"} Call - {room?.name || 'Research Room'}</DialogTitle>
+            <DialogTitle>{isVideoOn ? 'Video' : 'Voice'} Call - {room?.name || 'Research Room'}</DialogTitle>
           </DialogHeader>
           <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
             {isVideoOn && <video ref={remoteVideoRef} className="w-full h-full object-cover" />}
@@ -681,5 +685,3 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     </div>
   )
 }
-
-

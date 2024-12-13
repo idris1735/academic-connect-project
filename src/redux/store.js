@@ -11,5 +11,4 @@ export const store = configureStore({
   },
 })
 
-
-// Remove type definitions since this is a .js file 
+// Remove type definitions since this is a .js file

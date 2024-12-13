@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check, X, Loader2 } from "lucide-react"
+import { useEffect, useState } from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Check, X, Loader2 } from 'lucide-react'
 
 export function ConnectionInvitations() {
   const [invitations, setInvitations] = useState([])
@@ -84,16 +84,20 @@ export function ConnectionInvitations() {
         <CardTitle className="text-2xl font-bold text-indigo-900">Collaboration Requests</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
-        {loading ? (
+        {loading
+          ? (
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
             <p className="mt-2 text-sm text-indigo-600">Loading requests...</p>
           </div>
-        ) : invitations.length === 0 ? (
+            )
+          : invitations.length === 0
+            ? (
           <div className="flex justify-center items-center py-5">
             <p className="text-indigo-900 text-lg">No connection requests</p>
           </div>
-        ) : (
+              )
+            : (
           <div className="space-y-6">
             {invitations.map((invitation) => (
               <div key={invitation.connectionId} className="flex items-center space-x-4 bg-white p-4 rounded-lg shadow">
@@ -112,16 +116,16 @@ export function ConnectionInvitations() {
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full"
                     onClick={() => handleAccept(invitation.connectionId, invitation.userId)}
                   >
                     <Check className="h-5 w-5" />
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="border-red-500 text-red-500 hover:bg-red-50 rounded-full"
                     onClick={() => handleReject(invitation.connectionId, invitation.userId)}
                   >
@@ -131,9 +135,8 @@ export function ConnectionInvitations() {
               </div>
             ))}
           </div>
-        )}
+              )}
       </CardContent>
     </Card>
   )
 }
-

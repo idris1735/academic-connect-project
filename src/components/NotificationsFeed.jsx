@@ -12,22 +12,22 @@ export default function NotificationsFeed({ activeFilter }) {
 
   const formatTimeAgo = (date) => {
     const seconds = Math.floor((new Date() - date) / 1000)
-    
+
     let interval = seconds / 31536000
     if (interval > 1) return Math.floor(interval) + ' years ago'
-    
+
     interval = seconds / 2592000
     if (interval > 1) return Math.floor(interval) + ' months ago'
-    
+
     interval = seconds / 86400
     if (interval > 1) return Math.floor(interval) + ' days ago'
-    
+
     interval = seconds / 3600
     if (interval > 1) return Math.floor(interval) + ' hours ago'
-    
+
     interval = seconds / 60
     if (interval > 1) return Math.floor(interval) + ' minutes ago'
-    
+
     return Math.floor(seconds) + ' seconds ago'
   }
 
@@ -47,7 +47,7 @@ export default function NotificationsFeed({ activeFilter }) {
         setLoading(false)
       }
     }
-    
+
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 30000) // Poll every 30 seconds
     return () => clearInterval(interval)
@@ -96,10 +96,10 @@ export default function NotificationsFeed({ activeFilter }) {
       if (!response.ok) throw new Error('Failed to mark notification as read')
 
       // Update local state
-      setNotifications(notifications.map(notification => 
-        notification.id === notificationId 
+      setNotifications(notifications.map(notification =>
+        notification.id === notificationId
           ? { ...notification, read: true }
-          : notification
+          : notification,
       ))
     } catch (error) {
       console.error('Error marking notification as read:', error)
@@ -149,20 +149,23 @@ export default function NotificationsFeed({ activeFilter }) {
           </button>
         </div>
       )}
-      {filteredNotifications.length === 0 ? (
+      {filteredNotifications.length === 0
+        ? (
         <div className="p-8 text-center text-gray-500">
           No notifications found
         </div>
-      ) : (
-        filteredNotifications.map((notification) => (
-          <div 
-            key={notification.id} 
+          )
+        : (
+            filteredNotifications.map((notification) => (
+          <div
+            key={notification.id}
             className={`flex items-start gap-4 p-4 border-b last:border-b-0 ${
               !notification.read ? 'bg-blue-50 cursor-pointer' : ''
             }`}
             onClick={() => !notification.read && markAsRead(notification.id)}
           >
-            {notification.sender ? (
+            {notification.sender
+              ? (
               <img
                 src={notification.sender.photoURL}
                 alt={notification.sender.name}
@@ -170,11 +173,12 @@ export default function NotificationsFeed({ activeFilter }) {
                 height={48}
                 className="rounded-full"
               />
-            ) : (
+                )
+              : (
               <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-full">
                 {getIcon(notification.type)}
               </div>
-            )}
+                )}
             <div className="flex-1">
               <p className="text-sm">
                 {notification.sender && <strong>{notification.sender.name}</strong>}{' '}
@@ -185,8 +189,8 @@ export default function NotificationsFeed({ activeFilter }) {
               </span>
             </div>
           </div>
-        ))
-      )}
+            ))
+          )}
     </div>
   )
 }

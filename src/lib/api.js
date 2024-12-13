@@ -68,7 +68,7 @@ export const handleApiError = (response) => {
   if (response.status === 503) {
     showToast(
       'Connection Error',
-      'Please check your internet connection and try again'
+      'Please check your internet connection and try again',
     )
     return true
   }

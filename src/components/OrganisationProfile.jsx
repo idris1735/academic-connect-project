@@ -1,10 +1,10 @@
-import { ProfileHeader } from "./ProfileHeader"
-import { StatsSection } from "./StatsSection"
-import { ProfileTabs } from "./ProfileTabs"
+import { ProfileHeader } from './ProfileHeader'
+import { StatsSection } from './StatsSection'
+import { ProfileTabs } from './ProfileTabs'
 
 export function OrganizationProfilePage({ data }) {
   if (!data) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   return (
@@ -15,4 +15,3 @@ export function OrganizationProfilePage({ data }) {
     </div>
   )
 }
-

@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar } from "@/components/ui/calendar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { useToast } from "@/components/ui/use-toast"
+import { Calendar } from '@/components/ui/calendar'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function ScheduleActivity({ onSchedule }) {
   const [date, setDate] = useState(new Date())
@@ -17,22 +17,22 @@ export default function ScheduleActivity({ onSchedule }) {
   const handleSchedule = () => {
     if (!activityName || !time) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please fill in all fields.',
+        variant: 'destructive',
       })
       return
     }
 
     const scheduledActivity = {
       name: activityName,
-      date: date,
-      time: time,
+      date,
+      time,
     }
 
     onSchedule(scheduledActivity)
     toast({
-      title: "Activity Scheduled",
+      title: 'Activity Scheduled',
       description: `${activityName} scheduled for ${date.toDateString()} at ${time}.`,
     })
   }
@@ -82,4 +82,3 @@ export default function ScheduleActivity({ onSchedule }) {
     </Dialog>
   )
 }
-

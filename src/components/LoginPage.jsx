@@ -10,8 +10,9 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
 } from 'firebase/auth'
-import { browserPopupRedirectResolver } from 'firebase/auth'
+
 import { auth } from '@/app/firebase-config'
 // import { toast } from '@/components/ui/use-toast'
 import {
@@ -52,8 +53,8 @@ export default function LoginPage() {
           error === 'verification_failed'
             ? 'Error verifying session, please log in again'
             : error === 'session_expired'
-            ? 'Session expired, please log in again'
-            : 'Invalid session, please log in again',
+              ? 'Session expired, please log in again'
+              : 'Invalid session, please log in again',
         variant: 'destructive',
       })
       setShowToast(true)
@@ -128,13 +129,13 @@ export default function LoginPage() {
       const userCredential = await signInWithPopup(
         auth,
         provider,
-        browserPopupRedirectResolver
+        browserPopupRedirectResolver,
       )
-      let data = userCredential.user
+      const data = userCredential.user
       // Get the ID token
       const idToken = await data.getIdToken()
-      data['idToken'] = idToken
-      let user = {}
+      data.idToken = idToken
+      const user = {}
       user.email = data.email
       user.displayName = data.displayName
       user.photoURL = data.photoURL
@@ -150,7 +151,7 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ user }),
       })
-      let info = await res.json()
+      const info = await res.json()
       console.log('Google Sign-In response:', res)
       if (res.status === 200) {
         setToastDetails({
@@ -268,14 +269,16 @@ export default function LoginPage() {
               </label>
             </div>
             <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? (
+              {isLoading
+                ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   Processing...
                 </>
-              ) : (
-                'Log in'
-              )}
+                  )
+                : (
+                    'Log in'
+                  )}
             </Button>
           </form>
 

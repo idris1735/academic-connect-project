@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from 'react'
 
 const Progress = React.forwardRef(({ className, value, ...props }, ref) => {
   return (
@@ -19,7 +19,6 @@ const Progress = React.forwardRef(({ className, value, ...props }, ref) => {
   )
 })
 
-Progress.displayName = "Progress"
+Progress.displayName = 'Progress'
 
 export { Progress }
-
