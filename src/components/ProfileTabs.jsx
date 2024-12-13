@@ -166,6 +166,10 @@ export function ProfileTabs({ data, isOrganization }) {
   const isEditing = useSelector((state) => state.profile.isEditing)
   const [posts, setPosts] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const POSTS_PER_PAGE = 5
   const [publications, setPublications] = useState([])
   const [peerReviews, setPeerReviews] = useState([])
   const [isLoadingPubs, setIsLoadingPubs] = useState(false)
@@ -173,44 +177,117 @@ export function ProfileTabs({ data, isOrganization }) {
   const { posts: cachedPosts, postsLastFetched } = useSelector((state) => state.profile)
 
   useEffect(() => {
-    const loadPosts = async () => {
-      // Only fetch if we don't have data or it's older than 5 minutes
-      const shouldFetch = !postsLastFetched || Date.now() - postsLastFetched > 5 * 60 * 1000
-      
-      if (!cachedPosts || shouldFetch) {
-        try {
-          setIsLoading(true)
-          const response = await fetch(`/api/posts/get_posts?uid=${data.uid}`)
-          const responseData = await response.json()
-          
-          if (response.ok) {
-            // Dispatch to Redux instead of just setting local state
-            dispatch({
-              type: 'profile/setPosts',
-              payload: {
-                posts: responseData.posts,
-                timestamp: Date.now()
-              }
-            })
-            setPosts(responseData.posts)
-          } else {
-            console.error('Failed to fetch posts:', responseData.message)
-          }
-        } catch (error) {
-          console.error('Error fetching posts:', error)
-        } finally {
-          setIsLoading(false)
-        }
-      } else {
-        // Use cached posts
-        setPosts(cachedPosts)
-      }
-    }
-
     if (activeTab === 'posts' && data?.uid) {
-      loadPosts()
+      const loadInitialPosts = async () => {
+        // Check if we can use cached posts
+        const shouldFetch = !postsLastFetched || Date.now() - postsLastFetched > 5 * 60 * 1000;
+        
+        if (!cachedPosts || shouldFetch) {
+          try {
+            setIsLoadingPosts(true);
+            setPage(1);
+            const response = await fetch(`/api/posts/get_posts?uid=${data.uid}&page=1&limit=${POSTS_PER_PAGE}`);
+            const responseData = await response.json();
+            
+            if (response.ok) {
+              const newPosts = responseData.posts.map(post => ({
+                ...post,
+                authorTitle: data.occupation || 'Research Assistant',
+                authorLocation: `${data.city || ''}, ${data.country || ''}`,
+                connectionDegree: '1st',
+                avatar: data.photoURL || 'https://picsum.photos/seed/currentuser/200',
+                timestamp: post.timestamp || new Date().toISOString(),
+              }));
+
+              setPosts(newPosts);
+              setHasMore(responseData.hasMore);
+              setPage(2); // Set to 2 for next fetch
+
+              // Update cache
+              dispatch({
+                type: 'profile/setPosts',
+                payload: {
+                  posts: newPosts,
+                  timestamp: Date.now()
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching posts:', error);
+          } finally {
+            setIsLoadingPosts(false);
+          }
+        } else {
+          // Use cached posts for initial load
+          setPosts(cachedPosts);
+          setPage(Math.ceil(cachedPosts.length / POSTS_PER_PAGE) + 1);
+          setHasMore(true);
+        }
+      };
+
+      loadInitialPosts();
     }
-  }, [activeTab, data?.uid, cachedPosts, postsLastFetched, dispatch])
+  }, [activeTab, data?.uid, cachedPosts, postsLastFetched, dispatch, POSTS_PER_PAGE]);
+
+  const fetchPosts = async () => {
+    if (!hasMore || isLoadingPosts || !data?.uid) return;
+
+    try {
+      setIsLoadingPosts(true);
+      const response = await fetch(`/api/posts/get_posts?uid=${data.uid}&page=${page}&limit=${POSTS_PER_PAGE}`);
+      const responseData = await response.json();
+      
+      if (response.ok) {
+        const newPosts = responseData.posts.map(post => ({
+          ...post,
+          authorTitle: data.occupation || 'Research Assistant',
+          authorLocation: `${data.city || ''}, ${data.country || ''}`,
+          connectionDegree: '1st',
+          avatar: data.photoURL || 'https://picsum.photos/seed/currentuser/200',
+          timestamp: post.timestamp || new Date().toISOString(),
+        }));
+
+        // Append new posts to existing ones
+        setPosts(prevPosts => {
+          // Create a Map of existing posts for deduplication
+          const postsMap = new Map(prevPosts.map(post => [post.id, post]));
+          
+          // Add new posts if they don't exist
+          newPosts.forEach(post => {
+            if (!postsMap.has(post.id)) {
+              postsMap.set(post.id, post);
+            }
+          });
+
+          // Convert back to array while maintaining order
+          return Array.from(postsMap.values());
+        });
+
+        setHasMore(responseData.hasMore);
+        setPage(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        activeTab === 'posts' && // Only fetch if posts tab is active
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000 &&
+        !isLoadingPosts && 
+        hasMore
+      ) {
+        fetchPosts();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isLoadingPosts, hasMore, activeTab]);
 
   useEffect(() => {
     if (activeTab === 'publications' && data?.uid) {
@@ -348,30 +425,34 @@ export function ProfileTabs({ data, isOrganization }) {
           <Card className="border-none shadow-lg">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Posts</h3>
-              <div className="space-y-6">
-                {isLoading ? (
-                  <div className="animate-pulse space-y-4">
-                    {[1, 2, 3].map((n) => (
-                      <div key={n} className="bg-white rounded-lg shadow-md p-4">
-                        <div className="h-12 bg-gray-200 rounded-full w-12 mb-4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : posts.length > 0 ? (
-                  posts.map((post) => (
-                    <Post
-                      key={post.id}
-                      post={post}
-                      onLike={handleLike}
-                      onComment={handleComment}
-                    />
-                  ))
+              <div className="space-y-4">
+                {isLoadingPosts && posts.length === 0 ? (
+                  <Post.Skeletons count={3} />
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No posts yet</p>
-                  </div>
+                  <>
+                    {posts.map(post => (
+                      <Post 
+                        key={post.id} 
+                        post={post}
+                        onLike={handleLike}
+                        onComment={handleComment}
+                      />
+                    ))}
+                    
+                    {isLoadingPosts && <Post.Skeletons count={2} />}
+                    
+                    {!hasMore && posts.length > 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No more posts to load</p>
+                      </div>
+                    )}
+                    
+                    {!isLoadingPosts && posts.length === 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No posts yet</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </CardContent>

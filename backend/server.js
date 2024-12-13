@@ -39,36 +39,46 @@ const notificationRoutes = require('./routes/notification');
 const checkAuth = require('./middleware/auth');
 const errorHandler = require('./middleware/errorHandler');
 
-// Use routes
-server.use('/auth', authRoutes);
-server.use('/user', checkAuth, userRoutes);
-server.use('/api/posts', checkAuth, postRoutes);
-server.use('/api/users', checkAuth, userRoutes);
-server.use('/api/profile', checkAuth, profileRoutes);
-server.use('/api/network', checkAuth, networkRoutes);
-server.use('/api/notifications', checkAuth, notificationRoutes);
-app.prepare().then(() => {
-    
-    server.get('/login', (req, res)=>{
-        const sessionCookie = req.cookies.session;
-        if (sessionCookie){
-            return res.redirect('/feeds');
-        }
-        return app.render(req, res, '/login');
-    })
+// Wait for Next.js to be ready before starting the server
+app.prepare()
+  .then(() => {
+    // API routes
+    server.use('/auth', authRoutes);
+    server.use('/user', checkAuth, userRoutes);
+    server.use('/api/posts', checkAuth, postRoutes);
+    server.use('/api/users', checkAuth, userRoutes);
+    server.use('/api/profile', checkAuth, profileRoutes);
+    server.use('/api/network', checkAuth, networkRoutes);
+    server.use('/api/notifications', checkAuth, notificationRoutes);
 
-  server.get('*', checkAuth, (req, res) => {
-    return handle(req, res);
+    // Handle login route
+    server.get('/login', (req, res) => {
+      const sessionCookie = req.cookies.session;
+      if (sessionCookie) {
+        return res.redirect('/feeds');
+      }
+      return app.render(req, res, '/login');
+    });
+
+    // Handle all other routes
+    server.get('*', checkAuth, (req, res) => {
+      return handle(req, res);
+    });
+
+    // Error handling
+    server.use(errorHandler);
+
+    // Start server
+    server.listen(3000, (err) => {
+      if (err) throw err;
+      console.log('> Ready on http://localhost:3000');
+    });
+  })
+  .catch((err) => {
+    console.error('Error starting server:', err);
+    process.exit(1);
   });
 
-  // Error handling middleware
-  server.use(errorHandler);
-
-  server.listen(3000, (err) => {
-    if (err) throw err;
-    console.log('> Ready on http://localhost:3000');
-  });
-});
-
+// Export for testing
 module.exports = server;
 

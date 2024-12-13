@@ -10,6 +10,7 @@ import {
   Film,
   Image as ImageIcon,
   Send,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import PropTypes from 'prop-types'
@@ -38,6 +39,7 @@ const formatTimeAgo = (timestamp) => {
   return `${years}y ago`
 }
 
+
 // Skeleton loading component
 const PostSkeleton = () => (
   <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
@@ -64,21 +66,30 @@ const PostSkeleton = () => (
   </div>
 )
 
-export default function Post({ post, isLoading }) {
+// Move PostSkeletons before the main Post component
+const PostSkeletons = ({ count = 3 }) => (
+  <div className="space-y-4">
+    {Array.from({ length: count }).map((_, index) => (
+      <PostSkeleton key={`skeleton-${index}`} />
+    ))}
+  </div>
+)
+
+const Post = ({ post, isLoading, onLike, onComment }) => {
   const [isCommenting, setIsCommenting] = useState(false)
   const [comment, setComment] = useState('')
   const [showShareModal, setShowShareModal] = useState(false)
 
+  // Show skeleton loading if post is loading
+  if (isLoading) {
+    return <PostSkeleton />
+  }
 
   // Use a better placeholder image from a reliable CDN
   const avatarSrc = post.avatar || 'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
 
   // Format time in a consistent way
-  const formattedTime = post.timestamp ? formatTimeAgo(post.timestamp) : 'recently'
-
-  // Show skeleton loading if post is loading
-  if (isLoading) {
-    return <PostSkeleton />
+  const formattedTime = post.timeStamp ? formatTimeAgo(post.timeStamp) : 'recently'
 
   // Add console log to debug post data
   console.log('Post data:', post)
@@ -280,7 +291,7 @@ export default function Post({ post, isLoading }) {
       {isCommenting && (
         <div className='border-t bg-gray-50'>
           {/* Comment Form */}
-          <form onSubmit={submitComment} className='p-4 flex gap-3'>
+          <form onSubmit={submitComment} className='p-4 flex gap-3 sticky top-0 bg-gray-50 z-10'>
             <img
               src={post.avatar || avatarSrc}
               alt="Your avatar"
@@ -295,7 +306,7 @@ export default function Post({ post, isLoading }) {
                 className='w-full px-4 py-2 bg-white border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500'
               />
             </div>
-            <button
+            <button 
               type='submit'
               className='p-2 text-indigo-600 hover:bg-indigo-50 rounded-full'
               disabled={!comment.trim()}
@@ -304,9 +315,8 @@ export default function Post({ post, isLoading }) {
             </button>
           </form>
 
-          {/* Comments List */}
-
-          <div className="px-4 pb-4 space-y-4">
+          {/* Comments List with fixed height and scroll */}
+          <div className="px-4 pb-4 space-y-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             {post.comments && post.comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <img
@@ -325,7 +335,8 @@ export default function Post({ post, isLoading }) {
                     <button className="hover:text-gray-700">Reply</button>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -361,19 +372,13 @@ export default function Post({ post, isLoading }) {
   )
 }
 
+// Add Skeletons as a static property
+Post.Skeletons = PostSkeletons
 
-// Add array of skeleton posts for initial loading
-export const PostSkeletons = ({ count = 3 }) => (
-  <div className="space-y-4">
-    {Array.from({ length: count }).map((_, index) => (
-      <PostSkeleton key={`skeleton-${index}`} />
-    ))}
-  </div>
-)
 Post.propTypes = {
   post: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    avatar: PropTypes.string.isRequired,
+    avatar: PropTypes.string,
     content: PropTypes.string.isRequired,
     timestamp: PropTypes.string,
     attachment: PropTypes.string,
@@ -388,7 +393,7 @@ Post.propTypes = {
         author: PropTypes.string.isRequired,
         content: PropTypes.string.isRequired,
         timestamp: PropTypes.string,
-      }),
+      })
     ),
     discussion: PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -397,5 +402,8 @@ Post.propTypes = {
   onLike: PropTypes.func.isRequired,
   onComment: PropTypes.func.isRequired,
   onJoinDiscussion: PropTypes.func,
+  isLoading: PropTypes.bool
 }
+
+export default Post
 
