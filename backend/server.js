@@ -34,6 +34,8 @@ const postRoutes = require('./routes/posts');
 const profileRoutes = require('./routes/profile');
 const networkRoutes = require('./routes/network');
 const notificationRoutes = require('./routes/notification');
+const messageRoutes = require('./routes/messages');
+const workflowRoutes = require('./routes/workflows');
 
 // Import middleware
 const checkAuth = require('./middleware/auth');
@@ -50,6 +52,8 @@ app.prepare()
     server.use('/api/profile', checkAuth, profileRoutes);
     server.use('/api/network', checkAuth, networkRoutes);
     server.use('/api/notifications', checkAuth, notificationRoutes);
+    server.use('/api/messages', checkAuth, messageRoutes);
+    server.use('/api/workflows', checkAuth, workflowRoutes);
 
     // Handle login route
     server.get('/login', (req, res) => {

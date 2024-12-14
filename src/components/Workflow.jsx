@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -11,80 +11,173 @@ import { Plus, User, Menu } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-const initialColumns = {
-  todo: {
-    id: 'todo',
-    title: 'To Do',
-    taskIds: ['task-1', 'task-2', 'task-3'],
-  },
-  inProgress: {
-    id: 'inProgress',
-    title: 'In Progress',
-    taskIds: ['task-4', 'task-5'],
-  },
-  done: {
-    id: 'done',
-    title: 'Done',
-    taskIds: ['task-6'],
-  },
-}
-
-const initialTasks = {
-  'task-1': { id: 'task-1', content: 'Literature review', assignee: null },
-  'task-2': { id: 'task-2', content: 'Data collection', assignee: null },
-  'task-3': { id: 'task-3', content: 'Methodology design', assignee: null },
-  'task-4': { id: 'task-4', content: 'Data analysis', assignee: null },
-  'task-5': { id: 'task-5', content: 'Write introduction', assignee: null },
-  'task-6': { id: 'task-6', content: 'Define research question', assignee: null },
-}
-
-// Mock users data for task assignment
-const allUsers = [
-  { id: 1, name: 'Dr. Afolabi Akorede', avatar: 'https://picsum.photos/seed/afolabi/200' },
-  { id: 2, name: 'Prof. Mohamed Aden Ighe', avatar: 'https://picsum.photos/seed/mohamed/200' },
-  { id: 3, name: 'Dr. Naledi Dikgale', avatar: 'https://picsum.photos/seed/naledi/200' },
-  { id: 4, name: 'Habeeb Efiamotu Musa', avatar: 'https://picsum.photos/seed/habeeb/200' },
-  { id: 5, name: 'Dr. Marvin Nyalik', avatar: 'https://picsum.photos/seed/marvin/200' },
-]
-
 export default function Workflow({ workflow, onToggleSidebar }) {
-  const [columns, setColumns] = useState(initialColumns)
-  const [tasks, setTasks] = useState(initialTasks)
+  const [columns, setColumns] = useState({
+    todo: {
+      id: 'todo',
+      title: 'To Do',
+      taskIds: [],
+    },
+    inProgress: {
+      id: 'inProgress',
+      title: 'In Progress',
+      taskIds: [],
+    },
+    done: {
+      id: 'done',
+      title: 'Done',
+      taskIds: [],
+    }
+  })
+  const [tasks, setTasks] = useState({})
   const [newTaskContent, setNewTaskContent] = useState('')
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const { toast } = useToast()
 
-  const moveTask = (taskId, sourceColumn, targetColumn) => {
-    const updatedColumns = { ...columns }
-    updatedColumns[sourceColumn].taskIds = updatedColumns[sourceColumn].taskIds.filter(id => id !== taskId)
-    updatedColumns[targetColumn].taskIds.push(taskId)
-    setColumns(updatedColumns)
+  useEffect(() => {
+    if (workflow?.tasks) {
+      // Convert workflow tasks to our format
+      const taskMap = {}
+      const columnMap = {
+        todo: { id: 'todo', title: 'To Do', taskIds: [] },
+        inProgress: { id: 'inProgress', title: 'In Progress', taskIds: [] },
+        done: { id: 'done', title: 'Done', taskIds: [] }
+      }
+
+      workflow.tasks.forEach(task => {
+        taskMap[task.id] = {
+          id: task.id,
+          content: task.title,
+          assignee: task.assignedTo ? {
+            id: task.assignedTo,
+            name: task.assignedToName,
+            avatar: task.assignedToAvatar
+          } : null
+        }
+
+        // Add task to appropriate column
+        switch (task.status) {
+          case 'To do':
+            columnMap.todo.taskIds.push(task.id)
+            break
+          case 'In Progress':
+            columnMap.inProgress.taskIds.push(task.id)
+            break
+          case 'Done':
+            columnMap.done.taskIds.push(task.id)
+            break
+        }
+      })
+
+      setTasks(taskMap)
+      setColumns(columnMap)
+    }
+  }, [workflow])
+
+  const moveTask = async (taskId, sourceColumn, targetColumn) => {
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: targetColumn === 'todo' ? 'To do' : 
+                 targetColumn === 'inProgress' ? 'In Progress' : 'Done'
+        }),
+      })
+
+      if (response.ok) {
+        const updatedColumns = { ...columns }
+        updatedColumns[sourceColumn].taskIds = updatedColumns[sourceColumn].taskIds
+          .filter(id => id !== taskId)
+        updatedColumns[targetColumn].taskIds.push(taskId)
+        setColumns(updatedColumns)
+      } else {
+        throw new Error('Failed to update task status')
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to move task',
+        variant: 'destructive',
+      })
+    }
   }
 
-  const addNewTask = () => {
+  const addNewTask = async () => {
     if (newTaskContent.trim() === '') return
 
-    const newTaskId = `task-${Object.keys(tasks).length + 1}`
-    const newTask = { id: newTaskId, content: newTaskContent, assignee: null }
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newTaskContent,
+        }),
+      })
 
-    setTasks({ ...tasks, [newTaskId]: newTask })
-    setColumns({
-      ...columns,
-      todo: { ...columns.todo, taskIds: [...columns.todo.taskIds, newTaskId] },
-    })
+      const data = await response.json()
 
-    setNewTaskContent('')
+      if (response.ok) {
+        const newTaskId = data.task.id
+        const newTask = {
+          id: newTaskId,
+          content: newTaskContent,
+          assignee: null
+        }
+
+        setTasks({ ...tasks, [newTaskId]: newTask })
+        setColumns({
+          ...columns,
+          todo: { ...columns.todo, taskIds: [...columns.todo.taskIds, newTaskId] },
+        })
+        setNewTaskContent('')
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add task',
+        variant: 'destructive',
+      })
+    }
   }
 
-  const assignTask = (taskId, user) => {
-    setTasks({
-      ...tasks,
-      [taskId]: { ...tasks[taskId], assignee: user },
-    })
-    toast({
-      title: 'Task Assigned',
-      description: `Task assigned to ${user.name}`,
-    })
+  const assignTask = async (taskId, user) => {
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}/tasks/${taskId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assignedTo: user.id
+        }),
+      })
+
+      if (response.ok) {
+        setTasks({
+          ...tasks,
+          [taskId]: { ...tasks[taskId], assignee: user },
+        })
+        toast({
+          title: 'Success',
+          description: `Task assigned to ${user.name}`,
+        })
+      } else {
+        throw new Error('Failed to assign task')
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to assign task',
+        variant: 'destructive',
+      })
+    }
     setSelectedTaskId(null)
   }
 
@@ -120,70 +213,73 @@ export default function Workflow({ workflow, onToggleSidebar }) {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[calc(100vh-250px)]">
-                {column.taskIds.map((taskId) => (
-                  <div key={taskId} className="bg-white p-3 mb-2 rounded shadow">
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="text-sm">{tasks[taskId].content}</p>
-                      <Dialog open={selectedTaskId === taskId} onOpenChange={(open) => setSelectedTaskId(open ? taskId : null)}>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            {tasks[taskId].assignee
-                              ? (
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={tasks[taskId].assignee.avatar} />
-                                <AvatarFallback>{tasks[taskId].assignee.name[0]}</AvatarFallback>
-                              </Avatar>
-                                )
-                              : (
-                              <User className="h-4 w-4" />
-                                )}
+                {column.taskIds.map((taskId) => {
+                  const task = tasks[taskId];
+                  if (!task) return null;
+
+                  return (
+                    <div key={taskId} className="bg-white p-3 mb-2 rounded shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm">{task.content}</p>
+                        <Dialog open={selectedTaskId === taskId} onOpenChange={(open) => setSelectedTaskId(open ? taskId : null)}>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              {task.assignee ? (
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={task.assignee?.avatar} />
+                                  <AvatarFallback>{task.assignee?.name?.[0] || '?'}</AvatarFallback>
+                                </Avatar>
+                              ) : (
+                                <User className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Assign Task</DialogTitle>
+                            </DialogHeader>
+                            <Command>
+                              <CommandInput placeholder="Search members..." />
+                              <CommandEmpty>No members found.</CommandEmpty>
+                              <CommandGroup>
+                                {workflow?.participants?.map((user) => (
+                                  <CommandItem
+                                    key={user?.uid || 'default'}
+                                    onSelect={() => assignTask(taskId, user)}
+                                    className="flex items-center"
+                                  >
+                                    <Avatar className="h-6 w-6 mr-2">
+                                      <AvatarImage src={user?.avatar} />
+                                      <AvatarFallback>{user?.name?.[0] || '?'}</AvatarFallback>
+                                    </Avatar>
+                                    {user?.name || 'Unknown User'}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="flex justify-end space-x-1">
+                        {column.id !== 'todo' && (
+                          <Button size="sm" variant="outline" onClick={() => moveTask(taskId, column.id, 'todo')}>
+                            To Do
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Assign Task</DialogTitle>
-                          </DialogHeader>
-                          <Command>
-                            <CommandInput placeholder="Search members..." />
-                            <CommandEmpty>No members found.</CommandEmpty>
-                            <CommandGroup>
-                              {allUsers.map((user) => (
-                                <CommandItem
-                                  key={user.id}
-                                  onSelect={() => assignTask(taskId, user)}
-                                  className="flex items-center"
-                                >
-                                  <Avatar className="h-6 w-6 mr-2">
-                                    <AvatarImage src={user.avatar} />
-                                    <AvatarFallback>{user.name[0]}</AvatarFallback>
-                                  </Avatar>
-                                  {user.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </Command>
-                        </DialogContent>
-                      </Dialog>
+                        )}
+                        {column.id !== 'inProgress' && (
+                          <Button size="sm" variant="outline" onClick={() => moveTask(taskId, column.id, 'inProgress')}>
+                            In Progress
+                          </Button>
+                        )}
+                        {column.id !== 'done' && (
+                          <Button size="sm" variant="outline" onClick={() => moveTask(taskId, column.id, 'done')}>
+                            Done
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex justify-end space-x-1">
-                      {column.id !== 'todo' && (
-                        <Button size="sm" variant="outline" onClick={() => moveTask(taskId, column.id, 'todo')}>
-                          To Do
-                        </Button>
-                      )}
-                      {column.id !== 'inProgress' && (
-                        <Button size="sm" variant="outline" onClick={() => moveTask(taskId, column.id, 'inProgress')}>
-                          In Progress
-                        </Button>
-                      )}
-                      {column.id !== 'done' && (
-                        <Button size="sm" variant="outline" onClick={() => moveTask(taskId, column.id, 'done')}>
-                          Done
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </ScrollArea>
             </CardContent>
           </Card>

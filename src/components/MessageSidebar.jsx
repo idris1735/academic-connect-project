@@ -46,15 +46,16 @@ export default function MessageSidebar({
   const [isCreatingWorkflow, setIsCreatingWorkflow] = useState(false)
   const [rooms, setRooms] = useState({ DM: [], RR: [], GM: [] })
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
+  const [workflows, setWorkflows] = useState([])
+  const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(true)
   const { toast } = useToast()
-
-  const workflows = [
-    { id: 1, name: 'Grant Proposal Review', status: 'In Progress' },
-    { id: 2, name: 'Research Paper Draft', status: 'Under Review' },
-  ]
 
   useEffect(() => {
     fetchRooms()
+  }, [])
+
+  useEffect(() => {
+    fetchWorkflows()
   }, [])
 
   const fetchRooms = async () => {
@@ -81,6 +82,30 @@ export default function MessageSidebar({
     }
   }
 
+  const fetchWorkflows = async () => {
+    try {
+      setIsLoadingWorkflows(true)
+      const response = await fetch('/api/workflows/get_workflows')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+
+      if (data && data.workflows) {
+        setWorkflows(data.workflows)
+      } else {
+        setWorkflows([])
+      }
+    } catch (error) {
+      console.error('Error fetching workflows:', error)
+      setWorkflows([])
+    } finally {
+      setIsLoadingWorkflows(false)
+    }
+  }
+
   const handleCreateRoom = async () => {
     if (newRoomName.trim() === '') {
       toast({
@@ -99,9 +124,9 @@ export default function MessageSidebar({
         },
         body: JSON.stringify({
           name: newRoomName,
-          description: newRoomDescription,
+          description: newRoomDescription || null,
           roomType: 'RR',
-          participants: [] // You might want to add initial participants here
+          participants: []
         }),
       })
 
@@ -112,16 +137,17 @@ export default function MessageSidebar({
         setNewRoomName('')
         setNewRoomDescription('')
         setIsCreatingRoom(false)
-        await fetchRooms() // Refresh the rooms list
+        await fetchRooms()
         
         toast({
-          title: 'Room Created',
+          title: 'Success',
           description: `Your new room "${newRoomName}" has been created successfully.`,
         })
       } else {
-        throw new Error(data.message)
+        throw new Error(data.message || 'Failed to create room')
       }
     } catch (error) {
+      console.error('Error creating room:', error)
       toast({
         title: 'Error',
         description: error.message || 'Failed to create room',
@@ -153,7 +179,7 @@ export default function MessageSidebar({
     workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleCreateWorkflow = () => {
+  const handleCreateWorkflow = async () => {
     if (newWorkflowName.trim() === '') {
       toast({
         title: 'Error',
@@ -162,14 +188,43 @@ export default function MessageSidebar({
       })
       return
     }
-    onCreateWorkflow(newWorkflowName, newWorkflowDescription)
-    setNewWorkflowName('')
-    setNewWorkflowDescription('')
-    setIsCreatingWorkflow(false)
-    toast({
-      title: 'Workflow Created',
-      description: `Your new workflow "${newWorkflowName}" has been created successfully.`,
-    })
+
+    try {
+      const response = await fetch('/api/workflows/create_workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newWorkflowName,
+          description: newWorkflowDescription || null
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        onCreateWorkflow(data.workflow)
+        setNewWorkflowName('')
+        setNewWorkflowDescription('')
+        setIsCreatingWorkflow(false)
+        await fetchWorkflows()
+        
+        toast({
+          title: 'Success',
+          description: `Your new workflow "${newWorkflowName}" has been created successfully.`,
+        })
+      } else {
+        throw new Error(data.message || 'Failed to create workflow')
+      }
+    } catch (error) {
+      console.error('Error creating workflow:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create workflow',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (

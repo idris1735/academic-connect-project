@@ -4,7 +4,7 @@ const { getUserNameByUid } = require('../utils/user');
 
 exports.createMessageRoom = async (req, res) => {
   try {
-    const { roomType, participants, name, postId } = req.body;
+    const { roomType, participants, name, description, postId } = req.body;
     const creatorId = req.user.uid;
 
     // Validate room type
@@ -83,16 +83,15 @@ exports.createMessageRoom = async (req, res) => {
       id: roomRef.id,
       roomType,
       name: roomType === 'DM' ? null : name,
+      description: description || null,
       createdBy: creatorId,
       createdAt: FieldValue.serverTimestamp(),
       participants,
       lastMessage: null,
       lastMessageTime: null,
       isActive: true,
-      // Additional fields for GM and RR
       admins: roomType !== 'DM' ? [creatorId] : null,
-      description: null,
-      avatar: null,
+      avatar: 'https://picsum.photos/seed/sarah/200',
       settings: {
         canParticipantsAdd: roomType === 'RR',
         canParticipantsRemove: false,
@@ -124,16 +123,13 @@ exports.createMessageRoom = async (req, res) => {
       }))
     );
 
-    // Format response data
-    const responseData = {
-      ...roomData,
-      participants: participantDetails,
-      createdAt: new Date().toISOString()
-    };
-
     return res.status(201).json({
       message: 'Message room created successfully',
-      room: responseData
+      room: {
+        ...roomData,
+        participants: participantDetails,
+        createdAt: new Date().toISOString()
+      }
     });
 
   } catch (error) {
