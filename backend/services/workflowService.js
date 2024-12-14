@@ -173,24 +173,27 @@ exports.updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    // Use current timestamp instead of FieldValue.serverTimestamp()
+    const now = new Date().toISOString();
+    
     // Update the task status
     const updatedTasks = [...workflowData.tasks];
     updatedTasks[taskIndex] = {
       ...updatedTasks[taskIndex],
       status,
-      lastUpdate: FieldValue.serverTimestamp()
+      lastUpdate: now
     };
 
     await workflowRef.update({
       tasks: updatedTasks,
-      lastUpdate: FieldValue.serverTimestamp()
+      lastUpdate: FieldValue.serverTimestamp() // This is fine as it's not in an array
     });
 
     return res.status(200).json({
       message: 'Task status updated successfully',
       task: {
         ...updatedTasks[taskIndex],
-        lastUpdate: new Date().toISOString()
+        lastUpdate: now
       }
     });
   } catch (error) {

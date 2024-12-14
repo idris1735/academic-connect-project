@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": " nodemon backend/server.js",
+    "start": "NODE_PATH=. nodemon backend/server.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -32,6 +32,7 @@
     "firebase-admin": "^13.0.1",
     "framer-motion": "^11.12.0",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.453.0",
     "multer": "^1.4.5-lts.1",
     "next": "^15.0.3",
@@ -43,23 +44,14 @@
     "react-redux": "^9.1.2",
     "shadcn-ui": "^0.9.3",
     "socket.io-client": "^4.8.1",
-    "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.4"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^15.1.0",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "^15.1.0",
-    "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-n": "^16.6.2",
-    "eslint-plugin-promise": "^6.6.0",
-    "eslint-plugin-react": "^7.37.2",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.1",
     "postcss": "^8",
-    "prop-types": "^15.8.1",
     "tailwindcss": "^3.4.1"
   }
 }
