@@ -2,8 +2,30 @@ import { CheckCircle, Instagram, Linkedin, Twitter, Globe, Building2, User, MapP
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
+import { useState, useEffect } from 'react'
 
 export function ProfileHeader({ data, isOrganization }) {
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isOwnProfile, setIsOwnProfile] = useState(false)
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/users/current')
+        if (response.ok) {
+          const userData = await response.json()
+          setCurrentUser(userData.user)
+          // Check if current user is the profile owner
+          setIsOwnProfile(userData.user.uid === data.uid)
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error)
+      }
+    }
+
+    fetchCurrentUser()
+  }, [data.uid])
+
   if (!data) {
     return <div>Loading...</div>
   }
@@ -14,7 +36,7 @@ export function ProfileHeader({ data, isOrganization }) {
       return formatDistanceToNow(date, { addSuffix: false })
     } catch (error) {
       console.error('Error formatting date:', error)
-      return dateString // Return original string if formatting fails
+      return dateString
     }
   }
 
@@ -56,12 +78,14 @@ export function ProfileHeader({ data, isOrganization }) {
               <span>Member for {formatMemberSince(data.memberSince)}</span>
             </div>
           </div>
-          <div className="mt-6 flex justify-center space-x-4">
-            <Button className="bg-[#6366F1] hover:bg-[#5355CC]">Connect</Button>
-            <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10">
-              Message
-            </Button>
-          </div>
+          {!isOwnProfile && (
+            <div className="mt-6 flex justify-center space-x-4">
+              <Button className="bg-[#6366F1] hover:bg-[#5355CC]">Connect</Button>
+              <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10">
+                Message
+              </Button>
+            </div>
+          )}
           <div className="mt-6 flex justify-center space-x-6">
             {Object.entries(data.socialLinks).map(([platform, url]) => {
               const Icon = { instagram: Instagram, linkedin: Linkedin, twitter: Twitter, website: Globe }[platform]
