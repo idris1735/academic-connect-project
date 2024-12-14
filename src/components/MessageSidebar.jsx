@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -31,7 +31,6 @@ export default function MessageSidebar({
   onSelectWorkflow,
   onCreateRoom,
   onCreateWorkflow,
-  rooms,
   isSidebarOpen,
   onToggleSidebar,
 }) {
@@ -45,59 +44,44 @@ export default function MessageSidebar({
   const [searchQuery, setSearchQuery] = useState('')
   const [isCreatingRoom, setIsCreatingRoom] = useState(false)
   const [isCreatingWorkflow, setIsCreatingWorkflow] = useState(false)
+  const [rooms, setRooms] = useState({ DM: [], RR: [], GM: [] })
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const { toast } = useToast()
-
-  const directMessages = [
-    {
-      id: 1,
-      name: 'Dr. Afolabi Akorede',
-      avatar: 'https://picsum.photos/seed/afolabi/200',
-      status: 'online',
-    },
-    {
-      id: 2,
-      name: 'Prof. Mohamed Aden Ighe',
-      avatar: 'https://picsum.photos/seed/mohamed/200',
-      status: 'offline',
-    },
-    {
-      id: 3,
-      name: 'Dr. Naledi Dikgale',
-      avatar: 'https://picsum.photos/seed/naledi/200',
-      status: 'offline',
-    },
-    {
-      id: 4,
-      name: 'Habeeb Efiamotu Musa',
-      avatar: 'https://picsum.photos/seed/habeeb/200',
-      status: 'online',
-    },
-    {
-      id: 5,
-      name: 'Dr. Marvin Nyalik',
-      avatar: 'https://picsum.photos/seed/marvin/200',
-      status: 'online',
-    },
-  ]
 
   const workflows = [
     { id: 1, name: 'Grant Proposal Review', status: 'In Progress' },
     { id: 2, name: 'Research Paper Draft', status: 'Under Review' },
   ]
 
-  const filteredDirectMessages = directMessages.filter((dm) =>
-    dm.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  useEffect(() => {
+    fetchRooms()
+  }, [])
 
-  const filteredRooms = rooms.filter((room) =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const fetchRooms = async () => {
+    try {
+      setIsLoadingRooms(true)
+      const response = await fetch('/api/messages/rooms')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
 
-  const filteredWorkflows = workflows.filter((workflow) =>
-    workflow.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+      if (data && data.rooms) {
+        setRooms(data.rooms)
+      } else {
+        setRooms({ DM: [], RR: [], GM: [] })
+      }
+    } catch (error) {
+      console.error('Error fetching rooms:', error)
+      setRooms({ DM: [], RR: [], GM: [] })
+    } finally {
+      setIsLoadingRooms(false)
+    }
+  }
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     if (newRoomName.trim() === '') {
       toast({
         title: 'Error',
@@ -106,15 +90,68 @@ export default function MessageSidebar({
       })
       return
     }
-    onCreateRoom(newRoomName, newRoomDescription)
-    setNewRoomName('')
-    setNewRoomDescription('')
-    setIsCreatingRoom(false)
+
+    try {
+      const response = await fetch('/api/messages/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newRoomName,
+          description: newRoomDescription,
+          roomType: 'RR',
+          participants: [] // You might want to add initial participants here
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        onCreateRoom(data.room)
+        setNewRoomName('')
+        setNewRoomDescription('')
+        setIsCreatingRoom(false)
+        await fetchRooms() // Refresh the rooms list
+        
+        toast({
+          title: 'Room Created',
+          description: `Your new room "${newRoomName}" has been created successfully.`,
+        })
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create room',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value)
+  }
+
+  const handleSendDirectMessage = (message, recipient) => {
     toast({
-      title: 'Room Created',
-      description: `Your new room "${newRoomName}" has been created successfully.`,
+      title: 'Message Sent',
+      description: `Message sent to ${recipient.name}: ${message}`,
     })
   }
+
+  const filteredDirectMessages = rooms.DM?.filter(room =>
+    room.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
+  const filteredRooms = rooms.RR?.filter(room =>
+    room.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
+  const filteredWorkflows = workflows.filter((workflow) =>
+    workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const handleCreateWorkflow = () => {
     if (newWorkflowName.trim() === '') {
@@ -132,17 +169,6 @@ export default function MessageSidebar({
     toast({
       title: 'Workflow Created',
       description: `Your new workflow "${newWorkflowName}" has been created successfully.`,
-    })
-  }
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value)
-  }
-
-  const handleSendDirectMessage = (message, recipient) => {
-    toast({
-      title: 'Message Sent',
-      description: `Message sent to ${recipient.name}: ${message}`,
     })
   }
 
@@ -187,19 +213,18 @@ export default function MessageSidebar({
             expanded={dmsExpanded}
             setExpanded={setDmsExpanded}
             onSelect={onSelectDM}
-            onSendMessage={handleSendDirectMessage}
+            isLoading={isLoadingRooms}
             ItemIcon={({ item }) => (
               <div className='relative'>
                 <Avatar className='h-8 w-8'>
                   <AvatarImage src={item.avatar} alt={item.name} />
-                  <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{item.name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
-                <div
-                  className={cn(
-                    'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white',
-                    item.status === 'online' ? 'bg-green-500' : 'bg-gray-300',
-                  )}
-                />
+                {item.unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white">{item.unreadCount}</span>
+                  </div>
+                )}
               </div>
             )}
           />
@@ -211,6 +236,7 @@ export default function MessageSidebar({
             expanded={researchRoomsExpanded}
             setExpanded={setResearchRoomsExpanded}
             onSelect={onSelectResearchRoom}
+            isLoading={isLoadingRooms}
           />
 
           <SidebarSection
@@ -299,14 +325,6 @@ MessageSidebar.propTypes = {
   onSelectWorkflow: PropTypes.func.isRequired,
   onCreateRoom: PropTypes.func.isRequired,
   onCreateWorkflow: PropTypes.func.isRequired,
-  rooms: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      status: PropTypes.string,
-      members: PropTypes.number,
-    }),
-  ).isRequired,
   isSidebarOpen: PropTypes.bool.isRequired,
   onToggleSidebar: PropTypes.func.isRequired,
 }
@@ -320,6 +338,7 @@ function SidebarSection({
   onSelect,
   onSendMessage,
   ItemIcon,
+  isLoading,
 }) {
   const [newMessage, setNewMessage] = useState('')
 
@@ -392,4 +411,5 @@ SidebarSection.propTypes = {
   onSelect: PropTypes.func.isRequired,
   onSendMessage: PropTypes.func,
   ItemIcon: PropTypes.elementType,
+  isLoading: PropTypes.bool.isRequired,
 }

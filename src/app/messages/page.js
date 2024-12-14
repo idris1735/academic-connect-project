@@ -136,7 +136,6 @@ function MessagesContent() {
     </div>
   )
 }
-
 export default function MessagesPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -144,3 +143,4 @@ export default function MessagesPage() {
     </Suspense>
   )
 }
+
