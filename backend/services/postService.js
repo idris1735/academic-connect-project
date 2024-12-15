@@ -9,7 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.createPost = async (req, res) => {
   try {
-    const { content, category } = req.body;
+    const { content, category, discussionName } = req.body;
     const user = req.user;
     let attachmentUrl = null;
 
@@ -59,7 +59,27 @@ exports.createPost = async (req, res) => {
       likesCount: 0,
       commentsCount: 0,
       attachment: attachmentUrl,
+      discussion: null,
     };
+
+    // If a discussion name is provided, create a discussion object
+    if (discussionName && discussionName.trim()) {
+      const discussionRef = db.collection('discussions').doc();
+      const discussionID = discussionRef.id;
+
+      // Create the discussion document
+      await discussionRef.set({
+        id: discussionID,
+        name: discussionName,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Link the discussion to the post
+      postData.discussion = {
+        id: discussionID,
+        name: discussionName,
+      };
+    }
 
     await postRef.set(postData);
 
@@ -163,6 +183,7 @@ exports.getPosts = async (req, res) => {
         likesCount: postData.likesCount || 0,
         commentsCount: postData.commentsCount || 0,
         comments: comments,
+        discussion: postData.discussion || null, 
         attachment: postData.attachment || null,
         userInfo: {
           author: await getUserNameByUid(postData.uid),

@@ -270,10 +270,9 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
           <span>Comment ({post.commentsCount || 0})</span>
         </button>
 
-        {post && post.discussion && (
+        {post.discussion && post.discussion.id && (
           <Link
             href={`/messages?discussion=${post.discussion.id}`}
-
             className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
           >
             <MessageCircle className='h-5 w-5' />

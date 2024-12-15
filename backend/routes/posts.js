@@ -1,7 +1,7 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const multer = require('multer');
-const postService = require('../services/postService');
+const multer = require("multer");
+const postService = require("../services/postService");
 
 // Configure multer for memory storage
 const upload = multer({
@@ -11,19 +11,25 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Accept images, videos, and documents
-    if (file.mimetype.startsWith('image/') || 
-        file.mimetype.startsWith('video/') ||
-        file.mimetype.startsWith('application/')) {
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype.startsWith("video/") ||
+      file.mimetype.startsWith("application/")
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'), false);
+      cb(new Error("Invalid file type"), false);
     }
-  }
+  },
 });
 
-router.post('/create_post', upload.single('attachment'), postService.createPost);
-router.get('/get_posts', postService.getPosts);
-router.post('/:postId/like', postService.likePost);
-router.post('/:postId/comment', postService.addComment);
+router.post(
+  "/create_post",
+  upload.single("attachment"),
+  postService.createPost
+);
+router.get("/get_posts", postService.getPosts);
+router.post("/:postId/like", postService.likePost);
+router.post("/:postId/comment", postService.addComment);
 
 module.exports = router;

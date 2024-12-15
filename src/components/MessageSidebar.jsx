@@ -234,6 +234,7 @@ export default function MessageSidebar({
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         'md:relative md:translate-x-0',
       )}
+      style={{ height: 'calc(100vh - 64px)' }}
     >
       <div className='flex items-center justify-between p-4 border-b'>
         <h2 className='text-lg font-semibold'>Messages</h2>
@@ -259,7 +260,7 @@ export default function MessageSidebar({
         </div>
       </div>
 
-      <ScrollArea className='flex-1'>
+      <ScrollArea className='flex-1 overflow-y-auto' style={{ maxHeight: 'calc(100vh - 64px - 56px)' }}>
         <div className='px-4'>
           <SidebarSection
             title='Direct Messages'

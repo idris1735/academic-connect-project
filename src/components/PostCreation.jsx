@@ -28,6 +28,10 @@ export default function PostCreation({ onPostCreate }) {
         formData.append('attachment', attachment)
       }
 
+      if (isDiscussionMode && discussionName.trim()) {
+        formData.append('discussionName', discussionName)
+      }
+
       const response = await fetch('/api/posts/create_post', {
         method: 'POST',
         body: formData,
