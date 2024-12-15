@@ -12,6 +12,7 @@ import { ProfileEditForm } from './ProfileEditForm'
 import { PasswordChangeForm } from './PasswordChangeForm'
 import { formatDistanceToNow } from 'date-fns'
 import Post from './Post'
+import { useSearchParams } from 'next/navigation'
 
 const RecentActivities = ({ data }) => {
   const dispatch = useDispatch()
@@ -175,6 +176,51 @@ export function ProfileTabs({ data, isOrganization }) {
   const [isLoadingPubs, setIsLoadingPubs] = useState(false)
   const [isLoadingReviews, setIsLoadingReviews] = useState(false)
   const { posts: cachedPosts, postsLastFetched } = useSelector((state) => state.profile)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const searchParams = useSearchParams()
+  const pid = searchParams.get('pid')
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        console.log('Fetching current user...');
+        console.log('Current pid:', pid);
+        console.log('Current data.uid:', data?.uid);
+        
+        const response = await fetch('/api/users/current')
+        if (response.ok) {
+          const userData = await response.json()
+          console.log('Current user data:', userData);
+          setCurrentUser(userData.user)
+          
+          // Check if this is own profile
+          const isOwn = !pid || userData.user.uid === data?.uid;
+          console.log('Is own profile?', isOwn);
+          setIsOwnProfile(isOwn);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error)
+      }
+    }
+
+    // Only fetch if we have data
+    if (data) {
+      fetchCurrentUser()
+    }
+  }, [data, pid])
+
+  const tabItems = [
+    { value: "overview", label: "Overview" },
+    { value: "publications", label: "Publications" },
+    { value: "peer-reviews", label: "Peer Reviews" },
+    { value: "posts", label: "Posts" },
+    ...((!pid || isOwnProfile) ? [{ value: "settings", label: "Settings" }] : []),
+    ...(isOrganization ? [{ value: "members", label: "Members" }] : [])
+  ]
+
+  console.log('isOwnProfile:', isOwnProfile);
+  console.log('Current tab items:', tabItems);
 
   useEffect(() => {
     if (activeTab === 'posts' && data?.uid) {
@@ -348,15 +394,6 @@ export function ProfileTabs({ data, isOrganization }) {
       } : post
     ))
   }
-
-  const tabItems = [
-    { value: "overview", label: "Overview" },
-    { value: "publications", label: "Publications" },
-    { value: "peer-reviews", label: "Peer Reviews" },
-    { value: "posts", label: "Posts" },
-    { value: "settings", label: "Settings" },
-    ...(isOrganization ? [{ value: "members", label: "Members" }] : [])
-  ]
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
@@ -540,40 +577,42 @@ export function ProfileTabs({ data, isOrganization }) {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="settings">
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <div className="space-y-8">
-                {isEditing ? (
-                  <ProfileEditForm />
-                ) : (
-                  <>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Settings</h3>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Profile Views</span>
-                          <span className="text-sm font-medium">{data.profileViews || 0}</span>
+        {(!pid || isOwnProfile) && (
+          <TabsContent value="settings">
+            <Card className="border-none shadow-lg">
+              <CardContent className="p-6">
+                <div className="space-y-8">
+                  {isEditing ? (
+                    <ProfileEditForm />
+                  ) : (
+                    <>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Settings</h3>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Profile Views</span>
+                            <span className="text-sm font-medium">{data.profileViews || 0}</span>
+                          </div>
+                          <Button 
+                            className="w-full bg-[#6366F1] hover:bg-[#5355CC]"
+                            onClick={() => dispatch(toggleEditMode())}
+                          >
+                            Edit Profile
+                          </Button>
                         </div>
-                        <Button 
-                          className="w-full bg-[#6366F1] hover:bg-[#5355CC]"
-                          onClick={() => dispatch(toggleEditMode())}
-                        >
-                          Edit Profile
-                        </Button>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-                      <PasswordChangeForm />
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                      
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+                        <PasswordChangeForm />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

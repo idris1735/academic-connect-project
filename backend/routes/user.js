@@ -5,8 +5,7 @@ const userService = require('../services/userService');
 router.get('/profile', userService.getUserProfile);
 router.put('/update_profile', userService.updateUserProfile);
 router.get('/current', userService.getCurrentUser);
-router.post('/connect/:userId', userService.connectWithUser);
-router.get('/connection-status/:userId', userService.getConnectionStatus);
+
 
 module.exports = router;
 

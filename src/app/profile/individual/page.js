@@ -4,19 +4,22 @@ import { useEffect, useState } from 'react'
 import { IndividualProfilePage } from '@/components/IndividualProfile'
 import NavComponent from '../../../components/NavComponent'
 import { useSearchParams } from 'next/navigation'
-import { Check, X, Loader2 } from 'lucide-react'
 
 export default function IndividualProfilePreview() {
   const [profileData, setProfileData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const searchParams = useSearchParams()
-  const userId = searchParams.get('userId')
+  const pid = searchParams.get('pid')
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/profile/individual')
+        const endpoint = pid 
+          ? `/api/profile/individual?pid=${pid}`
+          : '/api/profile/individual'
+
+        const response = await fetch(endpoint)
 
         if (!response.ok) {
           throw new Error('Failed to fetch profile')
@@ -32,8 +35,8 @@ export default function IndividualProfilePreview() {
     }
 
     fetchProfile()
-  }, [userId])
-  
+  }, [pid])
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -42,6 +45,7 @@ export default function IndividualProfilePreview() {
       </div>
     )
   }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <NavComponent />

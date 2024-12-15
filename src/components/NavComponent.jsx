@@ -139,7 +139,7 @@ export default function NavComponent() {
   const handleSelectUser = (userId) => {
     setIsSearchOpen(false)
     setSearchQuery('')
-    router.push(`/profile/${userId}`)
+    window.location.href = `/profile/individual?pid=${userId}`
   }
 
   // Handle search input change
@@ -150,9 +150,14 @@ export default function NavComponent() {
 
 
   // Add a click handler for navigation
+  // TODO: If there's a way to do this without reloading the page, do it.
   const handleNavigation = (e, href) => {
     e.preventDefault()
-    router.push(href)
+    if (href === '/profile/individual') {
+      window.location.href = href // Force a full reload without pid
+    } else {
+      router.push(href)
+    }
   }
   // ... previous state declarations and navItems remain the same ...
 

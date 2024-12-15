@@ -3,10 +3,11 @@ const { getUserNameByUid, getRecentActivity, formatActivityForDisplay } = requir
 
 exports.getProfileIndividual = async (req, res) => {
   try {
-    const userId = req.user.uid
+    // Check for pid in query params first, fallback to current user's uid
+    const userId = req.query.pid || req.user.uid;
     
     if (!userId) {
-      return res.status(400).json({ message: 'User ID not found in request body' });
+      return res.status(400).json({ message: 'User ID not found' });
     }
 
     // Get base profile data without activities
