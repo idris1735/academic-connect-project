@@ -2,17 +2,31 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const notificationsSlice = createSlice({
   name: 'notifications',
-  initialState: [],
+  initialState: {
+    items: [],
+    loading: false,
+    error: null
+  },
   reducers: {
     addNotification: (state, action) => {
-      state.push(action.payload);
+      state.items.unshift(action.payload);
     },
-    clearNotifications: (state) => {
-      return []; // Clear all notifications
+    setNotifications: (state, action) => {
+      state.items = action.payload;
     },
-    // Other reducers can be added here...
+    markAsRead: (state, action) => {
+      const notification = state.items.find(n => n.id === action.payload);
+      if (notification) {
+        notification.read = true;
+      }
+    },
+    markAllAsRead: (state) => {
+      state.items.forEach(notification => {
+        notification.read = true;
+      });
+    }
   },
 });
 
-export const { addNotification, clearNotifications } = notificationsSlice.actions;
+export const { addNotification, setNotifications, markAsRead, markAllAsRead } = notificationsSlice.actions;
 export default notificationsSlice.reducer; 

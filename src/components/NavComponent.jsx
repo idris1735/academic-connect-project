@@ -11,6 +11,11 @@ import { Input } from '@/components/ui/input'
 import { dummyNotifications } from '@/lib/dummyNotifications'
 import { fetchWithErrorHandling } from '@/lib/api'
 import { useNavigationLoading } from '@/hooks/UseNavigationLoading'
+import { useSelector } from 'react-redux'
+import { useNotifications } from '@/hooks/useNotifications'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { formatDistanceToNow } from 'date-fns'
 
 // Dummy data for testing
 const dummyUsers = [
@@ -46,8 +51,44 @@ const dummyUsers = [
   },
 ]
 
-// ... previous imports and dummy data remain the same ...
-// ... previous imports remain the same ...
+// Update the formatTimeAgo helper function
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return 'just now';
+
+  try {
+    let date;
+    
+    // Handle Firestore Timestamp
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      date = timestamp.toDate();
+    }
+    // Handle string timestamp
+    else if (typeof timestamp === 'string') {
+      date = new Date(timestamp);
+    }
+    // Handle Date object
+    else if (timestamp instanceof Date) {
+      date = timestamp;
+    }
+    // Handle number (timestamp in milliseconds)
+    else if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    }
+    else {
+      return 'just now';
+    }
+
+    // Verify the date is valid
+    if (isNaN(date.getTime())) {
+      return 'just now';
+    }
+
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'just now';
+  }
+};
 
 export default function NavComponent() {
   const pathname = usePathname()
@@ -55,34 +96,14 @@ export default function NavComponent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
   const [users, setUsers] = useState([])
   const [filteredUsers, setFilteredUsers] = useState([])
   const isLoading = useNavigationLoading()
+  const notifications = useSelector(state => state?.notifications?.items) || [];
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  useEffect(() => {
-    // For testing with dummy data
-    // const unreadNotifications = dummyNotifications.filter(n => !n.read).length
-    // setUnreadCount(unreadNotifications)
-
-    // Real API implementation (commented out)
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await fetch('/api/notifications/get_notifications')
-        if (!response.ok) throw new Error('Failed to fetch notifications')
-        const data = await response.json()
-        const unreadCount = data.notifications.filter(n => !n.read).length
-        setUnreadCount(unreadCount)
-      } catch (error) {
-        console.error('Error fetching unread count:', error)
-        setUnreadCount(0) // Fallback to 0 on error
-      }
-    }
-
-    fetchUnreadCount()
-    const interval = setInterval(fetchUnreadCount, 30000) // Poll every 30 seconds
-    return () => clearInterval(interval) // Cleanup on unmount
-  }, [])
+  // Add the notifications hook
+  useNotifications();
 
   // Fetch users on component mount
   useEffect(() => {
@@ -220,26 +241,27 @@ export default function NavComponent() {
           {/* Desktop Navigation Items */}
           <div className="hidden md:flex items-center space-x-4">
             {navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={(e) => handleNavigation(e, item.href)}
-                className={`flex flex-col items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  pathname === item.href
-                    ? 'text-indigo-600 bg-blue-50'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <div className="relative">
-                  <item.icon className="h-6 w-6 mb-1" />
-                  {item.count && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {item.count}
-                    </span>
-                  )}
-                </div>
-                <span>{item.label}</span>
-              </a>
+              <div key={item.href} className="relative">
+                <a
+                  href={item.href}
+                  onClick={(e) => handleNavigation(e, item.href)}
+                  className={`flex flex-col items-center px-3 py-2 text-sm font-medium rounded-md ${
+                    pathname === item.href
+                      ? 'text-indigo-600 bg-blue-50'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="relative">
+                    <item.icon className="h-6 w-6 mb-1" />
+                    {item.count && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {item.count}
+                      </span>
+                    )}
+                  </div>
+                  <span>{item.label}</span>
+                </a>
+              </div>
             ))}
           </div>
 

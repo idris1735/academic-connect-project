@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const { auth } = require('./config/firebase');
 const admin = require('./config/firebase');
+const socketService = require('./services/socketService');
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -74,10 +75,16 @@ app.prepare()
     server.use(errorHandler);
 
     // Start server
-    server.listen(3000, (err) => {
+    const httpServer = server.listen(3000, (err) => {
       if (err) throw err;
       console.log('> Ready on http://localhost:3000');
     });
+
+    // Initialize socket service
+    socketService.initialize(httpServer);
+
+    // Export for use in other services
+    exports.socketServer = socketService;
   })
   .catch((err) => {
     console.error('Error starting server:', err);

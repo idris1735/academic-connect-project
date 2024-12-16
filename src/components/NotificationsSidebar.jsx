@@ -1,77 +1,45 @@
 'use client'
 
-import { Bell, Briefcase, Users, Star, Settings } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Bell, MessageSquare, Users, Briefcase, Settings } from 'lucide-react'
+import { useSelector } from 'react-redux'
 
 export default function NotificationsSidebar({ activeFilter, setActiveFilter }) {
-  const [counts, setCounts] = useState({
-    all: 0,
-    projects: 0,
-    connections: 0,
-    mentions: 0,
-  })
-
-  useEffect(() => {
-    // // Calculate counts from dummy data
-    // const categoryCounts = dummyNotifications.reduce((acc, notification) => {
-    //   if (!notification.read) {
-    //     acc.all += 1
-    //     switch (notification.type) {
-    //       case 'CONNECTION_REQUEST':
-    //         acc.connections += 1
-    //         break
-    //       case 'MESSAGE':
-    //         acc.mentions += 1
-    //         break
-    //       case 'PROJECT':
-    //         acc.projects += 1
-    //         break
-    //     }
-    //   }
-    //   return acc
-    // }, { all: 0, projects: 0, connections: 0, mentions: 0 })
-
-    // setCounts(categoryCounts)
-
-    // Real API implementation (commented out)
-    const fetchNotificationCounts = async () => {
-      try {
-        const response = await fetch('/api/notifications/get_notifications')
-        if (!response.ok) throw new Error('Failed to fetch notifications')
-        const data = await response.json()
-        const categoryCounts = data.notifications.reduce((acc, notification) => {
-          if (!notification.read) {
-            acc.all += 1
-            switch (notification.type) {
-              case 'CONNECTION_REQUEST':
-                acc.connections += 1
-                break
-              case 'MESSAGE':
-                acc.mentions += 1
-                break
-              case 'PROJECT':
-                acc.projects += 1
-                break
-            }
-          }
-          return acc
-        }, { all: 0, projects: 0, connections: 0, mentions: 0 })
-        setCounts(categoryCounts)
-      } catch (error) {
-        console.error('Error fetching notification counts:', error)
-      }
-    }
-
-    fetchNotificationCounts()
-    const interval = setInterval(fetchNotificationCounts, 30000)
-    return () => clearInterval(interval)
-  }, [])
+  const notifications = useSelector(state => state?.notifications?.items) || [];
 
   const filters = [
-    { icon: Bell, label: 'All', value: 'all', count: counts.all },
-    { icon: Briefcase, label: 'My projects', value: 'projects', count: counts.projects },
-    { icon: Users, label: 'Connections', value: 'connections', count: counts.connections },
-    { icon: Star, label: 'Mentions', value: 'mentions', count: counts.mentions },
+    {
+      id: 'all',
+      label: 'All Notifications',
+      icon: Bell,
+      count: notifications.filter(n => !n.read).length
+    },
+    {
+      id: 'interactions',
+      label: 'Interactions',
+      icon: MessageSquare,
+      count: notifications.filter(n => 
+        !n.read && 
+        (n.type === 'POST_LIKE' || n.type === 'POST_COMMENT')
+      ).length
+    },
+    {
+      id: 'connections',
+      label: 'Connection Requests',
+      icon: Users,
+      count: notifications?.filter(n => 
+        !n.read && 
+        n.type === 'CONNECTION_REQUEST'
+      ).length || 0
+    },
+    {
+      id: 'projects',
+      label: 'Research & Projects',
+      icon: Briefcase,
+      count: notifications?.filter(n => 
+        !n.read && 
+        (n.type === 'WORKFLOW_ASSIGNMENT' || n.type === 'RESEARCH_ROOM_INVITE')
+      ).length || 0
+    }
   ]
 
   return (
@@ -80,11 +48,11 @@ export default function NotificationsSidebar({ activeFilter, setActiveFilter }) 
       <nav>
         <ul className="space-y-2">
           {filters.map((filter) => (
-            <li key={filter.value}>
+            <li key={filter.id}>
               <button
-                onClick={() => setActiveFilter(filter.value)}
+                onClick={() => setActiveFilter(filter.id)}
                 className={`w-full flex items-center justify-between p-2 rounded-md ${
-                  activeFilter === filter.value
+                  activeFilter === filter.id
                     ? 'bg-indigo-50 text-indigo-600'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}

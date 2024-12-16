@@ -6,6 +6,7 @@ const { query } = require('firebase/firestore');
 const { getUserNameByUid } = require('../utils/user');
 const { admin, storage } = require('../config/firebase');
 const { v4: uuidv4 } = require('uuid');
+const notificationService = require('../services/notificationService');
 
 exports.createPost = async (req, res) => {
   try {
@@ -223,6 +224,11 @@ exports.likePost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
+    // Get post content first
+    const contentDoc = await postRef.collection('postContent')
+      .limit(1)
+      .get();
+
     // Check if user has already liked the post
     const likeRef = postRef.collection('likes').doc(userId);
     const likeDoc = await likeRef.get();
@@ -235,6 +241,24 @@ exports.likePost = async (req, res) => {
         likesCount: FieldValue.increment(-1)
       });
       newLikeCount = (postDoc.data().likesCount || 1) - 1;
+
+      // Delete the notification
+      const notificationsRef = db.collection('notifications')
+        .doc(postDoc.data().uid)
+        .collection('user_notifications')
+        .where('type', '==', 'POST_LIKE')
+        .where('data.postId', '==', postId)
+        .where('data.senderId', '==', userId);
+
+      const notificationDocs = await notificationsRef.get();
+      
+      // Delete all matching notifications in a batch
+      const batch = db.batch();
+      notificationDocs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
     } else {
       // Add new like
       await likeRef.set({
@@ -245,16 +269,24 @@ exports.likePost = async (req, res) => {
         likesCount: FieldValue.increment(1)
       });
       newLikeCount = (postDoc.data().likesCount || 0) + 1;
-    }
 
-    // Get the updated post document
-    const updatedPostDoc = await postRef.get();
-    const currentLikesCount = updatedPostDoc.data().likesCount;
+      // Create notification for post owner
+      if (postDoc.data().uid === userId) {    // Change this to postDoc.data().uid !== userId
+        await notificationService.createNotification(postDoc.data().uid, 'POST_LIKE', {
+          senderId: userId,
+          senderName: await getUserNameByUid(userId),
+          postId: postId,
+          postContent: contentDoc.docs[0]?.data()?.content || '',
+          message: 'liked your post',
+          timestamp: new Date()
+        });
+      }
+    }
 
     return res.status(200).json({ 
       message: likeDoc.exists ? 'Like removed' : 'Post liked',
       liked: !likeDoc.exists,
-      likesCount: currentLikesCount
+      likesCount: newLikeCount
     });
   } catch (error) {
     console.error('Error liking post:', error);
@@ -275,6 +307,11 @@ exports.addComment = async (req, res) => {
     if (!postDoc.exists) {
       return res.status(404).json({ message: 'Post not found' });
     }
+
+    // Get post content first
+    const contentDoc = await postRef.collection('postContent')
+      .limit(1)
+      .get();
 
     // Create new comment
     const commentRef = postRef.collection('comments').doc();
@@ -299,10 +336,24 @@ exports.addComment = async (req, res) => {
       commentsCount: FieldValue.increment(1)
     });
 
-    // Prepare the response data
+    // Create notification for post owner
+    if (postDoc.data().uid === userId) {   // Change this to postDoc.data().uid !== userId
+      await notificationService.createNotification(postDoc.data().uid, 'POST_COMMENT', {
+        senderId: userId,
+        senderName: await getUserNameByUid(userId),
+        postId: postId,
+        commentId: commentId,
+        commentContent: content,
+        postContent: contentDoc.docs[0]?.data()?.content || '',
+        message: 'commented on your post',
+        timestamp: new Date()
+      });
+    }
+
+    // Prepare the response data with the current timestamp
     const responseComment = {
       ...commentData,
-      timestamp: new Date().toISOString() // Use current time for immediate display
+      timestamp: new Date().toISOString()
     };
 
     return res.status(200).json({ 

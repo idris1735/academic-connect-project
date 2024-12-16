@@ -1,13 +1,36 @@
 const { db } = require('../config/database');
+const socketService = require('./socketService');
 
-exports.createNotification = async (userId, notification) => {
+const NOTIFICATION_TYPES = {
+  CONNECTION_REQUEST: 'CONNECTION_REQUEST',
+  POST_LIKE: 'POST_LIKE',
+  POST_COMMENT: 'POST_COMMENT',
+  DISCUSSION_MENTION: 'DISCUSSION_MENTION',
+  WORKFLOW_ASSIGNMENT: 'WORKFLOW_ASSIGNMENT',
+  RESEARCH_ROOM_INVITE: 'RESEARCH_ROOM_INVITE',
+  PUBLICATION_CITATION: 'PUBLICATION_CITATION'
+};
+
+exports.createNotification = async (userId, type, data) => {
   try {
-    const notificationRef = db.collection('notifications').doc(userId).collection('user_notifications');
-    await notificationRef.add({
-      ...notification,
+    const notificationRef = db.collection('notifications')
+      .doc(userId)
+      .collection('user_notifications')
+      .doc();
+
+    const notification = {
+      id: notificationRef.id,
+      type,
+      data,
       createdAt: new Date(),
       read: false
-    });
+    };
+
+    await notificationRef.set(notification);
+
+    // Emit real-time notification with the ID
+    socketService.emitToUser(userId, 'notification', notification);
+
   } catch (error) {
     console.error('Error creating notification:', error);
     throw error;
@@ -45,15 +68,58 @@ exports.markAsRead = async (req, res) => {
     const userId = req.user.uid;
     const { notificationId } = req.body;
 
-    await db.collection('notifications')
+    const notificationRef = db.collection('notifications')
       .doc(userId)
       .collection('user_notifications')
-      .doc(notificationId)
-      .update({ read: true });
+      .doc(notificationId);
 
-    return res.status(200).json({ message: 'Notification marked as read' });
+    await notificationRef.update({
+      read: true,
+      readAt: new Date()
+    });
+
+    return res.status(200).json({ 
+      message: 'Notification marked as read',
+      notificationId 
+    });
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    return res.status(500).json({ message: 'Failed to mark notification as read' });
+    return res.status(500).json({ 
+      message: 'Failed to mark notification as read',
+      error: error.message 
+    });
+  }
+};
+
+exports.markAllAsRead = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const batch = db.batch();
+
+    const notificationsRef = db.collection('notifications')
+      .doc(userId)
+      .collection('user_notifications')
+      .where('read', '==', false);
+
+    const unreadNotifications = await notificationsRef.get();
+
+    unreadNotifications.docs.forEach(doc => {
+      batch.update(doc.ref, { 
+        read: true,
+        readAt: new Date()
+      });
+    });
+
+    await batch.commit();
+
+    return res.status(200).json({ 
+      message: 'All notifications marked as read' 
+    });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    return res.status(500).json({ 
+      message: 'Failed to mark all notifications as read',
+      error: error.message 
+    });
   }
 };
