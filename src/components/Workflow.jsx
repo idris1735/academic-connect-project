@@ -181,6 +181,41 @@ export default function Workflow({ workflow, onToggleSidebar }) {
     setSelectedTaskId(null)
   }
 
+  const handleCreateWorkflow = async (name, description) => {
+    try {
+      const response = await fetch('/api/workflows/create_workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, description }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: 'Workflow Created',
+          description: `Your new workflow "${data.workflow.name}" has been created successfully.`,
+        });
+        // Optionally, refresh the workflow list or update state
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: 'Error',
+          description: errorData.message || 'Failed to create workflow.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error creating workflow:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred while creating the workflow.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="p-4 bg-white h-full">
       <div className="flex items-center justify-between mb-4">

@@ -71,12 +71,7 @@ export default function NotificationsSidebar({ activeFilter, setActiveFilter }) 
           ))}
         </ul>
       </nav>
-      <div className="mt-6">
-        <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800">
-          <Settings className="h-5 w-5" />
-          <span>View settings</span>
-        </button>
-      </div>
+     
     </aside>
   )
 }
