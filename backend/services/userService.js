@@ -13,12 +13,21 @@ exports.getUserProfile = async (req, res) => {
     }
 
     const userData = userDoc.data();
-    console.log(userData)
+    console.log('user', userData)
+
+    // Calculate total connections count
+    const totalConnections = (
+      (userData.connections?.accepted?.length || 0) + 
+      (userData.connections?.pending?.received?.length || 0) + 
+      (userData.connections?.pending?.sent?.length || 0)
+    );
+
     const profile = {
       name: userData.displayName || '',
       title: userData.occupation || 'Research Assistant',
       views: userData.profileViews || 0,
-      connections: userData.connections || 0,
+      connections: totalConnections, // Send the count instead of the object
+      pendingRequests: userData.connectionStats?.pendingRequests || 0,
       // Add any other profile fields you need
     };
 

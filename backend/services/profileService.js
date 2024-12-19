@@ -109,5 +109,5 @@ exports.getProfiles = async (req, res) => {
     });
   }
 
-  return res.status(200).json({ profiles: profileList });
+  return res.status(200).json({ profileList: profileList });
 };

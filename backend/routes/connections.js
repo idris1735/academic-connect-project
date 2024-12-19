@@ -2,7 +2,19 @@ const express = require('express');
 const router = express.Router();
 const connectionService = require('../services/connectionService');
 
-router.post('/connect/:userId', connectionService.connectWithUser);
-router.get('/connection-status/:userId', connectionService.getConnectionStatus);
+// Send connection request
+router.post('/request/:userId', connectionService.connectWithUser);
+
+// Accept/Reject connection request
+router.post('/respond/:connectionId', connectionService.respondToRequest);
+
+// Get connection status
+router.get('/status/:userId', connectionService.getConnectionStatus);
+
+// Get pending requests
+router.get('/pending', connectionService.getPendingRequests);
+
+// Get mutual connections
+router.get('/mutual/:userId', connectionService.getMutualConnections);
 
 module.exports = router;

@@ -9,11 +9,12 @@ import PostCreation from '../../components/PostCreation'
 import Post from '@/components/Post'
 import RightSidebar from '../../components/RightSidebar'
 import SearchBar from '../../components/SearchBar'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 
 export default function FeedsPage() {
   const dispatch = useDispatch()
   const [posts, setPosts] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -27,23 +28,26 @@ export default function FeedsPage() {
       try {
         setIsLoading(true)
         const response = await fetch(`/api/posts/get_posts?page=1&limit=${POSTS_PER_PAGE}`)
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts')
+        }
+        
         const data = await response.json()
         
         if (response.ok) {
           const enrichedPosts = data.posts.map((post) => ({
             ...post,
-            authorTitle: 'Research Assistant | Computer Science | MIT',
-            authorLocation: 'Cambridge, MA',
+            authorTitle: post.userInfo?.occupation || 'Research Assistant',
+            authorLocation: post.userInfo?.location || 'Unknown Location',
             connectionDegree: '1st',
-            avatar: 'https://picsum.photos/seed/currentuser/200',
-            timestamp: post.timestamp || new Date().toISOString(),
+            avatar: post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
+            timestamp: post.timeStamp || new Date().toISOString(),
           }))
 
           setPosts(enrichedPosts)
-          setHasMore(enrichedPosts.length === POSTS_PER_PAGE)
-          setPage(2) // Set to 2 for next fetch
-        } else {
-          console.error('Failed to fetch posts:', data.message)
+          setHasMore(data.hasMore)
+          setPage(2)
         }
       } catch (error) {
         console.error('Error fetching initial posts:', error)
@@ -54,7 +58,7 @@ export default function FeedsPage() {
     }
 
     initialFetch()
-  }, []) // Empty dependency array for initial load
+  }, [])
 
   const fetchPosts = async () => {
     if (!hasMore || isLoading) return;
@@ -184,6 +188,10 @@ export default function FeedsPage() {
              post.content.toLowerCase().includes(searchQuery.toLowerCase())
     })
 
+  if (isInitialLoad) {
+    return <LoadingSpinner />
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <NavComponent />
@@ -213,27 +221,21 @@ export default function FeedsPage() {
               </div>
 
               <div className="space-y-4 bg-gray-50 rounded-lg p-4">
-                {isInitialLoad ? (
-                  <Post.Skeletons count={POSTS_PER_PAGE} />
-                ) : (
-                  <>
-                    {filteredPosts.map(post => (
-                      <Post 
-                        key={post.id} 
-                        post={post}
-                        onLike={handleLike}
-                        onComment={handleComment}
-                      />
-                    ))}
-                    
-                    {isLoading && <Post.Skeletons count={2} />}
-                    
-                    {!hasMore && posts.length > 0 && (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No more posts to load</p>
-                      </div>
-                    )}
-                  </>
+                {filteredPosts.map(post => (
+                  <Post 
+                    key={post.id} 
+                    post={post}
+                    onLike={handleLike}
+                    onComment={handleComment}
+                  />
+                ))}
+                
+                {isLoading && <Post.Skeletons count={2} />}
+                
+                {!hasMore && posts.length > 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No more posts to load</p>
+                  </div>
                 )}
               </div>
             </div>

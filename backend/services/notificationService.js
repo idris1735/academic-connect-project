@@ -1,8 +1,10 @@
 const { db } = require('../config/database');
 const socketService = require('./socketService');
+const admin = require('firebase-admin');
 
 const NOTIFICATION_TYPES = {
   CONNECTION_REQUEST: 'CONNECTION_REQUEST',
+  CONNECTION_ACCEPTED: 'CONNECTION_ACCEPTED',
   POST_LIKE: 'POST_LIKE',
   POST_COMMENT: 'POST_COMMENT',
   DISCUSSION_MENTION: 'DISCUSSION_MENTION',
@@ -22,14 +24,20 @@ exports.createNotification = async (userId, type, data) => {
       id: notificationRef.id,
       type,
       data,
-      createdAt: new Date(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       read: false
     };
 
     await notificationRef.set(notification);
 
+    // Convert serverTimestamp to Date for the socket emission
+    const notificationWithDate = {
+      ...notification,
+      createdAt: new Date().toISOString()
+    };
+
     // Emit real-time notification with the ID
-    socketService.emitToUser(userId, 'notification', notification);
+    socketService.emitToUser(userId, 'notification', notificationWithDate);
 
   } catch (error) {
     console.error('Error creating notification:', error);

@@ -278,7 +278,7 @@ exports.likePost = async (req, res) => {
           postId: postId,
           postContent: contentDoc.docs[0]?.data()?.content || '',
           message: 'liked your post',
-          timestamp: new Date()
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
       }
     }
@@ -346,7 +346,7 @@ exports.addComment = async (req, res) => {
         commentContent: content,
         postContent: contentDoc.docs[0]?.data()?.content || '',
         message: 'commented on your post',
-        timestamp: new Date()
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
     }
 

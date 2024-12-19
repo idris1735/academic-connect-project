@@ -111,8 +111,8 @@ export default function NavComponent() {
       try {
         const response = await fetchWithErrorHandling('/api/profile/get_profiles')
         if (response) {
-          setUsers(response.profiles)
-          console.log(response.profiles)
+          setUsers(response.profileList)
+          console.log(response.profileList)
         }
       } catch (error) {
         console.error('Error fetching users:', error)
