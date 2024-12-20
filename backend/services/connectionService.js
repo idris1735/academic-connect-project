@@ -17,7 +17,41 @@ exports.connectWithUser = async (req, res) => {
       return res.status(404).json({ message: 'One or both profiles not found' });
     }
 
-    // Create connection request document
+
+    // Check if the current user has already sent a request to the target user
+    const existingSentRequest = await db.collection('connections')
+      .where('senderId', '==', currentUserId)
+      .where('receiverId', '==', targetUserId)
+      .where('status', '==', 'pending')
+      .get();
+
+    if (!existingSentRequest.empty) {
+      return res.status(400).json({ message: 'Connection request already sent' });
+    }
+
+    // Check if the target user has already sent a request to the current user
+    const existingReceivedRequest = await db.collection('connections')
+      .where('senderId', '==', targetUserId)
+      .where('receiverId', '==', currentUserId)
+      .where('status', '==', 'pending')
+      .get();
+
+    if (!existingReceivedRequest.empty) {
+      return res.status(400).json({ message: 'You have already received a connection request from this user' });
+    }
+
+    // Check if the users are already connected
+    const existingConnection = await db.collection('connections')
+      .where('senderId', 'in', [currentUserId, targetUserId])
+      .where('receiverId', 'in', [currentUserId, targetUserId])
+      .where('status', '==', 'accepted')
+      .get();
+
+    if (!existingConnection.empty) {
+      return res.status(400).json({ message: 'You are already connected with this user' });
+    }
+
+    // Proceed with creating the connection request
     const connectionRef = db.collection('connections').doc();
     const connectionData = {
       id: connectionRef.id,
@@ -72,7 +106,7 @@ exports.connectWithUser = async (req, res) => {
 exports.respondToRequest = async (req, res) => {
   try {
     const currentUserId = req.user.uid;
-    const { connectionId } = req.params;
+    const { connectionId } = req.body;
     const { accept } = req.body;
 
     const connectionRef = db.collection('connections').doc(connectionId);
@@ -99,7 +133,7 @@ exports.respondToRequest = async (req, res) => {
     if (accept) {
       // Update receiver's profile
       batch.update(receiverProfile.ref, {
-        'connections.accepted': admin.firestore.FieldValue.arrayUnion(connectionData.senderId),
+        'connections.connected': admin.firestore.FieldValue.arrayUnion(connectionData.senderId),
         'connections.pending.received': admin.firestore.FieldValue.arrayRemove(connectionData.senderId),
         'connectionStats.totalConnections': admin.firestore.FieldValue.increment(1),
         'connectionStats.pendingRequests': admin.firestore.FieldValue.increment(-1)
@@ -107,7 +141,7 @@ exports.respondToRequest = async (req, res) => {
 
       // Update sender's profile
       batch.update(senderProfile.ref, {
-        'connections.accepted': admin.firestore.FieldValue.arrayUnion(currentUserId),
+        'connections.connected': admin.firestore.FieldValue.arrayUnion(currentUserId),
         'connections.pending.sent': admin.firestore.FieldValue.arrayRemove(currentUserId),
         'connectionStats.totalConnections': admin.firestore.FieldValue.increment(1),
         'connectionStats.pendingRequests': admin.firestore.FieldValue.increment(-1)
@@ -120,6 +154,26 @@ exports.respondToRequest = async (req, res) => {
         message: 'accepted your connection request',
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
+    } else {
+      batch.update(receiverProfile.ref, {
+        'connections.pending.received': admin.firestore.FieldValue.arrayRemove(connectionData.senderId),
+        'connectionStats.pendingRequests': admin.firestore.FieldValue.increment(-1)
+      });
+
+      // Update sender's profile
+      batch.update(senderProfile.ref, {
+        'connections.pending.sent': admin.firestore.FieldValue.arrayRemove(currentUserId),
+        'connectionStats.pendingRequests': admin.firestore.FieldValue.increment(-1)
+      });
+
+      // // Create notification for acceptance
+      // await notificationService.createNotification(connectionData.senderId, 'CONNECTION_REJECTED', {
+      //   senderId: currentUserId,
+      //   senderName: receiverProfile.data().displayName || 'A user',
+      //   message: 'rejectedyour connection request',
+      //   timestamp: admin.firestore.FieldValue.serverTimestamp()
+      // });
+
     }
 
     // Update connection status
@@ -201,7 +255,7 @@ exports.getPendingRequests = async (req, res) => {
   try {
     const userId = req.user.uid;
     
-    const userDoc = await db.collection('users').doc(userId).get();
+    const userDoc = await db.collection('profiles').doc(userId).get();
     if (!userDoc.exists) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -210,24 +264,45 @@ exports.getPendingRequests = async (req, res) => {
     const pendingReceived = userData.connections?.pending?.received || [];
     const pendingSent = userData.connections?.pending?.sent || [];
 
-    // Get full user details for pending requests
+    // Get full user details for received pending requests
     const receivedRequests = await Promise.all(
       pendingReceived.map(async (senderId) => {
         const senderDoc = await db.collection('users').doc(senderId).get();
+        const connectionDoc = await db.collection('connections')
+          .where('senderId', '==', senderId)
+          .where('receiverId', '==', userId)
+          .where('status', '==', 'pending')
+          .get();
+
+        const connectionData = connectionDoc.empty ? null : connectionDoc.docs[0].data(); // Get the connection data
+
         return {
           uid: senderId,
           ...senderDoc.data(),
+          connectionId: connectionDoc.empty ? null : connectionDoc.docs[0].id, // Include connection ID
+          connectionData, // Include connection data
           requestType: 'received'
         };
       })
     );
 
+    // Get full user details for sent pending requests
     const sentRequests = await Promise.all(
       pendingSent.map(async (receiverId) => {
         const receiverDoc = await db.collection('users').doc(receiverId).get();
+        const connectionDoc = await db.collection('connections')
+          .where('senderId', '==', userId)
+          .where('receiverId', '==', receiverId)
+          .where('status', '==', 'pending')
+          .get();
+
+        const connectionData = connectionDoc.empty ? null : connectionDoc.docs[0].data(); // Get the connection data
+
         return {
           uid: receiverId,
           ...receiverDoc.data(),
+          connectionId: connectionDoc.empty ? null : connectionDoc.docs[0].id, // Include connection ID
+          connectionData, // Include connection data
           requestType: 'sent'
         };
       })
@@ -237,8 +312,7 @@ exports.getPendingRequests = async (req, res) => {
       received: receivedRequests,
       sent: sentRequests
     });
-
-  } catch (error) {
+    } catch (error) {
     console.error('Error getting pending requests:', error);
     return res.status(500).json({
       message: 'Failed to get pending requests',

@@ -192,7 +192,7 @@ export default function NotificationsFeed({ activeFilter }) {
       default:
         return (
           <p className="text-sm">
-            {notification.data.message}
+             <span className="text-indigo-600">{notification.data.senderName}</span> {notification.data.message}
           </p>
         );
     }
@@ -242,7 +242,7 @@ export default function NotificationsFeed({ activeFilter }) {
                   ? (
                   <img
                     src={notification.sender.photoURL}
-                    alt={notification.sender.name}
+                    alt={notification.data.senderName}
                     width={48}
                     height={48}
                     className="rounded-full"

@@ -6,7 +6,7 @@ const connectionService = require('../services/connectionService');
 router.post('/request/:userId', connectionService.connectWithUser);
 
 // Accept/Reject connection request
-router.post('/respond/:connectionId', connectionService.respondToRequest);
+router.post('/respond', connectionService.respondToRequest);
 
 // Get connection status
 router.get('/status/:userId', connectionService.getConnectionStatus);
