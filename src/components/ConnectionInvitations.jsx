@@ -65,7 +65,7 @@ export function ConnectionInvitations() {
       if (!response.ok) {
         throw new Error('Failed to accept request')
       }
-      setInvitations(prev => 
+      setRequests(prev => 
         prev.filter(inv => inv.connectionId !== connectionId)
       )
     } catch (error) {
@@ -89,7 +89,7 @@ export function ConnectionInvitations() {
       if (!response.ok) {
         throw new Error('Failed to reject request')
       }
-      setInvitations(prev => 
+      setRequests(prev => 
         prev.filter(req => req.connectionId !== connectionId)
       )
     } catch (error) {
