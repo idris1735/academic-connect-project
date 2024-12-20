@@ -16,15 +16,15 @@ export function NetworkSidebar() {
   useEffect(() => {
     const fetchNetworkData = async () => {
       try {
-        const response = await fetch('/api/network/get_connections?status=connected')
+        const response = await fetch('/api/network/get_network_info')
         if (!response.ok) {
           throw new Error('Failed to load network details, reload the page')
         }
         const data = await response.json()
-
+        console.log(data)
         // Simulate an APi call for groups, conferences and publications
         setNetworkCounts({
-          connections: data.connections.length,
+          connections: data.connectionData.connectionCount,
           groups: 0,
           conferences: 0,
           publications: 0,
