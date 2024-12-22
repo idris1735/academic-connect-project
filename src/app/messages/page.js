@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
-
+import { Suspense, useState, useEffect } from "react";
 import MessageSidebar from "@/components/MessageSidebar";
 import MessageView from "@/components/MessageView";
 import ResearchRoom from "@/components/ResearchRoom";
@@ -15,6 +14,7 @@ function MessagesContent() {
   const [activeView, setActiveView] = useState("messages");
   const [selectedItem, setSelectedItem] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const router = useRouter()
   
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
@@ -90,12 +90,29 @@ function MessagesContent() {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+ 
+  useEffect(() => {
+      if (id) {
+     
+      // Query API fro messages
+      const fetchMessages = async () => {
+        const response = await fetch(`/api/messages/rooms?id=${id}`); // Adjust the API endpoint as needed
+        const data = await response.json();
+        setSelectedItem(data.rooms); // Assuming the response contains a messages array
+        if (type == 'DM'){
+          setActiveView("messages")
+        } else if (type == 'RM'){
+          setActiveView("research")
+        } else {
+          setActiveView("workflow")
+        }
 
-  // useEffect(() => {
-  //   if (uid) {
-  //     // Query API fro messages
-  //   }
-  // }, [uid])
+      };
+      // router.push('/messages')
+      router.replace('/messages');
+      fetchMessages()   
+    }
+    }, [id])
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <NavComponent />

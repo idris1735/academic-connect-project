@@ -201,23 +201,34 @@ exports.addPostToRoom = async (req, res) => {
 exports.getUserRooms = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const { type, sort = 'latest' } = req.query;
+    const { id, type, sort = 'latest' } = req.query;
+    let query;
 
-    // Base query - get rooms where user is a participant
-    let query = db.collection('messageRooms')
+   
+
+    if (id) {
+      query = db.collection('messageRooms').where('id', '==', id )
+      // const roomDoc = query.get()
+      // const roomData = await roomDoc.data()
+      // query = query.where('id', '==', id)
+    } else {
+       // Base query - get rooms where user is a participant
+      query = db.collection('messageRooms')
       .where('participants', 'array-contains', userId)
       .where('isActive', '==', true);
 
-    // Add type filter only if a valid type is specified
-    if (type) {
-      if (!['DM', 'GM', 'RR'].includes(type)) {
-        return res.status(400).json({
-          message: 'Invalid room type. Must be either "DM", "GM", or "RR"'
-        });
-      }
+      // Add type filter only if a valid type is specified
+      if (type)  {
+        if (!['DM', 'GM', 'RR'].includes(type)) {
+          return res.status(400).json({
+            message: 'Invalid room type. Must be either "DM", "GM", or "RR"'
+          });
+        }
       query = query.where('roomType', '==', type);
-    }
+      }
 
+    }
+    
     const roomsSnapshot = await query.get();
 
     if (roomsSnapshot.empty) {
@@ -302,14 +313,15 @@ exports.getUserRooms = async (req, res) => {
     // Group rooms by type if no specific type was requested
     const response = {
       message: 'Rooms retrieved successfully',
-      roomType: type || 'all',
-      rooms: type ? sortedRooms : {
+      roomType: id ? sortedRooms[0].type : 'all',
+      rooms: id ? sortedRooms[0] : {
         DM: sortedRooms.filter(room => room.type === 'DM'),
         GM: sortedRooms.filter(room => room.type === 'GM'),
         RR: sortedRooms.filter(room => room.type === 'RR')
       }
     };
 
+    console.log(response)
     return res.status(200).json(response);
 
   } catch (error) {
