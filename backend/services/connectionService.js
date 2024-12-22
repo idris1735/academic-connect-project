@@ -203,8 +203,8 @@ exports.getConnectionStatus = async (req, res) => {
     const currentUserId = req.user.uid;
     const targetUserId = req.params.userId;
 
-    const userSnapshot = await db.collection('users')
-      .where('uid', '==', currentUserId)
+    const userSnapshot = await db.collection('profiles')
+      .where('pid', '==', currentUserId)
       .get();
 
     if (userSnapshot.empty) {
@@ -216,7 +216,7 @@ exports.getConnectionStatus = async (req, res) => {
     const connections = userData.connections || {};
 
     // Check if the target user is in the accepted connections
-    const isConnected = connections.accepted?.includes(targetUserId);
+    const isConnected = connections.connected?.includes(targetUserId);
     
     // Check for pending requests sent by the current user to the target user
     const pendingRequestsSent = await db.collection('connections')

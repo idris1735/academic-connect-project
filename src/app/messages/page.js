@@ -9,11 +9,20 @@ import Workflow from "@/components/Workflow";
 import { useToast } from "@/components/ui/use-toast";
 import NavComponent from "@/components/NavComponent";
 import { cn } from "@/lib/utils";
+import { useRouter, useSearchParams } from 'next/navigation'
 
 function MessagesContent() {
   const [activeView, setActiveView] = useState("messages");
   const [selectedItem, setSelectedItem] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  const searchParams = useSearchParams()
+  const id = searchParams.get('id')
+  const type = searchParams.get('type')
+
+  console.log(id, type)
+
+  // const { type, uid } = router.query
   const [rooms, setRooms] = useState([
     {
       id: 1,
@@ -42,6 +51,7 @@ function MessagesContent() {
       type: "research",
     },
   ]);
+
 
   const { showToast } = useToast();
 
@@ -81,6 +91,11 @@ function MessagesContent() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // useEffect(() => {
+  //   if (uid) {
+  //     // Query API fro messages
+  //   }
+  // }, [uid])
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <NavComponent />

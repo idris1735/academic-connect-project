@@ -48,9 +48,13 @@ exports.createMessageRoom = async (req, res) => {
         });
 
         if (existingDM) {
-          return res.status(400).json({ 
+          const roomDat = existingDM.data()
+          return res.status(200).json({ 
             message: 'Direct message room already exists between these users',
-            roomId: existingDM.id
+            room : {
+              id: existingDM.id,
+              ...roomDat
+            }
           });
         }
         break;
@@ -119,7 +123,7 @@ exports.createMessageRoom = async (req, res) => {
       participants.map(async (uid) => ({
         uid,
         name: await getUserNameByUid(uid),
-        role: uid === creatorId ? 'admin' : 'member'
+        role: roomType !== 'DM' ? (uid === creatorId ? 'admin' : 'member') : 'member'
       }))
     );
 

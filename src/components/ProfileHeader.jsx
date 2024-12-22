@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/use-toast'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export function ProfileHeader({ data, isOrganization }) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -14,6 +15,7 @@ export function ProfileHeader({ data, isOrganization }) {
     pendingSent: false,
     pendingReceived: false
   });
+  const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -81,6 +83,41 @@ export function ProfileHeader({ data, isOrganization }) {
     }
   }
 
+  const handleMessageClick = async () => {
+
+    if (connectionState === 'connected') {
+      try {
+        const response = await fetch("/api/messages/rooms", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            roomType: "DM",
+            participants: [data.uid],
+          }),
+        });
+  
+        const info = await response.json();
+        console.log(info)
+        let roomId = info.room.id
+  
+        if (response.ok) {
+          router.push(`/messages?id=${roomId}&type=DM`); 
+        } else {
+          throw new Error(info.message || "Failed to create room");
+        }
+      } catch (error) {
+        // console.error("Error creating room:", error);
+        // showToast({
+        //   title: "Error",
+        //   description: error.message || "Failed to create room",
+        //   variant: "destructive",
+        // });
+      }
+    }
+  };
+
   const renderConnectionButton = () => {
     if (isLoading) {
       return (
@@ -115,7 +152,7 @@ export function ProfileHeader({ data, isOrganization }) {
           <Button 
             className="bg-[#6366F1] hover:bg-[#5355CC]"
             onClick={handleConnect}
-            disabled={connectionState === 'sent' || connectionState === 'connected' || connectionState === 'received'}
+            disabled={connectionState === 'sent' || connectionState === 'connected' || connectionState === 'received' }
           >
             Connect
           </Button>
@@ -178,7 +215,11 @@ export function ProfileHeader({ data, isOrganization }) {
           {!isOwnProfile && (
             <div className="mt-6 flex justify-center space-x-4">
               {renderConnectionButton()}
-              <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10">
+              <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10"
+              //  onClick={() => window.location.href = `/messages?type=DM&uid=${data.uid}`}
+               onClick={handleMessageClick}
+               disabled={ connectionState !== 'connected'}
+              >
                 Message
               </Button>
             </div>
