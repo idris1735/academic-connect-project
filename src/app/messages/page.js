@@ -1,14 +1,14 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { StreamChatProvider } from '@/components/StreamChatProvider'
 import MessageSidebar from "@/components/MessageSidebar";
 import MessageView from "@/components/MessageView";
 import ResearchRoom from "@/components/ResearchRoom";
-import Workflow from "@/components/Workflow";
 import { useToast } from "@/components/ui/use-toast";
 import NavComponent from "@/components/NavComponent";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState, useEffect } from "react";
 
 function MessagesContent() {
   const [activeView, setActiveView] = useState("messages");
@@ -20,40 +20,25 @@ function MessagesContent() {
   const id = searchParams.get('id')
   const type = searchParams.get('type')
 
-  console.log(id, type)
-
-  // const { type, uid } = router.query
-  const [rooms, setRooms] = useState([
+  const dummyConversations = [
     {
-      id: 1,
-      name: "AI in Healthcare",
-      members: [
-        {
-          id: 1,
-          name: "Alice",
-          avatar: "https://picsum.photos/seed/alice/200",
-        },
-        { id: 2, name: "Bob", avatar: "https://picsum.photos/seed/bob/200" },
-      ],
-      type: "research",
+      id: 'dm1',
+      name: 'Alice Johnson',
+      avatar: 'https://picsum.photos/seed/alice/200',
     },
     {
-      id: 2,
-      name: "Climate Change Mitigation",
-      members: [
-        {
-          id: 1,
-          name: "Charlie",
-          avatar: "https://picsum.photos/seed/charlie/200",
-        },
-        { id: 2, name: "Dana", avatar: "https://picsum.photos/seed/dana/200" },
-      ],
-      type: "research",
+      id: 'dm2',
+      name: 'Bob Smith',
+      avatar: 'https://picsum.photos/seed/bob/200',
     },
-  ]);
+  ];
 
+  const [rooms, setRooms] = useState({
+    directMessages: dummyConversations,
+    researchRooms: [],
+  });
 
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   const handleSelectItem = (item, type) => {
     setSelectedItem(item);
@@ -73,14 +58,13 @@ function MessagesContent() {
       type: "research",
     };
     setRooms((prevRooms) => [...prevRooms, newRoom]);
-    showToast({
+    toast({
       title: "Room Created",
       description: `Your new room "${name}" has been created successfully.`,
     });
   };
 
   const handleCreateWorkflow = (name, description) => {
-    // In a real application, you would add the workflow to your state or database
     toast({
       title: "Workflow Created",
       description: `Your new workflow "${name}" has been created successfully.`,
@@ -92,13 +76,12 @@ function MessagesContent() {
   };
  
   useEffect(() => {
-      if (id) {
-     
-      // Query API fro messages
+    if (id) {
+      // Query API for messages
       const fetchMessages = async () => {
-        const response = await fetch(`/api/messages/rooms?id=${id}`); // Adjust the API endpoint as needed
+        const response = await fetch(`/api/messages/rooms?id=${id}`);
         const data = await response.json();
-        setSelectedItem(data.rooms); // Assuming the response contains a messages array
+        setSelectedItem(data.rooms);
         if (type == 'DM'){
           setActiveView("messages")
         } else if (type == 'RM'){
@@ -106,13 +89,12 @@ function MessagesContent() {
         } else {
           setActiveView("workflow")
         }
-
       };
-      // router.push('/messages')
       router.replace('/messages');
       fetchMessages()   
     }
-    }, [id])
+  }, [id])
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <NavComponent />
@@ -121,11 +103,6 @@ function MessagesContent() {
           <MessageSidebar
             onSelectDM={(dm) => handleSelectItem(dm, "messages")}
             onSelectResearchRoom={(room) => handleSelectItem(room, "research")}
-            onSelectWorkflow={(workflow) =>
-              handleSelectItem(workflow, "workflow")
-            }
-            onCreateRoom={handleCreateRoom}
-            onCreateWorkflow={handleCreateWorkflow}
             rooms={rooms}
             isSidebarOpen={isSidebarOpen}
             onToggleSidebar={toggleSidebar}
@@ -142,18 +119,11 @@ function MessagesContent() {
                     <MessageView
                       conversation={selectedItem}
                       onToggleSidebar={toggleSidebar}
-                      isSidebarOpen={isSidebarOpen}
                     />
                   )}
                   {activeView === "research" && (
                     <ResearchRoom
                       room={selectedItem}
-                      onToggleSidebar={toggleSidebar}
-                    />
-                  )}
-                  {activeView === "workflow" && (
-                    <Workflow
-                      workflow={selectedItem}
                       onToggleSidebar={toggleSidebar}
                     />
                   )}
@@ -166,10 +136,13 @@ function MessagesContent() {
     </div>
   );
 }
+
 export default function MessagesPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <MessagesContent />
-    </Suspense>
+    <StreamChatProvider>
+      <Suspense fallback={<div>Loading...</div>}>
+        <MessagesContent />
+      </Suspense>
+    </StreamChatProvider>
   );
 }
