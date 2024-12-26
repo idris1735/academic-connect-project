@@ -333,3 +333,116 @@ exports.getUserRooms = async (req, res) => {
   }
 };
 
+exports.createResearchRoomForPost = async (creatorId, name, postId, description) => {
+  try {
+    // Validate room name
+    if (!name) {
+      return { success: false, error: 'Room name is required for research rooms' };
+    }
+
+    // Create message room
+    const roomRef = db.collection('messageRooms').doc();
+    const roomData = {
+      id: roomRef.id,
+      roomType: 'RR',
+      name,
+      description: description || null,
+      createdBy: creatorId,
+      createdAt: FieldValue.serverTimestamp(),
+      participants: [creatorId],
+      lastMessage: null,
+      lastMessageTime: null,
+      isActive: true,
+      admins: [creatorId],
+      avatar: 'https://picsum.photos/seed/sarah/200',
+      settings: {
+        canParticipantsAdd: true,
+        canParticipantsRemove: false,
+        isPublic: true
+      },
+      postIds: postId ? [postId] : []
+    };
+
+    await roomRef.set(roomData);
+
+    // Update the post with the room reference
+    if (postId) {
+      const postRef = db.collection('posts').doc(postId);
+      await postRef.update({
+        discussion: {
+          id: roomRef.id,
+          type: 'RR'
+        }
+      });
+    }
+
+    
+    // Update user's profile to include the new discussion room
+     const profileRef = db.collection('profiles').doc(creatorId);
+
+     await profileRef.update({
+       'messageRooms.researchRooms': FieldValue.arrayUnion(roomRef.id)
+      });
+
+    return {
+      success: true,
+      room: {
+        ...roomData,
+      }
+    };
+
+  } catch (error) {
+    console.error('Error creating research room for post:', error);
+    await roomRef.delete();
+    await profileRef.update({
+     'messageRooms.researchRooms': FieldValue.arrayRemove(roomRef.id)
+    });
+    return {
+      success: false,
+      error: 'Failed to create research room'
+    };
+   
+  }
+};
+
+exports.joinRoom = async (req, res) => {
+  try {
+    // Get the room reference
+    const roomId = req.body.roomId;
+    const userId = req.body.uid || req.user.uid; 
+
+    // Get the room document from Firestore
+    const roomRef = db.collection('messageRooms').doc(roomId);
+    const roomDoc = await roomRef.get();
+
+    if (!roomDoc.exists) {
+      return { success: false, error: 'Room not found' };
+    }
+
+    const roomData = roomDoc.data();
+
+    // Check if the user is already a participant
+    if (roomData.participants.includes(userId)) {
+      return res.status(200).json({'message': 'User is already a participant' });
+    }
+
+    // Add the user to the participants
+    await roomRef.update({
+      participants: FieldValue.arrayUnion(userId),
+    });
+
+    // Update user's profile to include the new discussion room
+    const profileRef = db.collection('profiles').doc(userId);
+
+    await profileRef.update({
+      'messageRooms.researchRooms': FieldValue.arrayUnion(roomId)
+  });
+  
+
+  return res.status(200).json({'message': 'User has been added to the discussion room' });
+  } catch (error) {
+    console.error('Error joining discussion:', error);
+    return { success: false, error: 'Failed to join discussion' };
+  }
+};
+

@@ -10,11 +10,13 @@ import {
   Film,
   Image as ImageIcon,
   Send,
-  X,
+  Download,
+  X, FileIcon, PlayCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import PropTypes from 'prop-types'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 // Add time formatting function
 const formatTimeAgo = (timestamp) => {
@@ -79,6 +81,7 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
   const [isCommenting, setIsCommenting] = useState(false)
   const [comment, setComment] = useState('')
   const [showShareModal, setShowShareModal] = useState(false)
+  const router = useRouter()
 
   // Show skeleton loading if post is loading
   if (isLoading) {
@@ -145,14 +148,25 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
     }
   }
 
-  const renderAttachment = () => {
-    if (!post.attachment) return null
+  const handleDownload = (url) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = ''; // You can specify a filename here if desired
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-    switch (post.attachment.type) {
-      case 'image':
+  const renderAttachment = () => {
+    if (!post.attachment) return null;
+
+    switch (true) {
+      case post.attachment.fileType == 'images':
         return (
           <div className="mb-4 relative">
             <div className="aspect-w-16 aspect-h-9">
+            
+           
               <img
                 src={post.attachment.url}
                 alt="Post attachment"
@@ -160,31 +174,22 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
                 loading="lazy"
               />
             </div>
-
           </div>
-        )
-      case 'video':
+              )
+      case post.attachment.fileType == 'videos':
         return (
           <div className="mb-4">
             <video
               controls
               className="rounded-lg max-h-96 w-auto mx-auto"
-
-//           <div className='mb-4'>
-//             <video
-//               src={post.attachment}
-//               controls
-//               className='w-full h-auto rounded-lg'
-
             >
               <source src={post.attachment.url} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           </div>
-        )
-      case 'document':
+            )
+      case post.attachment.fileType == 'applications':
         return (
-
           <div className="mb-4 flex items-center gap-2 p-4 bg-gray-50 rounded-lg">
             <FileText className="h-6 w-6 text-gray-500" />
             <a
@@ -196,9 +201,9 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
               {post.attachment.name || 'View Document'}
             </a>
           </div>
-        )
+          )
       default:
-        return null
+        return <p>Unsupported file type</p>;
     }
   }
 
@@ -216,6 +221,33 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
       })
       .catch((error) => console.error('Error copying to clipboard:', error));
   }
+
+  const handleJoinDiscussion = async (roomId) => {
+    
+    try {
+      const response = await fetch(`/api/messages/rooms/join-room`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roomId
+        }),
+      });
+
+      const info = await response.json();
+      console.log(info);
+
+      if (response.ok) {
+        router.push(`/messages?id=${roomId}&type=RR`); 
+      } else {
+        throw new Error(info.message || "Failed to create room");
+      }
+    } catch (error) {
+      console.error("Error creating room:", error);
+    }
+  
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -271,13 +303,13 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
         </button>
 
         {post.discussion && post.discussion.id && (
-          <Link
-            href={`/messages?discussion=${post.discussion.id}`}
+          <button 
             className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
+            onClick={() => handleJoinDiscussion(post.discussion.id)}
           >
             <MessageCircle className='h-5 w-5' />
             <span>Join Discussion</span>
-          </Link>
+          </button>
         )}
         
         <button 

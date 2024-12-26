@@ -7,24 +7,45 @@ const { getUserNameByUid } = require('../utils/user');
 const { admin, storage } = require('../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 const notificationService = require('../services/notificationService');
+const messageService = require('../services/messageService')
+const fs = require('fs/promises');
+const path = require('path');
+
 
 exports.createPost = async (req, res) => {
   try {
-    const { content, category, discussionName } = req.body;
+   
     const user = req.user;
     let attachmentUrl = null;
+    const storeInCloud = false;
+
+    
+    const { content, category, discussionName } = req.body;
+    const attachment = req.file;
+    let attachment_info;
+
+    if (attachment) {
+      console.log('Uploaded file:', attachment.originalname);
+      console.log('File size:', attachment.size);
+      console.log('File mime type:', attachment.mimetype);
+      console.log('File path on server:', attachment.path);
+      console.log('File type:', attachment.type);
+    } else {
+      console.log('No attachment uploaded');
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
 
     // Handle file upload if there's an attachment
-    if (req.file) {
+    if (req.file && storeInCloud) {
       const bucket = storage.bucket();
-      const fileExtension = req.file.originalname.split('.').pop();
+      const fileExtension = attachment.originalname.split('.').pop();
       const fileName = `posts/${uuidv4()}.${fileExtension}`;
       
       // Create a new blob in the bucket
       const blob = bucket.file(fileName);
       const blobStream = blob.createWriteStream({
         metadata: {
-          contentType: req.file.mimetype,
+          contentType: attachment.mimetype,
         },
       });
 
@@ -48,10 +69,63 @@ exports.createPost = async (req, res) => {
       });
     }
 
+    if (attachment) {
+
+      const buffer = attachment.buffer;
+      const fileExtension = path.extname(attachment.originalname);
+      let uploadPath;
+      let fileType;
+    
+      if (attachment.mimetype.startsWith('image/')) {
+        fileType = 'images';
+      } else if (attachment.mimetype.startsWith('video/')) {
+        fileType = 'videos';
+      } else if (attachment.mimetype.startsWith('application/')) {
+        fileType = 'applications';
+      } else {
+        throw new Error('Invalid file type');
+      }
+    
+      uploadPath = path.join(process.cwd(), 'public', 'uploads', fileType, `${uuidv4()}${fileExtension}`);
+    
+      await fs.mkdir(path.dirname(uploadPath), { recursive: true });
+      await fs.writeFile(uploadPath, buffer);
+      //  // Write the file to the local storage
+      // fs.writeFileSync(uploadPath, attachment.buffer);
+      // attachmentUrl = uploadPath; // Store the local path or URL as needed
+      attachmentUrl = path.relative(path.join(process.cwd(), 'public'), uploadPath);
+      attachment_info = {
+        name: attachment.originalname,
+        fileType,
+        url: attachmentUrl,
+      }
+    
+
+      // const fileExtension = attachment.originalname.split('.').pop();
+      // let uploadPath;
+
+      // // Determine the upload path based on file type
+      // if (attachment.mimetype.startsWith('image/')) {
+      //   uploadPath = path.join(__dirname, '../../attachments/images', `${uuidv4()}.${fileExtension}`);
+      // } else if (req.file.mimetype.startsWith('video/')) {
+      //   uploadPath = path.join(__dirname, '../../attachments/videos', `${uuidv4()}.${fileExtension}`);
+      // } else if (req.file.mimetype.startsWith('application/')) {
+      //   uploadPath = path.join(__dirname, '../../attachments/documents', `${uuidv4()}.${fileExtension}`);
+      // } else {
+      //   return res.status(400).json({ message: 'Invalid file type' });
+      // }
+
+      // // Write the file to the local storage
+      // fs.writeFileSync(uploadPath, attachment.buffer);
+      // attachmentUrl = uploadPath; // Store the local path or URL as needed
+    }
+
     // Create the post document
     const postRef = db.collection('posts').doc();
     const postID = postRef.id;
     
+    
+
     const postData = {
       id: postID,
       uid: user.uid,
@@ -59,39 +133,48 @@ exports.createPost = async (req, res) => {
       postCat: category,
       likesCount: 0,
       commentsCount: 0,
-      attachment: attachmentUrl,
+      attachment: attachment_info,
       discussion: null,
     };
 
+    await postRef.set(postData);
+
     // If a discussion name is provided, create a discussion object
     if (discussionName && discussionName.trim()) {
-      const discussionRef = db.collection('discussions').doc();
-      const discussionID = discussionRef.id;
+     //Create a discussion, that is a research room
+      let discussionResponse = await messageService.createResearchRoomForPost(user.uid, discussionName, postID);
 
-      // Create the discussion document
-      await discussionRef.set({
-        id: discussionID,
-        name: discussionName,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      // Link the discussion to the post
-      postData.discussion = {
-        id: discussionID,
-        name: discussionName,
-      };
+      if (discussionResponse.success) {
+        // Link the discussion to the post
+        console.log('Created discussion room:', discussionResponse.room);
+        postData.discussion = {
+          id: discussionResponse.room.id,
+          name: discussionResponse.room.name,
+        }
+      } else {
+        console.error('Failed to create discussion:', discussionResponse.error);
+        // Handle the error as needed
+        postRef.delete();
+        return res.status(500).json({ 
+          message: 'Failed to create discussion for post', 
+          error: discussionResponse.error 
+        });
+      }
     }
 
-    await postRef.set(postData);
 
     const PostContentRef = postRef.collection('postContent').doc();
     const postContentID = PostContentRef.id;
     await PostContentRef.set({
-      id: postContentID,
-      uid: user.uid,
-      content: content,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+        id: postContentID,//-
+        uid: user.uid,//-
+        content: content,//-
+        updatedAt: FieldValue.serverTimestamp(),//-
+      });//-
+
+
+    // Create a research room with the discussion ID
+    
     
     const name = await getUserNameByUid(user.uid);
     const fullPost = {

@@ -8,6 +8,9 @@ router.get('/rooms', messageService.getUserRooms);
 // Create a new message room
 router.post('/rooms', messageService.createMessageRoom);
 
+// Add user to a discussion room message room
+router.post('/rooms/join-room', messageService.joinRoom);
+
 // Add a post to an existing research room
 router.post('/rooms/add-post', messageService.addPostToRoom);
 

@@ -84,7 +84,7 @@ function MessagesContent() {
         setSelectedItem(data.rooms);
         if (type == 'DM'){
           setActiveView("messages")
-        } else if (type == 'RM'){
+        } else if (type == 'RR'){
           setActiveView("research")
         } else {
           setActiveView("workflow")

@@ -85,10 +85,27 @@ const ProfilePost = ({ post, onEdit, onDelete, onLike, onComment }) => {
             </div>
           </div>
         ) : (
-          <p>{post.content}</p>
-        )}
-        {post.image && (
-          <img src={post.image} alt="Post content" className="mt-4 rounded-lg max-h-96 w-full object-cover" />
+        //   <p>{post.content}</p>
+        // )}
+        // {post.image && (
+        //   <img src={post.image} alt="Post content" className="mt-4 rounded-lg max-h-96 w-full object-cover" />
+          <div>
+            <p>{post.content}</p>
+            {post.attachment && (
+              <div className="mt-4">
+                {post.attachment.endsWith('.jpg') || post.attachment.endsWith('.png') ? (
+                  <img src={`/${post.attachment}`} alt="Post content" className="rounded-lg max-h-96 w-full object-cover" />
+                ) : post.attachment.endsWith('.mp4') ? (
+                  <video controls className="rounded-lg max-h-96 w-full">
+                    <source src={`/${post.attachment}`} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <a href={`/${post.attachment}`} target="_blank" rel="noopener noreferrer">View Document</a>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
       <CardFooter className="flex justify-between">

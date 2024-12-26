@@ -25,6 +25,7 @@ export default function PostCreation({ onPostCreate }) {
       formData.append('category', category)
       
       if (attachment) {
+        console.log('A file was attached.')
         formData.append('attachment', attachment)
       }
 
@@ -32,10 +33,34 @@ export default function PostCreation({ onPostCreate }) {
         formData.append('discussionName', discussionName)
       }
 
+    
       const response = await fetch('/api/posts/create_post', {
         method: 'POST',
         body: formData,
       })
+
+            // Log the FormData contents
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+
+          console.log('File objects', key, value.name); // For File objects, log the file name
+        } else {
+          console.log(key, value);
+        }
+      }
+
+      //  // Create the discussin/reserach room first
+      // let response = await fetch('/api/messages/rooms', {
+      //   method: 'POST',
+      //   body: {
+      //     roomType: 'RR',
+      //     participants: [],
+      //     name: discussionName,
+      //   }
+      // })
+
+   
 
       const data = await response.json()
 
@@ -81,6 +106,7 @@ export default function PostCreation({ onPostCreate }) {
       return
     }
 
+    console.log('found attachment:', file.originalname, type)
     setAttachment(file)
     setError('')
   }
