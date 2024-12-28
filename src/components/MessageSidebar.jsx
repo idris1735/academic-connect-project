@@ -1,44 +1,80 @@
-"use client";
+'use client'
 
-import { ChannelList, useChannelStateContext } from 'stream-chat-react'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
-import { Plus, X } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { ChevronDown, Plus, Search, Edit, Users, MessageCircle, X } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { toasts } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 
-const customChannelFilter = {
-  type: { $in: ['messaging', 'team'] },
-  members: { $in: ['olanike'] }
-}
-
-const CustomChannelPreview = ({ channel, setActiveChannel }) => {
-  const { messages } = useChannelStateContext()
-  
-  return (
-    <div 
-      className="p-4 border-b hover:bg-gray-50 cursor-pointer"
-      onClick={() => setActiveChannel(channel)}
-    >
-      <div className="font-medium">{channel.data.name || 'Unnamed Channel'}</div>
-      <div className="text-sm text-gray-500">
-        {messages[messages.length - 1]?.text || 'No messages yet'}
-      </div>
-    </div>
-  )
-}
-
-export default function MessageSidebar({ 
-  onSelectDM, 
-  onSelectResearchRoom, 
-  rooms, 
-  isSidebarOpen, 
-  onToggleSidebar 
+export default function MessageSidebar({
+  onSelectDM,
+  onSelectResearchRoom,
+  onSelectWorkflow,
+  onCreateRoom,
+  onCreateWorkflow,
+  rooms,
+  workflows,
+  isSidebarOpen,
+  onToggleSidebar
 }) {
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false)
+  const [dmsExpanded, setDmsExpanded] = useState(true)
+  const [researchRoomsExpanded, setResearchRoomsExpanded] = useState(true)
+  const [workflowsExpanded, setWorkflowsExpanded] = useState(true)
   const [newRoomName, setNewRoomName] = useState('')
+  const [newRoomDescription, setNewRoomDescription] = useState('')
+  const [newWorkflowName, setNewWorkflowName] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filteredRooms, setFilteredRooms] = useState(rooms)
+  const [filteredWorkflows, setFilteredWorkflows] = useState(workflows)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const filtered = {
+      directMessages: rooms.directMessages.filter(dm =>
+        dm.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+      researchRooms: rooms.researchRooms.filter(room =>
+        room.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+    setFilteredRooms(filtered)
+
+    const filteredWf = workflows.filter(workflow =>
+      workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    setFilteredWorkflows(filteredWf)
+  }, [searchQuery, rooms, workflows])
+
+  const handleCreateRoom = () => {
+    if (newRoomName.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Room name cannot be empty.",
+        variant: "destructive"
+      })
+      return
+    }
+    onCreateRoom(newRoomName, newRoomDescription)
+    setNewRoomName('')
+    setNewRoomDescription('')
+  }
+
+  const handleCreateWorkflow = () => {
+    if (newWorkflowName.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Workflow name cannot be empty.",
+        variant: "destructive"
+      })
+      return
+    }
+    onCreateWorkflow(newWorkflowName)
+    setNewWorkflowName('')
+  }
 
   return (
     <div className={cn(
@@ -46,10 +82,10 @@ export default function MessageSidebar({
       isSidebarOpen ? "translate-x-0" : "-translate-x-full",
       "md:relative md:translate-x-0"
     )}>
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b">
         <h2 className="text-lg font-semibold">Messages</h2>
-        <Button
-          variant="ghost"
+        <Button 
+          variant="ghost" 
           size="icon"
           className="md:hidden"
           onClick={onToggleSidebar}
@@ -58,90 +94,100 @@ export default function MessageSidebar({
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Direct Messages Section */}
-        <div className="p-4">
-          <h3 className="text-sm font-semibold text-gray-500 mb-2">Direct Messages</h3>
-          {rooms.directMessages.map((dm) => (
-            <div
-              key={dm.id}
-              className="flex items-center p-2 hover:bg-gray-100 rounded-lg cursor-pointer"
-              onClick={() => onSelectDM(dm)}
-            >
-              <div className="relative">
-                <img
-                  src={dm.avatar}
-                  alt={dm.name}
-                  className="w-10 h-10 rounded-full"
-                />
-                {dm.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                )}
-              </div>
-              <div className="ml-3">
-                <div className="font-medium">{dm.name}</div>
-                <div className="text-sm text-gray-500">{dm.lastMessage}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Research Rooms Section */}
-        <div className="p-4 border-t">
-          <h3 className="text-sm font-semibold text-gray-500 mb-2">Research Rooms</h3>
-          {rooms.researchRooms.map((room) => (
-            <div
-              key={room.id}
-              className="flex items-center p-2 hover:bg-gray-100 rounded-lg cursor-pointer"
-              onClick={() => onSelectResearchRoom(room)}
-            >
-              <img
-                src={room.avatar}
-                alt={room.name}
-                className="w-10 h-10 rounded-lg"
-              />
-              <div className="ml-3">
-                <div className="font-medium">{room.name}</div>
-                <div className="text-sm text-gray-500">
-                  {room.members.length} members
-                </div>
-              </div>
-            </div>
-          ))}
+      <div className="flex-shrink-0 p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            placeholder="Search messages..."
+            className="w-full pl-9 bg-gray-50 border-gray-200"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
-      <div className="p-4 border-t">
-        <Dialog open={isCreatingRoom} onOpenChange={setIsCreatingRoom}>
+      <ScrollArea className="flex-grow h-full overflow-y-auto">
+
+        <div className="p-4 space-y-6">
+          <SidebarSection
+            title="Direct Messages"
+            icon={MessageCircle}
+            items={filteredRooms.directMessages}
+            expanded={dmsExpanded}
+            setExpanded={setDmsExpanded}
+            onSelect={onSelectDM}
+          />
+
+          <SidebarSection
+            title="Research Rooms"
+            icon={Users}
+            items={filteredRooms.researchRooms}
+            expanded={researchRoomsExpanded}
+            setExpanded={setResearchRoomsExpanded}
+            onSelect={onSelectResearchRoom}
+          />
+
+          <SidebarSection
+            title="Workflows"
+            icon={Edit}
+            items={filteredWorkflows}
+            expanded={workflowsExpanded}
+            setExpanded={setWorkflowsExpanded}
+            onSelect={onSelectWorkflow}
+          />
+        </div>
+      </ScrollArea>
+
+      <div className="flex-shrink-0 p-4 border-t mt-auto space-y-2">
+        <Dialog>
           <DialogTrigger asChild>
             <Button className="w-full bg-[#6366F1] hover:bg-[#5457E5] text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Create Research Room
+              Create New Room
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create a Research Room</DialogTitle>
+              <DialogTitle>Create a New Room</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <Input
-                placeholder="Room Name"
+              <Input 
+                placeholder="Room Name" 
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
               />
+              <Input 
+                placeholder="Room Description" 
+                value={newRoomDescription}
+                onChange={(e) => setNewRoomDescription(e.target.value)}
+              />
             </div>
-            <Button
-              onClick={() => {
-                // This would normally connect to a backend
-                toast({
-                  title: "Demo Mode",
-                  description: "Room creation would be handled by the backend",
-                });
-                setIsCreatingRoom(false);
-              }}
-              className="w-full bg-[#6366F1] hover:bg-[#5457E5] text-white"
-            >
+            <Button onClick={handleCreateRoom} className="w-full bg-[#6366F1] hover:bg-[#5457E5] text-white">
               Create Room
+            </Button>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="w-full bg-[#22C55E] hover:bg-[#16A34A] text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Workflow
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create a New Workflow</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input 
+                placeholder="Workflow Name" 
+                value={newWorkflowName}
+                onChange={(e) => setNewWorkflowName(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleCreateWorkflow} className="w-full bg-[#22C55E] hover:bg-[#16A34A] text-white">
+              Create Workflow
             </Button>
           </DialogContent>
         </Dialog>
@@ -149,3 +195,42 @@ export default function MessageSidebar({
     </div>
   )
 }
+
+function SidebarSection({ title, icon: Icon, items, expanded, setExpanded, onSelect }) {
+  return (
+    <div className="mb-6">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between py-2 text-sm font-medium text-gray-900 hover:text-[#6366F1]"
+      >
+        <div className="flex items-center">
+          <Icon className="h-4 w-4 mr-2" />
+          <span>{title}</span>
+        </div>
+        <ChevronDown className={cn(
+          "h-4 w-4 text-gray-500 transition-transform duration-200",
+          expanded ? "" : "-rotate-90"
+        )} />
+      </button>
+      
+      {expanded && (
+        <div className="mt-1 space-y-1">
+          {items.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onSelect(item)}
+              className="flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+            >
+              <Avatar className="h-6 w-6 mr-2">
+                <AvatarImage src={item.avatar} alt={item.name} />
+                <AvatarFallback>{item.name[0]}</AvatarFallback>
+              </Avatar>
+              <span className="truncate">{item.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+

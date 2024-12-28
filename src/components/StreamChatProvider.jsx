@@ -1,92 +1,126 @@
-"use client";
+'use client';
 
-import { StreamChat } from "stream-chat";
-import { Chat } from "stream-chat-react";
-import { useEffect, useState } from "react";
-import "stream-chat-react/dist/css/v2/index.css";
+import { StreamChat } from 'stream-chat';
+import { Chat } from 'stream-chat-react';
+import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
+import { StreamVideoClient } from '@stream-io/video-react-sdk';
+import 'stream-chat-react/dist/css/v2/index.css';
 
-// Using details from Chat Explorer
 const APP_CONFIG = {
-  
+
 };
 
-
 export const chatClient = StreamChat.getInstance(APP_CONFIG.apiKey);
+export const videoClient = new StreamVideoClient({
+  apiKey: APP_CONFIG.apiKey,
+});
+
+// Configure chat and video clients together
+chatClient.callSettings = {
+  provider: 'stream',
+  enabled: true,
+  audio: true,
+  video: true,
+  screensharing: true,
+};
+
+export const startCall = async (channel, callType) => {
+  try {
+    const call = videoClient.call('default', channel.id);
+    await call.getOrCreate({
+      ring: true,
+      data: { callType },
+    });
+    return call;
+  } catch (error) {
+    console.error('Error starting call:', error);
+    throw error;
+  }
+};
+
+export const endCall = async (call) => {
+  try {
+    await call.leave();
+  } catch (error) {
+    console.error('Error ending call:', error);
+    throw error;
+  }
+};
 
 export function StreamChatProvider({ children }) {
   const [clientReady, setClientReady] = useState(false);
   const [chatToken, setChatToken] = useState(null);
   const [currentUser, setUser] = useState(null);
 
-  
   const getUser = async () => {
     try {
-      const response = await fetch("/user/current");
+      const response = await fetch('/user/current');
       if (!response.ok) {
-        throw new Error("Failed to fetch user:", response.message);
+        throw new Error('Failed to fetch user: ' + response.statusText);
       }
       const data = await response.json();
       setUser(data.user);
     } catch (error) {
-      console.error("Error fetching user:", error.message);
+      console.error('Error fetching user:', error.message);
     }
-  }
+  };
 
   const getToken = async () => {
-      try {
-        const response = await fetch("/api/chats/get_token");
-        if (!response.ok) {
-          throw new Error("Failed to fetch chat token:", response.message);
-        }
-        const data = await response.json();
-        setChatToken(data.token);
-      } catch (error) {
-        console.error("Error fetching chat token:", error.message);
+    try {
+      const response = await fetch('/api/chats/get_token');
+      if (!response.ok) {
+        throw new Error('Failed to fetch chat token: ' + response.statusText);
       }
+      const data = await response.json();
+      setChatToken(data.token);
+    } catch (error) {
+      console.error('Error fetching chat token:', error.message);
     }
+  };
 
-  useEffect(() =>{
+  useEffect(() => {
     getUser();
   }, []);
 
   useEffect(() => {
     getToken();
-  }, [])
-
-  console.log("User fetched:", currentUser);
+  }, []);
 
   useEffect(() => {
     const setupClient = async () => {
       if (currentUser && chatToken) {
         try {
-          console.log("Setting up client", currentUser); // Debugging log
           const user = {
             id: currentUser.uid,
             name: currentUser.displayName,
-            role: "admin",
+            role: 'admin',
             image: currentUser.photoURL,
           };
-          console.log("User connecting:", user); // Debugging log
-          // const userToken = ""; 
+
+          if (chatClient.userID) {
+            await chatClient.disconnectUser();
+          }
+
           await chatClient.connectUser(user, chatToken);
-          console.log("User connected:", user); // Debugging log
+
+          // Connect video client with the same user and token
+          await videoClient.connectUser(user, chatToken);
+
           setClientReady(true);
         } catch (error) {
-          console.error("Error connecting user:", error.message);
+          console.error('Error connecting user:', error.message);
         }
+      }
     };
-  }
 
-    if (!chatClient.userID) {
-      // getUser(); // Fetch user details when client connects for the first time
-      setupClient();
-    }
+    setupClient();
 
     return () => {
       if (chatClient.userID) {
         chatClient.disconnectUser();
-        console.log("User disconnected"); // Debugging log
       }
+      videoClient.disconnectUser();
     };
   }, [currentUser, chatToken]);
 
@@ -98,3 +132,7 @@ export function StreamChatProvider({ children }) {
     </Chat>
   );
 }
+
+StreamChatProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
