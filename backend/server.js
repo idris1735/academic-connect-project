@@ -38,6 +38,7 @@ const notificationRoutes = require('./routes/notification');
 const messageRoutes = require('./routes/messages');
 const workflowRoutes = require('./routes/workflows');
 const connectionRoutes = require('./routes/connections');
+const chatRoutes = require('./routes/chats');
 // Import middleware
 const checkAuth = require('./middleware/auth');
 const errorHandler = require('./middleware/errorHandler');
@@ -56,6 +57,7 @@ app.prepare()
     server.use('/api/messages', checkAuth, messageRoutes);
     server.use('/api/workflows', checkAuth, workflowRoutes);
     server.use('/api/connections', checkAuth, connectionRoutes);
+    server.use('/api/chats', checkAuth, chatRoutes); 
 
     // Handle login route
     server.get('/login', (req, res) => {

@@ -1,8 +1,10 @@
 const { admin } = require('../config/firebase');
 const { PUBLIC_ROUTES, AUTH_ROUTES } = require('../utils/constants');
+const generateUserChatToken = require('../services/chatService').generateUserChatToken;
 
 const checkAuth = async (req, res, next) => {
     const sessionCookie = req.cookies.session;
+    const chatToken = req.cookies.chatToken;
 
     // Allow unprotected routes
     if (
@@ -23,6 +25,7 @@ const checkAuth = async (req, res, next) => {
         const decodedToken = await admin.auth().verifySessionCookie(sessionCookie, true);
         console.log('Authenticated user:', decodedToken.email);
         console.log(req.path);
+        console.log('Chat token:', chatToken);
         req.user = decodedToken;
         return next();
     } catch (error) {
@@ -43,4 +46,6 @@ const checkAuth = async (req, res, next) => {
     }
 };
 
+
 module.exports = checkAuth;
+

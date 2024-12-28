@@ -1,7 +1,7 @@
 const { auth } = require('../config/firebase');
 const admin = require('../config/firebase');
 const { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } = require('firebase/auth');
-const createCookieSession = require('../utils/cookieSession');
+const {createCookieSession, AddChatToken} = require('../utils/cookieSession');
 const { db } = require('../config/database');
 const { Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
 
@@ -18,6 +18,7 @@ exports.login = async (req, res) => {
 
     const idToken = await user.getIdToken();
     await createCookieSession(req, res, idToken, user);
+    await AddChatToken(req, res, user);
 
     res.status(200).json({ message: 'Login successful', redirectTo: '/feeds', user: user });
   } catch (error) {

@@ -1,5 +1,6 @@
 const { admin } = require('../config/firebase');
 const { SESSION_EXPIRY } = require('./constants');
+const generateUserChatToken = require('../services/chatService').generateUserChatToken;
 
 const createCookieSession = async (req, res, idToken, user) => {
   try {
@@ -23,5 +24,23 @@ const createCookieSession = async (req, res, idToken, user) => {
   }
 };
 
-module.exports = createCookieSession;
+
+const AddChatToken = async (req, res, user) => {
+
+  const chatToken = await generateUserChatToken(user.uid);
+
+  const options = {
+    maxAge: SESSION_EXPIRY,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  };
+  res.cookie('chatToken', chatToken, options)
+}
+
+
+
+module.exports = {createCookieSession, AddChatToken};
+
+
 

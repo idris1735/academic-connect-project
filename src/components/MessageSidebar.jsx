@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Plus, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { cn } from "@/lib/utils"
-import { toast } from "@/components/ui/use-toast"
+import { toasts } from "@/components/ui/use-toast"
 
 const customChannelFilter = {
   type: { $in: ['messaging', 'team'] },

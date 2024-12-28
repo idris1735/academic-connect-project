@@ -10,32 +10,75 @@ const APP_CONFIG = {
   
 };
 
+
 export const chatClient = StreamChat.getInstance(APP_CONFIG.apiKey);
 
 export function StreamChatProvider({ children }) {
   const [clientReady, setClientReady] = useState(false);
+  const [chatToken, setChatToken] = useState(null);
+  const [currentUser, setUser] = useState(null);
+
+  
+  const getUser = async () => {
+    try {
+      const response = await fetch("/user/current");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user:", response.message);
+      }
+      const data = await response.json();
+      setUser(data.user);
+    } catch (error) {
+      console.error("Error fetching user:", error.message);
+    }
+  }
+
+  const getToken = async () => {
+      try {
+        const response = await fetch("/api/chats/get_token");
+        if (!response.ok) {
+          throw new Error("Failed to fetch chat token:", response.message);
+        }
+        const data = await response.json();
+        setChatToken(data.token);
+      } catch (error) {
+        console.error("Error fetching chat token:", error.message);
+      }
+    }
+
+  useEffect(() =>{
+    getUser();
+  }, []);
+
+  useEffect(() => {
+    getToken();
+  }, [])
+
+  console.log("User fetched:", currentUser);
 
   useEffect(() => {
     const setupClient = async () => {
-      try {
-        const user = {
-          id: "olanike",
-          name: "olanike",
-          role: "admin",
-          image: "https://getstream.io/random_svg/?name=olanike",
-        };
-
-        // Token generated specifically for user 'olanike'
-        const userToken = ""; 
-        await chatClient.connectUser(user, userToken);
-        console.log("User connected:", user); // Debugging log
-        setClientReady(true);
-      } catch (error) {
-        console.error("Error connecting user:", error.message);
-      }
+      if (currentUser && chatToken) {
+        try {
+          console.log("Setting up client", currentUser); // Debugging log
+          const user = {
+            id: currentUser.uid,
+            name: currentUser.displayName,
+            role: "admin",
+            image: currentUser.photoURL,
+          };
+          console.log("User connecting:", user); // Debugging log
+          // const userToken = ""; 
+          await chatClient.connectUser(user, chatToken);
+          console.log("User connected:", user); // Debugging log
+          setClientReady(true);
+        } catch (error) {
+          console.error("Error connecting user:", error.message);
+        }
     };
+  }
 
     if (!chatClient.userID) {
+      // getUser(); // Fetch user details when client connects for the first time
       setupClient();
     }
 
@@ -45,7 +88,7 @@ export function StreamChatProvider({ children }) {
         console.log("User disconnected"); // Debugging log
       }
     };
-  }, []);
+  }, [currentUser, chatToken]);
 
   if (!clientReady) return null;
 

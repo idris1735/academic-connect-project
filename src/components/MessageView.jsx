@@ -16,16 +16,18 @@ import "stream-chat-react/dist/css/v2/index.css";
 export default function MessageView({ conversation, onToggleSidebar }) {
   const [channel, setChannel] = useState(null);
 
+  const [client, setClient] = useState(null);
+
+  
+
   useEffect(() => {
     if (conversation) {
       const setupChannel = async () => {
-        const channelId = `messaging_dm1_${conversation.id}`;
+        const channelId = conversation.id;
+        const participants = await conversation.participants;;
         const newChannel = chatClient.channel("messaging", channelId, {
           name: conversation.name,
-          members: ["olanike", "dm1"],
-          image: conversation.avatar,
         });
-
         await newChannel.watch();
         setChannel(newChannel);
       };

@@ -1,6 +1,7 @@
 const { db } = require('../config/database');
 const { FieldValue } = require('firebase-admin/firestore');
 const { getUserNameByUid } = require('../utils/user');
+const { createChannel, getChannel } = require('../services/chatService'); // Import chat service
 
 exports.createMessageRoom = async (req, res) => {
   try {
@@ -49,11 +50,19 @@ exports.createMessageRoom = async (req, res) => {
 
         if (existingDM) {
           const roomDat = existingDM.data()
+
+          // Query for existing channel
+          let channel = await getChannel(existingDM.id);
+          if (!channel) {
+            channel = await createChannel(creatorId, participants, existingDM.id, roomType, name);
+          }
+
           return res.status(200).json({ 
             message: 'Direct message room already exists between these users',
             room : {
               id: existingDM.id,
-              ...roomDat
+              ...roomDat,
+              channel: channel.id,
             }
           });
         }
@@ -118,6 +127,8 @@ exports.createMessageRoom = async (req, res) => {
       });
     }
 
+    const channel = await createChannel(creatorId, participants, roomRef.id, roomType, roomData.name);
+
     // Get participant details for response
     const participantDetails = await Promise.all(
       participants.map(async (uid) => ({
@@ -132,7 +143,8 @@ exports.createMessageRoom = async (req, res) => {
       room: {
         ...roomData,
         participants: participantDetails,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        channel: channel.id,
       }
     });
 

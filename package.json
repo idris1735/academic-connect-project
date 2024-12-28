@@ -27,6 +27,7 @@
     "cookie-parser": "^1.4.7",
     "countries-list": "^3.1.1",
     "date-fns": "^4.1.0",
+    "diff": "^7.0.0",
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "firebase": "^11.0.1",
@@ -48,9 +49,12 @@
     "shadcn-ui": "^0.9.3",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "stream-chat": "^8.49.0",
+    "stream-chat-react": "^12.8.1",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "use-debounce": "^10.0.4"
+    "use-debounce": "^10.0.4",
+    "uvu": "^0.5.6"
   },
   "devDependencies": {
     "eslint": "^8",

@@ -34,10 +34,32 @@ function MessagesContent() {
   ];
 
   const [rooms, setRooms] = useState({
-    directMessages: dummyConversations,
+    directMessages: [],
     researchRooms: [],
   });
 
+  useEffect(() => {
+    const fetchMessageRooms = async () => {
+      try {
+        const response = await fetch('/api/messages/rooms'); // Adjust the URL as necessary
+        if (!response.ok) {
+          throw new Error('Failed to fetch message rooms');
+        }
+        const data = await response.json();
+        setRooms({
+          directMessages: data.rooms.DM || [],
+          researchRooms: data.rooms.RM || [],
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+        });
+      }
+    };
+
+    fetchMessageRooms();
+  }, [])
   const { toast } = useToast();
 
   const handleSelectItem = (item, type) => {
@@ -81,7 +103,7 @@ function MessagesContent() {
       const fetchMessages = async () => {
         const response = await fetch(`/api/messages/rooms?id=${id}`);
         const data = await response.json();
-        setSelectedItem(data.rooms);
+        setSelectedItem(data.room);
         if (type == 'DM'){
           setActiveView("messages")
         } else if (type == 'RR'){
