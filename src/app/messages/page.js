@@ -19,8 +19,8 @@ function MessagesContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [workflows, setWorkflows] = useState([
-    { id: "wf1", name: "Research Project A", tasks: [], members: [] },
-    { id: "wf2", name: "Grant Proposal Review", tasks: [], members: [] },
+    // { id: "wf1", name: "Research Project A", tasks: [], members: [] },
+    // { id: "wf2", name: "Grant Proposal Review", tasks: [], members: [] },
   ]);
   const router = useRouter();
 
@@ -31,54 +31,54 @@ function MessagesContent() {
   const [rooms, setRooms] = useState({
     directMessages: [],
     researchRooms: [
-      {
-        id: "rr1",
-        name: "AI Ethics Research",
-        avatar: "https://picsum.photos/seed/ai-ethics/200",
-        members: [
-          { id: "user1", name: "Alice Johnson" },
-          { id: "user2", name: "Bob Smith" },
-          { id: "user3", name: "Charlie Brown" },
-        ],
-        resources: [
-          { id: "res1", name: "AI Ethics Guidelines", url: "#" },
-          { id: "res2", name: "Recent Survey Results", url: "#" },
-        ],
-        schedule: [
-          { id: "sch1", name: "Weekly Meeting", date: "2023-06-15T10:00:00Z" },
-          {
-            id: "sch2",
-            name: "Ethics Panel Discussion",
-            date: "2023-06-20T14:00:00Z",
-          },
-        ],
-      },
-      {
-        id: "rr2",
-        name: "Quantum Computing",
-        avatar: "https://picsum.photos/seed/quantum/200",
-        members: [
-          { id: "user2", name: "Bob Smith" },
-          { id: "user4", name: "Diana Prince" },
-          { id: "user5", name: "Ethan Hunt" },
-        ],
-        resources: [
-          { id: "res3", name: "Quantum Algorithms Overview", url: "#" },
-          { id: "res4", name: "Quantum Hardware Comparison", url: "#" },
-        ],
-        schedule: [
-          {
-            id: "sch3",
-            name: "Quantum Theory Seminar",
-            date: "2023-06-18T11:00:00Z",
-          },
-          {
-            id: "sch4",
-            name: "Lab Experiment #42",
-            date: "2023-06-22T09:00:00Z",
-          },
-        ],
-      },
+      // {
+      //   id: "rr1",
+      //   name: "AI Ethics Research",
+      //   avatar: "https://picsum.photos/seed/ai-ethics/200",
+      //   members: [
+      //     { id: "user1", name: "Alice Johnson" },
+      //     { id: "user2", name: "Bob Smith" },
+      //     { id: "user3", name: "Charlie Brown" },
+      //   ],
+      //   resources: [
+      //     { id: "res1", name: "AI Ethics Guidelines", url: "#" },
+      //     { id: "res2", name: "Recent Survey Results", url: "#" },
+      //   ],
+      //   schedule: [
+      //     { id: "sch1", name: "Weekly Meeting", date: "2023-06-15T10:00:00Z" },
+      //     {
+      //       id: "sch2",
+      //       name: "Ethics Panel Discussion",
+      //       date: "2023-06-20T14:00:00Z",
+      //     },
+      //   ],
+      // },
+      // {
+      //   id: "rr2",
+      //   name: "Quantum Computing",
+      //   avatar: "https://picsum.photos/seed/quantum/200",
+      //   members: [
+      //     { id: "user2", name: "Bob Smith" },
+      //     { id: "user4", name: "Diana Prince" },
+      //     { id: "user5", name: "Ethan Hunt" },
+      //   ],
+      //   resources: [
+      //     { id: "res3", name: "Quantum Algorithms Overview", url: "#" },
+      //     { id: "res4", name: "Quantum Hardware Comparison", url: "#" },
+      //   ],
+      //   schedule: [
+      //     {
+      //       id: "sch3",
+      //       name: "Quantum Theory Seminar",
+      //       date: "2023-06-18T11:00:00Z",
+      //     },
+      //     {
+      //       id: "sch4",
+      //       name: "Lab Experiment #42",
+      //       date: "2023-06-22T09:00:00Z",
+      //     },
+      //   ],
+      // },
     ],
   });
 
@@ -95,6 +95,7 @@ function MessagesContent() {
         setRooms((prevRooms) => ({
           ...prevRooms,
           directMessages: data.rooms.DM || [],
+          researchRooms: data.rooms.RR || [],
         }));
       } catch (error) {
         toast({
@@ -103,6 +104,8 @@ function MessagesContent() {
         });
       }
     };
+
+    
 
     fetchMessageRooms();
   }, []);
@@ -121,7 +124,6 @@ function MessagesContent() {
   const handleCreateRoom = async (name, description) => {
     try {
       const newRoom = {
-        id: uuidv4(),
         name,
         description,
         avatar: `https://picsum.photos/seed/${name}/200`,
@@ -130,9 +132,23 @@ function MessagesContent() {
         schedule: [],
       };
 
+      const roomData = { ...newRoom, roomType: "RR", participants: []};
+      console.log(roomData)
+
+      const response = await fetch("/api/messages/rooms", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomData  }),
+      });
+      if (!response.ok) {
+        console.log(response)
+        throw new Error("Failed to create room");
+      }
+      const createdRoom = await response.json();
+
       setRooms((prevRooms) => ({
         ...prevRooms,
-        researchRooms: [...prevRooms.researchRooms, newRoom],
+        researchRooms: [...prevRooms.researchRooms, createdRoom.room],
       }));
 
       toast({
@@ -140,6 +156,7 @@ function MessagesContent() {
         description: `Your new room "${name}" has been created successfully.`,
       });
     } catch (error) {
+      console.log(error)
       toast({
         title: "Error",
         description: error.message,

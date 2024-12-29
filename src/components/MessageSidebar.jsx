@@ -50,6 +50,7 @@ export default function MessageSidebar({
   }, [searchQuery, rooms, workflows])
 
   const handleCreateRoom = () => {
+    
     if (newRoomName.trim() === '') {
       toast({
         title: "Error",

@@ -56,7 +56,7 @@ exports.createChannelUser = async(userId) =>{
     // check if user already exists
     let user = await serverClient.queryUsers({'id': { $eq: userId  }});
     if (!user) {
-        user = await serverClient.upsertUsers([{"id": userId, "role": "admin"}])
+        user = await serverClient.upsertUsers([{"id": userId, "role": "channel_moderator"}])
     }
     return user;
 }
@@ -64,23 +64,40 @@ exports.createChannel = async (creator, participants, messageID, roomType, name)
 
     // Check for existing user  - Remove this from here later on, create user on signup
     // const user = await this.createChannelUser(creator);
-    for (let participant of participants) {
-        console.log('Participant:', participant);
-        let user = await this.createChannelUser(participant);
-        console.log('User:', user);
-    }
+    // for (let participant of participants) {
+    //     console.log('Participant:', participant);
+    //     let user = await this.createChannelUser(participant);
+    //     console.log('User:', user);
+    // }
 
     try {
-        const type = roomType === 'DM'? 'messaging' : 'team';
-        const channel = serverClient.channel(
-            type, messageID, {
-                name: name,
-                members: participants,
-                created_by_id: creator,
-            }
-        )
-        await channel.create();
-        return channel;
+
+        if (roomType === 'DM') {
+            const channel = serverClient.channel(
+                "messaging", messageID, {
+                    name: name,
+                    members: participants,
+                    created_by_id: creator,
+                }
+            )
+            await channel.create();
+            return channel;
+        } else {
+            // Create a group channel for research rooms
+            const channel = serverClient.channel(
+                "messaging", `research_${messageID}`, {
+                    name: name,
+                    created_by_id: creator,
+                }
+            )
+            await channel.create();
+            await channel.addMembers([
+                { user_id: creator, channel_role: "channel_moderator" },
+              ]);
+            
+            return channel;
+        }
+       
     } catch (error) {
         console.error('Error creating channel:', error.message);
         return null;

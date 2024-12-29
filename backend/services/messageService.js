@@ -3,9 +3,34 @@ const { FieldValue } = require('firebase-admin/firestore');
 const { getUserNameByUid } = require('../utils/user');
 const { createChannel, getChannel } = require('../services/chatService'); // Import chat service
 
+
+
+
+const getUserRoleInRoom = async (userId, roomRefId) => {
+  // Fetch the user's profile
+  const userProfileDoc = await db.collection('profiles').doc(userId).get();
+  
+  if (!userProfileDoc.exists) {
+    throw new Error('User profile not found');
+  }
+
+  const userProfile = userProfileDoc.data();
+  
+  // Access the rooms collection in the user's profile
+  const roomsCollection = userProfile.messageRooms?.researchRooms|| []; // Assuming rooms is an array of room objects
+
+  // Find the specific room document where roomId matches roomRefId
+  const roomDoc = roomsCollection.find(room => room.roomId === roomRefId);
+
+  // Return the role if the room document is found, otherwise return 'member'
+  return roomDoc ? roomDoc.role : 'member';
+};
+
 exports.createMessageRoom = async (req, res) => {
+
   try {
-    const { roomType, participants, name, description, postId } = req.body;
+     console.log(req.body)
+    const { roomType, participants, name, description, postId } = req.body.roomData;
     const creatorId = req.user.uid;
 
     // Validate room type
@@ -87,7 +112,6 @@ exports.createMessageRoom = async (req, res) => {
             message: 'Room name is required for research rooms' 
           });
         }
-        break;
     }
 
     // Create message room
@@ -104,17 +128,46 @@ exports.createMessageRoom = async (req, res) => {
       lastMessageTime: null,
       isActive: true,
       admins: roomType !== 'DM' ? [creatorId] : null,
-      avatar: 'https://picsum.photos/seed/sarah/200',
+      avatar: req.body.avatar || 'https://picsum.photos/seed/sarah/200',
       settings: {
         canParticipantsAdd: roomType === 'RR',
         canParticipantsRemove: false,
         isPublic: roomType === 'RR'
       },
       // Add postIds array for RR type
-      postIds: roomType === 'RR' ? (postId ? [postId] : []) : null
+      postIds: roomType === 'RR' ? (postId ? [postId] : []) : null,
+      resources: roomType === 'RR'? [] : null,
+      schedule: roomType === 'RR'? [] : null,
+      members: roomType === 'RR' ? await Promise.all(participants.map(async (uid) => {
+        let role;
+        if (uid === creatorId) {
+          role = 'admin';
+        } else {
+          role = 'channel_member';
+        }
+        return {
+          uid,
+          role // Use the updated role logic
+        };
+      })) : null, // Initialize members array with role as member for all participants
     };
 
     await roomRef.set(roomData);
+
+    if (roomType === 'RR') {
+      // Update the user's profile with the room reference
+      for (const uid of participants) {
+        if (uid === creatorId) continue; // Skip the creator
+        const userProfileRef = db.collection('profiles').doc(uid);
+        await userProfileRef.update({
+          'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role':'channel_member' })
+        });
+      }
+      const userProfileRef = db.collection('profiles').doc(creatorId);
+      await userProfileRef.update({
+        'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role': 'admin' })
+       });
+    }
 
     // If postId is provided for RR, update the post with the room reference
     if (roomType === 'RR' && postId) {
@@ -130,12 +183,19 @@ exports.createMessageRoom = async (req, res) => {
     const channel = await createChannel(creatorId, participants, roomRef.id, roomType, roomData.name);
 
     // Get participant details for response
+
     const participantDetails = await Promise.all(
-      participants.map(async (uid) => ({
-        uid,
-        name: await getUserNameByUid(uid),
-        role: roomType !== 'DM' ? (uid === creatorId ? 'admin' : 'member') : 'member'
-      }))
+      participants.map(async (uid) => {
+        const memberRole = roomType !== 'DM' 
+        ? await getUserRoleInRoom(uid, roomRef.id) // Pass the roomRef.id to get the role
+        : 'member'; // Default role fo
+    
+        return {
+          uid,
+          name: await getUserNameByUid(uid),
+          role: memberRole, // Use the updated role logic
+        };
+      })
     );
 
     return res.status(201).json({
@@ -149,6 +209,11 @@ exports.createMessageRoom = async (req, res) => {
     });
 
   } catch (error) {
+    // channel.delete(); // Delete the channel if it was not created successfully
+    // roomRef.delete(); // Delete the room if it was not created successfully
+
+    // Other necessary error handling
+
     console.error('Error creating message room:', error);
     return res.status(500).json({ 
       message: 'Failed to create message room', 
@@ -260,7 +325,7 @@ exports.getUserRooms = async (req, res) => {
         roomData.participants.map(async (uid) => ({
           uid,
           name: await getUserNameByUid(uid),
-          role: roomData.admins?.includes(uid) ? 'admin' : 'member'
+          role: await getUserRoleInRoom(uid, doc.id) // Pass the roomRef.id to get the role
         }))
       );
 
@@ -290,6 +355,7 @@ exports.getUserRooms = async (req, res) => {
         type: roomData.roomType,
         name: displayName,
         participants: participantDetails,
+        members: participantDetails,
         lastMessage: lastMessageData ? {
           content: lastMessageData.content,
           timestamp: lastMessageData.timestamp?.toDate().toISOString(),
@@ -303,7 +369,9 @@ exports.getUserRooms = async (req, res) => {
         settings: roomData.settings || {},
         postIds: roomData.postIds || [],
         avatar: roomData.avatar,
-        description: roomData.description
+        description: roomData.description,
+        resources: roomData.resources || [],
+        schedule: roomData.schedule || []
       };
     }));
 
@@ -393,7 +461,7 @@ exports.createResearchRoomForPost = async (creatorId, name, postId, description)
      const profileRef = db.collection('profiles').doc(creatorId);
 
      await profileRef.update({
-       'messageRooms.researchRooms': FieldValue.arrayUnion(roomRef.id)
+       'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role': 'admin' })
       });
 
     return {
@@ -407,7 +475,7 @@ exports.createResearchRoomForPost = async (creatorId, name, postId, description)
     console.error('Error creating research room for post:', error);
     await roomRef.delete();
     await profileRef.update({
-     'messageRooms.researchRooms': FieldValue.arrayRemove(roomRef.id)
+     'messageRooms.researchRooms': FieldValue.arrayRemove({'room': roomRef.id, 'role': 'admin' })
     });
     return {
       success: false,
@@ -447,7 +515,7 @@ exports.joinRoom = async (req, res) => {
     const profileRef = db.collection('profiles').doc(userId);
 
     await profileRef.update({
-      'messageRooms.researchRooms': FieldValue.arrayUnion(roomId)
+      'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomId, 'role': 'channel_member' })
   });
   
 

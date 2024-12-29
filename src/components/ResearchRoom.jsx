@@ -16,9 +16,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       const setupChannel = async () => {
         try {
           const channelId = `research_${room.id}`
-          const newChannel = chatClient.channel('team', channelId, {
+          const newChannel = chatClient.channel('messaging', channelId, {
             name: room.name,
-            members: room.members.map(member => member.id),
           })
           
           await newChannel.watch()
@@ -124,7 +123,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
           <h3 className="text-lg font-semibold mb-2">Members</h3>
           <ul>
             {room.members.map((member) => (
-              <li key={member.id} className="mb-2">
+              <li key={member.uid} className="mb-2">
                 {member.name}
               </li>
             ))}
