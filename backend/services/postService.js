@@ -22,18 +22,11 @@ exports.createPost = async (req, res) => {
     
     const { content, category, discussionName } = req.body;
     const attachment = req.file;
+  
     let attachment_info;
 
-    if (attachment) {
-      console.log('Uploaded file:', attachment.originalname);
-      console.log('File size:', attachment.size);
-      console.log('File mime type:', attachment.mimetype);
-      console.log('File path on server:', attachment.path);
-      console.log('File type:', attachment.type);
-    } else {
-      console.log('No attachment uploaded');
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
+   
+    
 
     // Handle file upload if there's an attachment
     if (req.file && storeInCloud) {
@@ -133,7 +126,7 @@ exports.createPost = async (req, res) => {
       postCat: category,
       likesCount: 0,
       commentsCount: 0,
-      attachment: attachment_info,
+      attachment: attachment ? attachment_info : null,
       discussion: null,
     };
 
