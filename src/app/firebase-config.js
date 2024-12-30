@@ -1,5 +1,6 @@
-const { getAuth } = require('firebase/auth')
-const { initializeApp, getApps } = require('firebase/app')
+// Client-side Firebase config
+import { initializeApp, getApps } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyB0xMcnwwj7qlZAzDL-UbH8pLBctXVwUcU',
@@ -11,15 +12,10 @@ const firebaseConfig = {
   measurementId: 'G-163HH48S44',
 }
 
-// Initialize Firebase
+// Initialize Firebase for client
 let app
-
 if (!getApps().length) {
   app = initializeApp(firebaseConfig)
-} else {
-  app = getApps()[0]
 }
 
-const auth = getAuth(app)
-
-module.exports = { auth }
+export const auth = getAuth(app)

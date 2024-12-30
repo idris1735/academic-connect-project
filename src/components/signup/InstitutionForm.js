@@ -203,8 +203,7 @@ const InstitutionForm = ({ onComplete, onBack, subOption }) => {
             </div>
 
             {/* Dynamic Fields for Admin/Staff */}
-            {subOption === 'Admin'
-              ? (
+            {subOption === 'Admin' ? (
               <>
                 <Input
                   id='adminName'
@@ -236,8 +235,7 @@ const InstitutionForm = ({ onComplete, onBack, subOption }) => {
                   disabled={isLoading}
                 />
               </>
-                )
-              : (
+            ) : (
               <>
                 <Input
                   id='staffName'
@@ -268,22 +266,20 @@ const InstitutionForm = ({ onComplete, onBack, subOption }) => {
                   disabled={isLoading}
                 />
               </>
-                )}
+            )}
           </form>
         </CardContent>
 
         <CardFooter className='flex flex-col gap-4'>
           <Button type='submit' className='w-full' disabled={!isFormValid}>
-            {isLoading
-              ? (
+            {isLoading ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Processing...
               </>
-                )
-              : (
-                  'Continue'
-                )}
+            ) : (
+              'Continue'
+            )}
           </Button>
         </CardFooter>
       </Card>

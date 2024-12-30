@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "NODE_PATH=. nodemon backend/server.js",
-    "lint": "next lint"
+    "start:backend": "cross-env NODE_ENV=development nodemon backend/server.js",
+    "start:frontend": "next dev",
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "lint": "next lint",
+    "clean-data": "node scripts/cleanInstitutionsData.js"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
@@ -62,6 +65,8 @@
     "uvu": "^0.5.6"
   },
   "devDependencies": {
+    "concurrently": "^9.1.1",
+    "cross-env": "^7.0.3",
     "eslint": "^8",
     "eslint-config-next": "15.0.1",
     "postcss": "^8",
