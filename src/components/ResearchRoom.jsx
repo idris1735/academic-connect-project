@@ -495,7 +495,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                 <div className="space-y-4">
                   {room?.members?.map((member) => (
                     <div
-                      key={member.id}
+                      key={member.uid}
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-accent"
                     >
                       <div className="flex items-center gap-3">
