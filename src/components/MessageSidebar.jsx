@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ChevronDown, Plus, Search, Edit, Users, MessageCircle, X } from 'lucide-react'
+import { ChevronDown, Plus, Search, Edit, Users, MessageCircle, X, Check } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
+import { Badge } from "@/components/ui/badge"
 
 export default function MessageSidebar({
   onSelectDM,
@@ -50,7 +51,6 @@ export default function MessageSidebar({
   }, [searchQuery, rooms, workflows])
 
   const handleCreateRoom = () => {
-    
     if (newRoomName.trim() === '') {
       toast({
         title: "Error",
@@ -78,8 +78,8 @@ export default function MessageSidebar({
   }
 
   return (
-    <div className={cn(
-      "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white border-r border-gray-200 transition-transform duration-200 ease-in-out",
+    <aside className={cn(
+      "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white border-r border-gray-200 transition-transform duration-200 ease-in-out h-[calc(100vh-4rem)]",
       isSidebarOpen ? "translate-x-0" : "-translate-x-full",
       "md:relative md:translate-x-0"
     )}>
@@ -107,8 +107,7 @@ export default function MessageSidebar({
         </div>
       </div>
 
-      <ScrollArea className="flex-grow h-full overflow-y-auto">
-
+      <ScrollArea className="flex-grow sidebar-content">
         <div className="p-4 space-y-6">
           <SidebarSection
             title="Direct Messages"
@@ -139,7 +138,7 @@ export default function MessageSidebar({
         </div>
       </ScrollArea>
 
-      <div className="flex-shrink-0 p-4 border-t mt-auto space-y-2">
+      <div className="flex-shrink-0 p-4 border-t space-y-2 sidebar-footer">
         <Dialog>
           <DialogTrigger asChild>
             <Button className="w-full bg-[#6366F1] hover:bg-[#5457E5] text-white">
@@ -193,13 +192,13 @@ export default function MessageSidebar({
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </aside>
   )
 }
 
 function SidebarSection({ title, icon: Icon, items, expanded, setExpanded, onSelect }) {
   return (
-    <div className="mb-6">
+    <div className="space-y-1">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between py-2 text-sm font-medium text-gray-900 hover:text-[#6366F1]"
@@ -216,17 +215,40 @@ function SidebarSection({ title, icon: Icon, items, expanded, setExpanded, onSel
       
       {expanded && (
         <div className="mt-1 space-y-1">
-          {items.map((item) => (
+          {items?.map((item) => (
             <button
               key={item.id}
               onClick={() => onSelect(item)}
-              className="flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              className="flex w-full items-center justify-between rounded-md px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
             >
-              <Avatar className="h-6 w-6 mr-2">
-                <AvatarImage src={item.avatar} alt={item.name} />
-                <AvatarFallback>{item.name[0]}</AvatarFallback>
-              </Avatar>
-              <span className="truncate">{item.name}</span>
+              <div className="flex items-center">
+                <Avatar className="h-6 w-6 mr-2">
+                  <AvatarImage src={item.avatar} alt={item.name} />
+                  <AvatarFallback>{item.name[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">{item.name}</span>
+                  {item.lastMessage && (
+                    <span className="text-xs text-gray-500 truncate max-w-[150px]">
+                      {item.lastMessage}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {item.unreadCount > 0 && (
+                  <Badge variant="secondary" className="bg-green-500 text-white">
+                    {item.unreadCount}
+                  </Badge>
+                )}
+                {item.status === 'sent' && <Check className="h-4 w-4 text-gray-400" />}
+                {item.status === 'delivered' && (
+                  <div className="flex">
+                    <Check className="h-4 w-4 text-gray-400" />
+                    <Check className="h-4 w-4 -ml-2 text-gray-400" />
+                  </div>
+                )}
+              </div>
             </button>
           ))}
         </div>
@@ -234,4 +256,5 @@ function SidebarSection({ title, icon: Icon, items, expanded, setExpanded, onSel
     </div>
   )
 }
+
 

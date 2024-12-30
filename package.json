@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@heroicons/react": "^1.0.6",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-checkbox": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.4",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-popover": "^1.1.2",
     "@radix-ui/react-scroll-area": "^1.2.0",
@@ -29,6 +32,7 @@
     "countries-list": "^3.1.1",
     "date-fns": "^4.1.0",
     "diff": "^7.0.0",
+    "emoji-mart": "^5.6.0",
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "firebase": "^11.0.1",
