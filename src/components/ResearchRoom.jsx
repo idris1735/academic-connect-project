@@ -1,250 +1,519 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { Channel, MessageList, MessageInput, Thread, Window } from 'stream-chat-react'
-import { Button } from '@/components/ui/button'
-import { Menu, Video, Phone, Smile, Mic, Square, Settings2, Users, FileText, CalendarDays, Plus, UserPlus, X } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { useToast } from "@/components/ui/use-toast"
-import { Switch } from "@/components/ui/switch"
-import data from '@emoji-mart/data'
-import Picker from '@emoji-mart/react'
-import { chatClient } from './StreamChatProvider'
+import { useState, useEffect, useRef } from "react";
+import {
+  Channel,
+  MessageList,
+  MessageInput,
+  Thread,
+  Window,
+} from "stream-chat-react";
+import { Button } from "@/components/ui/button";
+import {
+  Menu,
+  Video,
+  Phone,
+  Smile,
+  Mic,
+  Square,
+  Settings2,
+  Users,
+  FileText,
+  CalendarDays,
+  Plus,
+  UserPlus,
+  X,
+  MoreHorizontal,
+  Bell,
+  Badge,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import { chatClient, videoClient } from "./StreamChatProvider";
+import {
+  StreamVideo,
+  StreamCall,
+  CallControls,
+  CallParticipantsList,
+  SpeakerLayout,
+} from "@stream-io/video-react-sdk";
+import "@stream-io/video-react-sdk/dist/css/styles.css";
 
 export default function ResearchRoom({ room, onToggleSidebar }) {
-  const [channel, setChannel] = useState(null)
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingTime, setRecordingTime] = useState(0)
-  const [isAddingMember, setIsAddingMember] = useState(false)
-  const [newMemberEmail, setNewMemberEmail] = useState('')
-  const [isCreatingEvent, setIsCreatingEvent] = useState(false)
-  const [events, setEvents] = useState([])
+  const [channel, setChannel] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [activeCall, setActiveCall] = useState(null);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [platformUsers, setPlatformUsers] = useState([
+    {
+      id: "1",
+      name: "Alice Johnson",
+      role: "Professor",
+      department: "Computer Science",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice",
+      email: "alice.j@university.edu",
+    },
+    {
+      id: "2",
+      name: "Bob Smith",
+      role: "Research Assistant",
+      department: "Physics",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob",
+      email: "bob.s@university.edu",
+    },
+    {
+      id: "3",
+      name: "Carol White",
+      role: "Associate Professor",
+      department: "Mathematics",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Carol",
+      email: "carol.w@university.edu",
+    },
+    {
+      id: "4",
+      name: "David Brown",
+      role: "PhD Student",
+      department: "Computer Science",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
+      email: "david.b@university.edu",
+    },
+    {
+      id: "5",
+      name: "Eva Martinez",
+      role: "Research Fellow",
+      department: "Biology",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Eva",
+      email: "eva.m@university.edu",
+    },
+  ]);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [events, setEvents] = useState([]);
   const [settings, setSettings] = useState({
     notifications: true,
     soundEffects: true,
     darkMode: false,
-    autoPlay: true
-  })
+    autoPlay: true,
+  });
   const [eventDetails, setEventDetails] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     date: new Date(),
-    time: ''
-  })
-  const mediaRecorderRef = useRef(null)
-  const audioChunksRef = useRef([])
-  const recordingTimerRef = useRef(null)
-  const { toast } = useToast()
+    time: "",
+    reminders: {
+      email: true,
+      notification: true,
+      reminderTime: "1hour",
+    },
+  });
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (room) {
       const setupChannel = async () => {
         try {
-          const channelId = `research_${room.id}`
-          const newChannel = chatClient.channel('messaging', channelId, {
+          const channelId = `research_${room.id}`;
+          const newChannel = chatClient.channel("messaging", channelId, {
             name: room.name,
-          })
-          await newChannel.watch()
-          setChannel(newChannel)
+          });
+          await newChannel.watch();
+          setChannel(newChannel);
         } catch (error) {
-          console.error('Error setting up channel:', error)
+          console.error("Error setting up channel:", error);
         }
-      }
+      };
 
-      setupChannel()
+      setupChannel();
     }
-  }, [room])
+  }, [room]);
 
-  const handleAddMember = async () => {
+  useEffect(() => {
+    if (channel) {
+      // Listen for incoming calls
+      const handleIncomingCall = (event) => {
+        const { call } = event;
+        setActiveCall(call);
+        toast({
+          title: "Incoming Call",
+          description: `${
+            call.type === "video" ? "Video" : "Voice"
+          } call from ${call.creator.name}`,
+        });
+      };
+
+      channel.on("call.incoming", handleIncomingCall);
+
+      return () => {
+        channel.off("call.incoming", handleIncomingCall);
+      };
+    }
+  }, [channel]);
+
+  const handleAddMember = async (user) => {
     try {
-      const response = await fetch('/api/rooms/members', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          roomId: room.id,
-          email: newMemberEmail
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to add member')
-      }
-
+      // Here you would typically make an API call to add the member
       toast({
         title: "Success",
-        description: "Member has been invited to the room",
-      })
-      setIsAddingMember(false)
-      setNewMemberEmail('')
+        description: `${user.name} has been added to the room`,
+      });
+      setIsAddingMember(false); // Close the dialog after successful addition
     } catch (error) {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleCreateEvent = async () => {
     try {
+      if (!eventDetails.title.trim()) {
+        toast({
+          title: "Error",
+          description: "Event title is required",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const newEvent = {
         id: Date.now().toString(),
         ...eventDetails,
-        createdAt: new Date().toISOString()
-      }
-      
-      setEvents(prev => [...prev, newEvent])
-      
+        createdAt: new Date().toISOString(),
+        status: "upcoming",
+        createdBy: {
+          name: "Current User",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=currentUser",
+        },
+      };
+
+      setEvents((prev) => [...prev, newEvent]);
+
       toast({
         title: "Success",
-        description: "Event has been created",
-      })
-      setIsCreatingEvent(false)
+        description: "Event has been created and reminders have been set",
+      });
+
+      // Reset form and close dialog
       setEventDetails({
-        title: '',
-        description: '',
+        title: "",
+        description: "",
         date: new Date(),
-        time: ''
-      })
+        time: "",
+        reminders: {
+          email: true,
+          notification: true,
+          reminderTime: "1hour",
+        },
+      });
+      setIsCreatingEvent(false);
     } catch (error) {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorderRef.current = new MediaRecorder(stream)
-      audioChunksRef.current = []
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data)
+      // Make sure any existing recording is stopped and cleaned up
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stream
+          ?.getTracks()
+          .forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
       }
+      clearInterval(recordingTimerRef.current);
+      audioChunksRef.current = [];
 
-      mediaRecorderRef.current.start()
-      setIsRecording(true)
-      
-      let time = 0
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+      });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start(100); // Record in 100ms chunks
+      setIsRecording(true);
+
+      let time = 0;
       recordingTimerRef.current = setInterval(() => {
-        time += 1
-        setRecordingTime(time)
-      }, 1000)
+        time += 1;
+        setRecordingTime(time);
+      }, 1000);
     } catch (error) {
-      console.error('Error starting recording:', error)
+      console.error("Error starting recording:", error);
       toast({
         title: "Error",
         description: "Failed to start recording",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const stopRecording = async (shouldSend = true) => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
-      clearInterval(recordingTimerRef.current)
-      setIsRecording(false)
-      setRecordingTime(0)
+      return new Promise((resolve) => {
+        // First stop the recording and clean up
+        const cleanup = () => {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
+            mediaRecorderRef.current.stream
+              .getTracks()
+              .forEach((track) => track.stop());
+          }
+          clearInterval(recordingTimerRef.current);
+          setIsRecording(false);
+          setRecordingTime(0);
+          mediaRecorderRef.current = null;
+          audioChunksRef.current = [];
+        };
 
-      if (shouldSend) {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' })
-        const file = new File([audioBlob], 'voice-note.mp3', { type: 'audio/mp3' })
-        
         try {
-          const response = await channel.sendFile(file)
-          await channel.sendMessage({
-            text: '🎤 Voice Note',
-            attachments: [{
-              type: 'audio',
-              asset_url: response.file,
-              title: 'Voice Note',
-            }],
-          })
-        } catch (error) {
-          console.error('Error sending voice note:', error)
-          toast({
-            title: "Error",
-            description: "Failed to send voice note",
-            variant: "destructive"
-          })
-        }
-      }
-    }
-  }
+          mediaRecorderRef.current.onstop = async () => {
+            try {
+              if (shouldSend && audioChunksRef.current.length > 0) {
+                const audioBlob = new Blob(audioChunksRef.current, {
+                  type: "audio/webm;codecs=opus",
+                });
 
-  const handleEmojiSelect = async (emoji) => {
+                // Create a File object with a proper name and type
+                const file = new File([audioBlob], "voice-message.webm", {
+                  type: "audio/webm;codecs=opus",
+                  lastModified: Date.now(),
+                });
+
+                // First upload the file
+                const response = await channel.sendFile(file);
+
+                // Then send the message with the file attachment
+                if (response.file) {
+                  await channel.sendMessage({
+                    text: "🎤 Voice Message",
+                    attachments: [
+                      {
+                        type: "audio",
+                        asset_url: response.file,
+                        title: "Voice Message",
+                        mime_type: "audio/webm;codecs=opus",
+                        file_size: file.size,
+                      },
+                    ],
+                  });
+
+                  toast({
+                    title: "Success",
+                    description: "Voice message sent successfully",
+                  });
+                }
+              }
+            } catch (error) {
+              console.error("Error sending voice note:", error);
+              toast({
+                title: "Error",
+                description: "Failed to send voice message: " + error.message,
+                variant: "destructive",
+              });
+            } finally {
+              cleanup();
+              resolve();
+            }
+          };
+
+          // Stop the recording
+          mediaRecorderRef.current.stop();
+        } catch (error) {
+          console.error("Error stopping recording:", error);
+          cleanup();
+          resolve();
+        }
+      });
+    }
+  };
+
+  const handleEmojiSelect = (emoji) => {
     if (channel) {
-      try {
-        await channel.sendMessage({
+      const messageInput = document.querySelector(
+        ".str-chat__textarea textarea"
+      );
+      if (messageInput) {
+        const start = messageInput.selectionStart;
+        const end = messageInput.selectionEnd;
+        const text = messageInput.value;
+        const newText =
+          text.substring(0, start) + emoji.native + text.substring(end);
+
+        // Set the value and trigger Stream's input handler
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          "value"
+        ).set;
+        nativeInputValueSetter.call(messageInput, newText);
+
+        const ev2 = new Event("input", { bubbles: true });
+        messageInput.dispatchEvent(ev2);
+
+        // Restore cursor position
+        messageInput.selectionStart = start + emoji.native.length;
+        messageInput.selectionEnd = start + emoji.native.length;
+        messageInput.focus();
+      } else {
+        // Send as standalone message if no input is focused
+        channel.sendMessage({
           text: emoji.native,
-        })
-      } catch (error) {
-        console.error('Error sending emoji:', error)
-        toast({
-          title: "Error",
-          description: "Failed to send emoji",
-          variant: "destructive"
-        })
+        });
       }
     }
-  }
+  };
 
   const handleStartCall = async (isVideoCall) => {
-    if (!channel) return
-    
+    if (!channel) return;
+
     try {
-      const callId = `${channel.id}_${Date.now()}`
-      const callType = isVideoCall ? 'video' : 'audio'
-      
-      // Initialize call with Stream's Video API
-      const call = await channel.video.createCall({
-        id: callId,
-        type: callType,
-        options: {
-          audio: true,
+      // Request permissions first
+      let permissions;
+      try {
+        permissions = await navigator.mediaDevices.getUserMedia({
           video: isVideoCall,
+          audio: true,
+        });
+      } catch (error) {
+        if (error.name === "NotAllowedError") {
+          toast({
+            title: "Permission Denied",
+            description:
+              "Please allow access to camera and microphone in your browser settings",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Device Error",
+            description: "Unable to access camera or microphone",
+            variant: "destructive",
+          });
         }
-      })
+        return;
+      }
 
-      // Join the call
-      await call.join()
+      const callId = `${channel.id}_${Date.now()}`;
+      const call = videoClient.call("default", callId);
 
-      // Notify other members
+      await call.getOrCreate({
+        data: {
+          custom: {
+            channelId: channel.id,
+            channelType: channel.type,
+          },
+        },
+        members: Object.keys(channel.state.members),
+        ring: true,
+      });
+
+      // Use the already-acquired stream when joining
+      await call.join({
+        create: true,
+        data: {
+          member: {
+            role: "user",
+          },
+        },
+        audio: {
+          track: permissions.getAudioTracks()[0],
+          enabled: true,
+        },
+        video: isVideoCall
+          ? {
+              track: permissions.getVideoTracks()[0],
+              enabled: true,
+            }
+          : undefined,
+      });
+
+      setActiveCall(call);
       await channel.sendMessage({
-        text: `Started a ${callType} call`,
-        callId,
-      })
+        text: `Started a ${isVideoCall ? "video" : "voice"} call`,
+        custom_type: "call_started",
+        callId: callId,
+        callType: isVideoCall ? "video" : "audio",
+      });
 
+      toast({
+        title: "Call Started",
+        description: `${isVideoCall ? "Video" : "Voice"} call is now active`,
+      });
     } catch (error) {
-      console.error('Error starting call:', error)
+      console.error("Error starting call:", error);
       toast({
         title: "Error",
-        description: "Failed to start call",
-        variant: "destructive"
-      })
+        description: "Failed to start call: " + error.message,
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  if (!channel) return null
+  if (!channel) return null;
 
   return (
     <div className="flex flex-col h-full">
       <Tabs defaultValue="chat" className="flex-1">
+        {activeCall && (
+          <div className="fixed inset-0 z-50 bg-black/80">
+            <StreamVideo client={videoClient}>
+              <StreamCall call={activeCall}>
+                <div className="relative h-full flex flex-col">
+                  <div className="flex-1">
+                    <SpeakerLayout participantsBarPosition="bottom" />
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center gap-4 bg-gradient-to-t from-black/50">
+                    <CallControls />
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        await activeCall.leave();
+                        setActiveCall(null);
+                      }}
+                    >
+                      End Call
+                    </Button>
+                  </div>
+                </div>
+              </StreamCall>
+            </StreamVideo>
+          </div>
+        )}
+
         <TabsList className="w-full justify-start px-4 h-12 bg-white border-b">
           <TabsTrigger value="chat" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -280,20 +549,30 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                     </Button>
                     <div>
                       <div className="font-semibold">{room?.name}</div>
-                      <div className="text-sm text-muted-foreground">{room?.members?.length} members</div>
+                      <div className="text-sm text-muted-foreground">
+                        {room?.members?.length} members
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleStartCall(true)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleStartCall(true)}
+                    >
                       <Video className="h-5 w-5" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleStartCall(false)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleStartCall(false)}
+                    >
                       <Phone className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
-                
-                <ScrollArea className="flex-grow">
+
+                <ScrollArea className="flex-grow h-full overflow-y-auto">
                   <MessageList />
                 </ScrollArea>
 
@@ -312,37 +591,38 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                       />
                     </PopoverContent>
                   </Popover>
-                  
+
                   {isRecording ? (
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         size="icon"
                         onClick={() => stopRecording(false)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         size="icon"
                         onClick={() => stopRecording(true)}
                       >
                         <Square className="h-4 w-4" />
                       </Button>
                       <span className="text-sm text-red-500">
-                        Recording: {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                        Recording: {Math.floor(recordingTime / 60)}:
+                        {(recordingTime % 60).toString().padStart(2, "0")}
                       </span>
                     </div>
                   ) : (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
                       onClick={startRecording}
                     >
                       <Mic className="h-4 w-4" />
                     </Button>
                   )}
-                  
+
                   <div className="flex-1">
                     <MessageInput focus />
                   </div>
@@ -356,15 +636,23 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         <TabsContent value="schedule" className="flex-1 p-4 m-0">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Upcoming Events</CardTitle>
+              <div>
+                <CardTitle>Research Events</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Manage and track research room events
+                </p>
+              </div>
               <Dialog open={isCreatingEvent} onOpenChange={setIsCreatingEvent}>
                 <DialogTrigger asChild>
-                  <Button variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button
+                    variant="default"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     New Event
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[525px]">
                   <DialogHeader>
                     <DialogTitle>Create New Event</DialogTitle>
                   </DialogHeader>
@@ -375,10 +663,12 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                         id="title"
                         placeholder="Team Meeting"
                         value={eventDetails.title}
-                        onChange={(e) => setEventDetails({
-                          ...eventDetails,
-                          title: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setEventDetails({
+                            ...eventDetails,
+                            title: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="grid gap-2">
@@ -387,38 +677,108 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                         id="description"
                         placeholder="Weekly team sync..."
                         value={eventDetails.description}
-                        onChange={(e) => setEventDetails({
-                          ...eventDetails,
-                          description: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setEventDetails({
+                            ...eventDetails,
+                            description: e.target.value,
+                          })
+                        }
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label>Date</Label>
-                      <Calendar
-                        mode="single"
-                        selected={eventDetails.date}
-                        onSelect={(date) => setEventDetails({
-                          ...eventDetails,
-                          date: date || new Date()
-                        })}
-                        className="rounded-md border"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="time">Time</Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={eventDetails.time}
-                        onChange={(e) => setEventDetails({
-                          ...eventDetails,
-                          time: e.target.value
-                        })}
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label>Date</Label>
+                        <Calendar
+                          mode="single"
+                          selected={eventDetails.date}
+                          onSelect={(date) =>
+                            setEventDetails({
+                              ...eventDetails,
+                              date: date || new Date(),
+                            })
+                          }
+                          className="rounded-md border"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="time">Time</Label>
+                        <Input
+                          id="time"
+                          type="time"
+                          value={eventDetails.time}
+                          onChange={(e) =>
+                            setEventDetails({
+                              ...eventDetails,
+                              time: e.target.value,
+                            })
+                          }
+                        />
+                        <div className="space-y-4 mt-4">
+                          <Label>Reminder Settings</Label>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="email-reminder"
+                              checked={eventDetails.reminders.email}
+                              onCheckedChange={(checked) =>
+                                setEventDetails({
+                                  ...eventDetails,
+                                  reminders: {
+                                    ...eventDetails.reminders,
+                                    email: checked,
+                                  },
+                                })
+                              }
+                            />
+                            <Label htmlFor="email-reminder">
+                              Email Reminder
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="notification-reminder"
+                              checked={eventDetails.reminders.notification}
+                              onCheckedChange={(checked) =>
+                                setEventDetails({
+                                  ...eventDetails,
+                                  reminders: {
+                                    ...eventDetails.reminders,
+                                    notification: checked,
+                                  },
+                                })
+                              }
+                            />
+                            <Label htmlFor="notification-reminder">
+                              In-App Notification
+                            </Label>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="reminder-time">Remind Before</Label>
+                            <select
+                              id="reminder-time"
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              value={eventDetails.reminders.reminderTime}
+                              onChange={(e) =>
+                                setEventDetails({
+                                  ...eventDetails,
+                                  reminders: {
+                                    ...eventDetails.reminders,
+                                    reminderTime: e.target.value,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="1hour">1 Hour Before</option>
+                              <option value="1day">1 Day Before</option>
+                              <option value="1week">1 Week Before</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <Button onClick={handleCreateEvent} className="w-full">Create Event</Button>
+                  <Button onClick={handleCreateEvent} className="w-full">
+                    Create Event with Reminders
+                  </Button>
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -426,29 +786,78 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
               <ScrollArea className="h-[500px] pr-4">
                 <div className="space-y-4">
                   {events.map((event) => (
-                    <Card key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
+                    <Card
+                      key={event.id}
+                      className="bg-card hover:bg-accent/5 transition-colors border-l-4 border-l-primary"
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg font-semibold">{event.title}</CardTitle>
+                          <div className="flex items-center space-x-4">
+                            <div>
+                              <CardTitle className="text-lg font-semibold">
+                                {event.title}
+                              </CardTitle>
+                              <div className="flex items-center mt-1 space-x-2">
+                                <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                <time
+                                  className="text-sm text-muted-foreground"
+                                  dateTime={`${event.date}T${event.time}`}
+                                >
+                                  {new Date(event.date).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    }
+                                  )}{" "}
+                                  at {event.time}
+                                </time>
+                              </div>
+                            </div>
+                          </div>
                           <div className="flex items-center space-x-2">
+                            {event.reminders?.notification && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-primary"
+                              >
+                                <Bell className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon">
-                              <CalendarDays className="h-4 w-4" />
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <CalendarDays className="h-3 w-3 mr-1" />
-                          <time dateTime={`${event.date}T${event.time}`}>
-                            {new Date(event.date).toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })} at {event.time}
-                          </time>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {event.description}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center space-x-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={event.createdBy.avatar} />
+                              <AvatarFallback>
+                                {event.createdBy.name[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-muted-foreground">
+                              Created by {event.createdBy.name}
+                            </span>
+                          </div>
+                          <Badge
+                            variant={
+                              event.status === "upcoming"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {event.status}
+                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
@@ -470,23 +879,60 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                     Add Member
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>Add New Member</DialogTitle>
+                    <DialogTitle>Add Members</DialogTitle>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">Email address</Label>
+                  <div className="py-4">
+                    <div className="mb-4">
+                      <Label htmlFor="search">Search Users</Label>
                       <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter member's email"
-                        value={newMemberEmail}
-                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                        id="search"
+                        placeholder="Search by name, department, or role..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="mt-2"
                       />
                     </div>
+                    <ScrollArea className="h-[300px] border rounded-md">
+                      {platformUsers
+                        .filter(
+                          (user) =>
+                            user.name
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase()) ||
+                            user.department
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase()) ||
+                            user.role
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase())
+                        )
+                        .map((user) => (
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
+                            onClick={() => handleAddMember(user)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback>{user.name[0]}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {user.role} • {user.department}
+                                </p>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="icon">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                    </ScrollArea>
                   </div>
-                  <Button onClick={handleAddMember}>Add Member</Button>
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -496,7 +942,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                   {room?.members?.map((member) => (
                     <div
                       key={member.uid}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-accent"
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-accent"
                     >
                       <div className="flex items-center gap-3">
                         <Avatar>
@@ -506,10 +952,13 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                         <div>
                           <p className="font-medium">{member.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {member.role || 'Member'}
+                            {member.role || "Member"}
                           </p>
                         </div>
                       </div>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -585,10 +1034,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
             </Card>
           </div>
         </TabsContent>
-       
       </Tabs>
     </div>
-  )
+  );
 }
-
-

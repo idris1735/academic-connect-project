@@ -1,33 +1,22 @@
-'use client'
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import ClientLayout from "@/components/ClientLayout";
 
-import PropTypes from 'prop-types'
-import { useNavigationLoading } from '@/hooks/UseNavigationLoading'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
-import Footer from '@/components/Footer'
-import MessagingPopup from '@/components/MessagingPopup'
-import './globals.css'
-import { Provider } from 'react-redux'
-import { store } from '@/redux/store'
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata = {
+  title: "Academic Connect",
+  description: "Connect with academics around the world",
+};
 
 export default function RootLayout({ children }) {
-  const isLoading = useNavigationLoading()
-
   return (
     <html lang="en">
-      <body>
-        <Provider store={store}>
-          <div className="flex flex-col min-h-screen">
-            {isLoading && <LoadingSpinner />}
-            <main className="flex-grow">{children}</main>
-            <Footer />
-            <MessagingPopup />
-          </div>
-        </Provider>
+      <body className={inter.className}>
+        <ClientLayout>{children}</ClientLayout>
+        <Toaster />
       </body>
     </html>
-  )
-}
-
-RootLayout.propTypes = {
-  children: PropTypes.node.isRequired,
+  );
 }
