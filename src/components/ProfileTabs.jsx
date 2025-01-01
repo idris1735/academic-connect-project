@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,6 +21,10 @@ import {
   LinkIcon,
   FileText,
   Download,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Globe,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleEditMode, setPosts } from "@/redux/features/profileSlice";
@@ -156,6 +160,7 @@ const RecentActivities = ({ data }) => {
             className="flex items-start space-x-4 bg-gray-50 p-4 rounded-lg"
           >
             <Avatar className="h-10 w-10">
+              <AvatarImage className="rounded-full" src={`/${data.photoURL}`} />
               <AvatarFallback className="bg-[#6366F1] text-white">
                 {data.name.charAt(0)}
               </AvatarFallback>
@@ -220,6 +225,8 @@ export function ProfileTabs({ data, isOrganization }) {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
   const { toast } = useToast(); // Toast for notifications
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -517,6 +524,68 @@ export function ProfileTabs({ data, isOrganization }) {
     },
   ];
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Error',
+        description: 'Please select an image file',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'File size should be less than 5MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await fetch('/api/profile/update-avatar', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update avatar');
+      }
+
+      const data = await response.json();
+      
+      toast({
+        title: 'Success',
+        description: 'Profile photo updated successfully'
+      });
+
+      // Refresh the page to show new avatar
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -720,21 +789,320 @@ export function ProfileTabs({ data, isOrganization }) {
 }
 
 const SettingsTab = ({ data }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [updatingSocial, setUpdatingSocial] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
+  const { toast } = useToast();
+  
+  const [formData, setFormData] = useState({
+    gender: data.gender || '',
+    department: data.department || '',
+    location: data.location || '',
+    emailNotifications: data.settings?.notifications?.email ?? true,
+    pushNotifications: data.settings?.notifications?.push ?? true,
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    confirmDelete: false
+  });
+
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: data.socialLinks?.instagram || '',
+    linkedin: data.socialLinks?.linkedin || '',
+    twitter: data.socialLinks?.twitter || '',
+    website: data.socialLinks?.website || ''
+  });
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Error',
+        description: 'Please select an image file',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'File size should be less than 5MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await fetch('/api/profile/update-avatar', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update avatar');
+      }
+
+      const data = await response.json();
+      
+      toast({
+        title: 'Success',
+        description: 'Profile photo updated successfully'
+      });
+
+      // Refresh the page to show new avatar
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleProfileUpdate = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/profile/update-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gender: formData.gender,
+          department: formData.department,
+          location: formData.location
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update profile');
+
+      toast({
+        title: 'Success',
+        description: 'Profile updated successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'New passwords do not match',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/profile/update-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update password');
+
+      toast({
+        title: 'Success',
+        description: 'Password updated successfully'
+      });
+
+      // Clear password fields
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNotificationUpdate = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/profile/update-notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailNotifications: formData.emailNotifications,
+          pushNotifications: formData.pushNotifications
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update notification settings');
+
+      toast({
+        title: 'Success',
+        description: 'Notification settings updated successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!formData.confirmDelete) {
+      toast({
+        title: 'Error',
+        description: 'Please confirm account deletion',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/profile/delete-account', {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete account');
+
+      toast({
+        title: 'Success',
+        description: 'Account deleted successfully'
+      });
+
+      // Redirect to login page
+      window.location.href = '/login';
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialLinkUpdate = async (platform) => {
+    if (isLoading || updatingSocial) return;
+    
+    setUpdatingSocial(platform);
+    try {
+      // Log the request payload for debugging
+      console.log('Updating social link:', {
+        platform,
+        url: socialLinks[platform]
+      });
+
+      const response = await fetch('/api/profile/update-social-links', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          platform,
+          url: socialLinks[platform] || '' // Ensure url is never undefined
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update social link');
+      }
+
+      const data = await response.json();
+      console.log('Update response:', data); // Log the response
+
+      toast({
+        title: 'Success',
+        description: `${platform} link updated successfully`
+      });
+    } catch (error) {
+      console.error('Error updating social link:', error);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setUpdatingSocial('');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20 relative group">
-            <AvatarImage src={data.photoURL} />
-            <AvatarFallback>{data.name?.charAt(0)}</AvatarFallback>
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-              <Camera className="h-6 w-6 text-white" />
-            </div>
-          </Avatar>
+          <div className="relative group">
+            <Avatar 
+              className="h-20 w-20 cursor-pointer"
+              onClick={handleAvatarClick}
+            >
+              <AvatarImage src={`/${data.photoURL}`} />
+              <AvatarFallback>{data.name?.[0]}</AvatarFallback>
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                {isUploadingAvatar ? (
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                ) : (
+                  <Camera className="h-6 w-6 text-white" />
+                )}
+              </div>
+            </Avatar>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+              disabled={isUploadingAvatar}
+            />
+          </div>
           <div>
             <h3 className="text-lg font-medium">Profile photo</h3>
             <p className="text-sm text-gray-500">
-              This will be displayed on your profile
+              Click to update your profile photo
             </p>
           </div>
         </div>
@@ -742,7 +1110,7 @@ const SettingsTab = ({ data }) => {
         <div className="grid gap-6">
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" defaultValue={data.name} className="max-w-md" />
+            <Input id="name" defaultValue={data.name} className="max-w-md" disabled />
           </div>
 
           <div className="grid gap-2">
@@ -750,6 +1118,7 @@ const SettingsTab = ({ data }) => {
             <Input
               id="email"
               type="email"
+              disabled
               defaultValue={data.email}
               className="max-w-md"
             />
@@ -757,7 +1126,11 @@ const SettingsTab = ({ data }) => {
 
           <div className="grid gap-2">
             <Label htmlFor="gender">Gender</Label>
-            <Select defaultValue={data.gender}>
+            <Select 
+              name="gender"
+              value={formData.gender}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+            >
               <SelectTrigger className="max-w-md">
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
@@ -773,7 +1146,9 @@ const SettingsTab = ({ data }) => {
             <Label htmlFor="department">Department</Label>
             <Input
               id="department"
-              defaultValue={data.department}
+              name="department"
+              value={formData.department}
+              onChange={handleInputChange}
               className="max-w-md"
             />
           </div>
@@ -782,7 +1157,9 @@ const SettingsTab = ({ data }) => {
             <Label htmlFor="location">Location</Label>
             <Input
               id="location"
-              defaultValue={data.location}
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
               className="max-w-md"
             />
           </div>
@@ -798,35 +1175,76 @@ const SettingsTab = ({ data }) => {
                   Get emails to find out what's going on when you're not online
                 </p>
               </div>
-              <Switch defaultChecked={data.emailNotifications} />
+              <Switch
+                name="emailNotifications"
+                checked={formData.emailNotifications}
+                onCheckedChange={(checked) => 
+                  setFormData(prev => ({ ...prev, emailNotifications: checked }))
+                }
+              />
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <Label>Push notifications</Label>
                 <p className="text-sm text-gray-500">
-                  Get push notifications to find out what's going on when you're
-                  online
+                  Get push notifications in-app
                 </p>
               </div>
-              <Switch defaultChecked={data.pushNotifications} />
+              <Switch
+                name="pushNotifications"
+                checked={formData.pushNotifications}
+                onCheckedChange={(checked) => 
+                  setFormData(prev => ({ ...prev, pushNotifications: checked }))
+                }
+              />
             </div>
+            <Button 
+              onClick={handleNotificationUpdate}
+              disabled={isLoading}
+            >
+              Update Notifications
+            </Button>
           </div>
         </div>
 
         <div className="space-y-6">
           <h3 className="text-lg font-medium">Social Accounts</h3>
           <div className="space-y-4">
-            {Object.entries(data.socialLinks || {}).map(([platform, url]) => (
+            {Object.entries(socialLinks).map(([platform, url]) => (
               <div key={platform} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                  <LinkIcon className="h-5 w-5 text-gray-600" />
+                  {platform === 'instagram' && <Instagram className="h-5 w-5 text-gray-600" />}
+                  {platform === 'linkedin' && <Linkedin className="h-5 w-5 text-gray-600" />}
+                  {platform === 'twitter' && <Twitter className="h-5 w-5 text-gray-600" />}
+                  {platform === 'website' && <Globe className="h-5 w-5 text-gray-600" />}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium capitalize">{platform}</p>
-                  <p className="text-sm text-gray-500">Not Connected</p>
+                  <Input
+                    value={url}
+                    onChange={(e) => setSocialLinks(prev => ({
+                      ...prev,
+                      [platform]: e.target.value
+                    }))}
+                    placeholder={`Enter your ${platform} URL`}
+                    className="mt-1"
+                    disabled={updatingSocial === platform}
+                  />
                 </div>
-                <Button variant="outline" className="w-28">
-                  {url ? "Disconnect" : "Connect"}
+                <Button 
+                  variant="outline" 
+                  className="w-28"
+                  onClick={() => handleSocialLinkUpdate(platform)}
+                  disabled={updatingSocial === platform}
+                >
+                  {updatingSocial === platform ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Updating...</span>
+                    </div>
+                  ) : (
+                    url ? 'Update' : 'Add'
+                  )}
                 </Button>
               </div>
             ))}
@@ -840,22 +1258,41 @@ const SettingsTab = ({ data }) => {
               <Label htmlFor="current-password">Current Password</Label>
               <Input
                 id="current-password"
+                name="currentPassword"
                 type="password"
+                value={formData.currentPassword}
+                onChange={handleInputChange}
                 className="max-w-md"
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="new-password">New Password</Label>
-              <Input id="new-password" type="password" className="max-w-md" />
+              <Input
+                id="new-password"
+                name="newPassword"
+                type="password"
+                value={formData.newPassword}
+                onChange={handleInputChange}
+                className="max-w-md"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="confirm-password">Confirm New Password</Label>
               <Input
                 id="confirm-password"
+                name="confirmPassword"
                 type="password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
                 className="max-w-md"
               />
             </div>
+            <Button 
+              onClick={handlePasswordUpdate}
+              disabled={isLoading || !formData.currentPassword || !formData.newPassword || !formData.confirmPassword}
+            >
+              Update Password
+            </Button>
           </div>
         </div>
 
@@ -867,19 +1304,36 @@ const SettingsTab = ({ data }) => {
               services, and we permanently delete your personal data.
             </p>
             <div className="flex items-start gap-2">
-              <input type="checkbox" id="confirm-delete" className="mt-1" />
+              <input
+                type="checkbox"
+                id="confirm-delete"
+                name="confirmDelete"
+                checked={formData.confirmDelete}
+                onChange={handleInputChange}
+                className="mt-1"
+              />
               <label htmlFor="confirm-delete" className="text-sm text-gray-600">
                 Confirm that I want to delete my account
               </label>
             </div>
           </div>
-          <Button variant="destructive">Delete Account</Button>
+          <Button 
+            variant="destructive"
+            onClick={handleDeleteAccount}
+            disabled={isLoading || !formData.confirmDelete}
+          >
+            Delete Account
+          </Button>
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-          Update
+        <Button 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={handleProfileUpdate}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Updating...' : 'Update Profile'}
         </Button>
       </div>
     </div>

@@ -3,7 +3,7 @@ const { db } = require('../config/database');
 const { Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
 const { getDocs, collection, where } = require("firebase/firestore");
 const { query } = require('firebase/firestore');
-const { getUserNameByUid } = require('../utils/user');
+const { getUserNameByUid, getProfilePhotoURl } = require('../utils/user');
 const { admin, storage } = require('../config/firebase');
 const { v4: uuidv4 } = require('uuid');
 const notificationService = require('../services/notificationService');
@@ -193,21 +193,15 @@ exports.createPost = async (req, res) => {
 };
 
 exports.getPosts = async (req, res) => {
-  const uid = req.params.uid;
+  const uid = req.params.uid || req.user.uid;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 5;
   const startAfter = (page - 1) * limit;
 
   try {
     // Base query
-    let query = db.collection('posts');
+    let query = db.collection('posts').where('uid', '==', uid);
 
-    // Add user filter
-    if (uid) {
-      query = query.where('uid', '==', uid);
-    } else {
-      query = query.where('uid', '==', req.user.uid);
-    }
 
     // Get the paginated data
     const postsSnapshot = await query
@@ -244,10 +238,11 @@ exports.getPosts = async (req, res) => {
         .limit(10)
         .get();
       
-      const comments = commentsSnapshot.docs.map(doc => ({
+      const comments = await Promise.all(commentsSnapshot.docs.map(async (doc) => ({
         ...doc.data(),
+        photoURL: await getProfilePhotoURl(doc.data().userId),
         timestamp: doc.data().timestamp?.toDate().toISOString()
-      }));
+      })));
 
       const content = contentDoc.docs[0]?.data()?.content;
 
@@ -263,8 +258,10 @@ exports.getPosts = async (req, res) => {
         discussion: postData.discussion || null, 
         attachment: postData.attachment || null,
         userInfo: {
-          author: await getUserNameByUid(postData.uid),
-        }
+          author: await getUserNameByUid(uid),
+        },
+        // Ad the photoURL
+        photoURL: await getProfilePhotoURl(uid),
       });
     }));
 
@@ -373,10 +370,9 @@ exports.likePost = async (req, res) => {
 exports.addComment = async (req, res) => {
   try {
     const { postId } = req.params;
-    const { content } = req.body;
+    const { content, parentId } = req.body; // parentId for replies
     const userId = req.user.uid;
 
-    // Get reference to the post
     const postRef = db.collection('posts').doc(postId);
     const postDoc = await postRef.get();
 
@@ -384,16 +380,10 @@ exports.addComment = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    // Get post content first
-    const contentDoc = await postRef.collection('postContent')
-      .limit(1)
-      .get();
-
     // Create new comment
     const commentRef = postRef.collection('comments').doc();
     const commentId = commentRef.id;
     
-    // Get user name for the comment
     const userName = await getUserNameByUid(userId);
 
     const commentData = {
@@ -401,43 +391,110 @@ exports.addComment = async (req, res) => {
       content,
       userId,
       author: userName,
-      timestamp: FieldValue.serverTimestamp()
+      parentId: parentId || null, // null for top-level comments
+      likes: 0,
+      replies: [], // Array of reply IDs
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    // Save the comment
     await commentRef.set(commentData);
+
+    // If this is a reply, update parent comment's replies array
+    if (parentId) {
+      const parentCommentRef = postRef.collection('comments').doc(parentId);
+      await parentCommentRef.update({
+        replies: admin.firestore.FieldValue.arrayUnion(commentId)
+      });
+    }
 
     // Update comment count
     await postRef.update({
-      commentsCount: FieldValue.increment(1)
+      commentsCount: admin.firestore.FieldValue.increment(1)
     });
 
-    // Create notification for post owner
-    if (postDoc.data().uid === userId) {   // Change this to postDoc.data().uid !== userId
+    // Create notification
+    if (postDoc.data().uid !== userId) {
       await notificationService.createNotification(postDoc.data().uid, 'POST_COMMENT', {
         senderId: userId,
-        senderName: await getUserNameByUid(userId),
+        senderName: userName,
         postId: postId,
         commentId: commentId,
         commentContent: content,
-        postContent: contentDoc.docs[0]?.data()?.content || '',
-        message: 'commented on your post',
+        message: parentId ? 'replied to a comment on your post' : 'commented on your post',
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
     }
 
-    // Prepare the response data with the current timestamp
-    const responseComment = {
-      ...commentData,
-      timestamp: new Date().toISOString()
-    };
-
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: 'Comment added successfully',
-      comment: responseComment
+      comment: {
+        ...commentData,
+        photoURL: await getProfilePhotoURl(userId),
+        timestamp: new Date().toISOString()
+      }
     });
   } catch (error) {
     console.error('Error adding comment:', error);
     return res.status(500).json({ message: 'Failed to add comment', error: error.message });
+  }
+};
+
+// Add like comment endpoint
+exports.likeComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const userId = req.user.uid;
+
+    const postRef = db.collection('posts').doc(postId);
+    const commentRef = postRef.collection('comments').doc(commentId);
+    
+    const [postDoc, commentDoc] = await Promise.all([
+      postRef.get(),
+      commentRef.get()
+    ]);
+
+    if (!postDoc.exists || !commentDoc.exists) {
+      return res.status(404).json({ message: 'Post or comment not found' });
+    }
+
+    const likeRef = commentRef.collection('likes').doc(userId);
+    const likeDoc = await likeRef.get();
+
+    if (likeDoc.exists) {
+      // Unlike
+      await likeRef.delete();
+      await commentRef.update({
+        likes: admin.firestore.FieldValue.increment(-1)
+      });
+    } else {
+      // Like
+      await likeRef.set({
+        userId,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+      await commentRef.update({
+        likes: admin.firestore.FieldValue.increment(1)
+      });
+
+      // Create notification for comment owner
+      if (commentDoc.data().userId !== userId) {
+        await notificationService.createNotification(commentDoc.data().userId, 'COMMENT_LIKE', {
+          senderId: userId,
+          senderName: await getUserNameByUid(userId),
+          postId: postId,
+          commentId: commentId,
+          message: 'liked your comment',
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    }
+
+    return res.status(200).json({
+      message: likeDoc.exists ? 'Comment unliked' : 'Comment liked',
+      likes: (commentDoc.data().likes || 0) + (likeDoc.exists ? -1 : 1)
+    });
+  } catch (error) {
+    console.error('Error liking comment:', error);
+    return res.status(500).json({ message: 'Failed to like comment', error: error.message });
   }
 };

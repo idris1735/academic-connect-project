@@ -52,7 +52,7 @@ const ProfilePost = ({ post, onEdit, onDelete, onLike, onComment }) => {
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar>
-          <AvatarImage src={post.avatar} alt={post.author} />
+          <AvatarImage className="rounded-full" src={`/${post.photoURL}`} alt={post.author} />
           <AvatarFallback>{post.author && post.author.length > 0 ? post.author[0] : '?'}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
@@ -93,15 +93,15 @@ const ProfilePost = ({ post, onEdit, onDelete, onLike, onComment }) => {
             <p>{post.content}</p>
             {post.attachment && (
               <div className="mt-4">
-                {post.attachment.endsWith('.jpg') || post.attachment.endsWith('.png') ? (
-                  <img src={`/${post.attachment}`} alt="Post content" className="rounded-lg max-h-96 w-full object-cover" />
-                ) : post.attachment.endsWith('.mp4') ? (
+                {post.attachment.fileType == 'images' ? (
+                  <img src={`/${post.attachment.url}`} alt="Post content" className="rounded-lg max-h-96 w-full object-cover" />
+                ) : post.attachment.fileType == 'videos' ? (
                   <video controls className="rounded-lg max-h-96 w-full">
-                    <source src={`/${post.attachment}`} type="video/mp4" />
+                    <source src={`/${post.attachment.url}`} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                 ) : (
-                  <a href={`/${post.attachment}`} target="_blank" rel="noopener noreferrer">View Document</a>
+                  <a href={`/${post.attachment.url}`} target="_blank" rel="noopener noreferrer">View Document</a>
                 )}
               </div>
             )}

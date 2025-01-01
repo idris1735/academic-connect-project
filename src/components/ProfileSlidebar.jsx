@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Pencil } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 import {
   ToastProvider,
@@ -137,7 +138,12 @@ export default function ProfileSidebar() {
           <div className="h-20 w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]" />
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full bg-white border-4 border-white">
             <div className="w-full h-full rounded-full bg-gray-300 flex items-center justify-center text-xl font-medium">
+            <Avatar>
+          <AvatarImage src={`/${profile.photoURL}`} />
+            <AvatarFallback className="text-4xl font-semibold bg-[#6366F1] text-white">
               {profile.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
             </div>
           </div>
         </div>

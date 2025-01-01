@@ -1,5 +1,5 @@
 import { CheckCircle, Instagram, Linkedin, Twitter, Globe, Building2, User, MapPin, Loader2 } from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect } from 'react'
@@ -180,6 +180,7 @@ export function ProfileHeader({ data, isOrganization }) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="-mt-24 text-center">
           <Avatar className="h-32 w-32 rounded-full ring-4 ring-white inline-flex">
+          <AvatarImage src={`/${data.photoURL}`} />
             <AvatarFallback className="text-4xl font-semibold bg-[#6366F1] text-white">
               {data.name.charAt(0)}
             </AvatarFallback>

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { MessageSquare, Users2, Briefcase, Image, FileText, Film, X, Paperclip, MessageCircle } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function PostCreation({ onPostCreate }) {
   const [content, setContent] = useState('')
@@ -11,6 +12,25 @@ export default function PostCreation({ onPostCreate }) {
   const [discussionName, setDiscussionName] = useState('')
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
+  const [photoURL, setPhotoURL] = useState(null)
+
+
+ 
+
+  useEffect( () =>{
+     const getPhoto = async () => {
+       const response = await fetch('/api/users/photo_url')
+       if (!response.ok) {
+         throw new Error('Failed to load photo, reload the page')
+       }
+       const data = await response.json()
+       
+       setPhotoURL(data.photoURL)
+     }
+
+     getPhoto()
+   
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -200,7 +220,15 @@ export default function PostCreation({ onPostCreate }) {
       <form onSubmit={handleSubmit}>
         <div className="flex gap-4 mb-4">
           <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-medium">
-            AC
+          <Avatar>
+            {photoURL ? (
+              <AvatarImage src={`/${photoURL}`} />
+            ) : (
+              <AvatarFallback className="text-4xl font-semibold bg-[#6366F1] text-white">
+                U
+              </AvatarFallback>
+            )}
+          </Avatar>
           </div>
           <textarea
             placeholder="Start a post"

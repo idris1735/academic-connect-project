@@ -2,6 +2,7 @@ const  StreamChat = require("stream-chat").StreamChat;
 const { CHAT_API_KEY, CHAT_API_SECRET } = require("../utils/constants");
 
 const serverClient = StreamChat.getInstance(CHAT_API_KEY, CHAT_API_SECRET);
+const { getUserNameByUid } = require('../utils/user');
 
 
 
@@ -12,17 +13,17 @@ exports.generateUserChatToken = async (userId) => {
       Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 5), // 5 days
     );
 
-    // // upDTA USER ON STREAMCHAT
-    // const response = await serverClient.queryUsers({
-    //     id: { $eq: userId },
-    //   });
+    // upDTA USER ON STREAMCHAT
+    const response = await serverClient.queryUsers({
+        id: { $eq: userId },
+      });
 
-    // if (response.length == 0){
-    //     const updateResponse = await serverClient.upsertUser({
-    //         id: userId,
-    //         role: "admin",
-    //       }, token);
-    // }
+    if (response.length == 0){
+        const updateResponse = await serverClient.upsertUser({
+            id: userId,
+            role: "user",
+          }, token);
+    }
     
 
     return token;
@@ -63,12 +64,12 @@ exports.createChannelUser = async(userId) =>{
 exports.createChannel = async (creator, participants, messageID, roomType, name) => {
 
     // Check for existing user  - Remove this from here later on, create user on signup
-    // const user = await this.createChannelUser(creator);
-    // for (let participant of participants) {
-    //     console.log('Participant:', participant);
-    //     let user = await this.createChannelUser(participant);
-    //     console.log('User:', user);
-    // }
+    const user = await this.createChannelUser(creator);
+    for (let participant of participants) {
+        console.log('Participant:', participant);
+        let user = await this.createChannelUser(participant);
+        console.log('User:', user);
+    }
 
     try {
 
@@ -91,9 +92,15 @@ exports.createChannel = async (creator, participants, messageID, roomType, name)
                 }
             )
             await channel.create();
+            let creatorName = await getUserNameByUid(creator);
             await channel.addMembers([
-                { user_id: creator, channel_role: "channel_moderator" },
-              ]);
+                { user_id: creator, channel_role: "channel_moderator" }],
+                {
+                    text: `${creatorName} created ${name} research room.`,
+                    user_id: creator,
+                 }
+            
+            );
             
             return channel;
         }
@@ -109,4 +116,30 @@ exports.getChannel = async (channelId) => {
    const channels = await serverClient.queryChannels({'id': {'$eq': channelId  }});
    console.log('Channels:', channels);
    return channels[0];
+}
+
+exports.addMembersToChannel = async (channelId, members, args=None) => {
+    // Arg variable for further argumants on adding members
+    try {
+        const channel = await this.getChannel(channelId);
+        if (channel) {
+            for (let member of members) {
+                let memberName = await getUserNameByUid(member);
+                await channel.addMembers(members, 
+                    {
+                        text: `${memberName} has joined the research room.`,
+                        user_id: creator,
+                     }
+                );
+            }
+            
+            return true;
+        } else {
+            console.error(`Channel not found with ID: ${channelId}`);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error adding members to channel:', error.message);
+        return false;
+    }
 }

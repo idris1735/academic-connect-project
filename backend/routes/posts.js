@@ -31,5 +31,6 @@ router.post(
 router.get("/get_posts", postService.getPosts);
 router.post("/:postId/like", postService.likePost);
 router.post("/:postId/comment", postService.addComment);
+router.post('/:postId/comments/:commentId/like', postService.likeComment);
 
 module.exports = router;

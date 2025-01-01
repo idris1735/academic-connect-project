@@ -23,6 +23,7 @@ exports.getUserProfile = async (req, res) => {
       views: userData.profileViews || 0,
       connections: userData.connectionStats?.totalConnections, // Send the count instead of the object
       pendingRequests: userData.connectionStats?.pendingRequests || 0,
+      photoURL: userData.photoURL || '',
       // Add any other profile fields you need
     };
 
@@ -89,5 +90,21 @@ exports.getCurrentUser = async (req, res) => {
       message: 'Failed to get current user',
       error: error.message 
     });
+  }
+};
+
+exports.getProfilePhotoURL = async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const photoURL = await db.collection('profiles').doc(uid).get().then(doc => doc.data().photoURL);
+
+    if (!photoURL) {
+      return res.status(404).json({ message: 'Profile photo not found' });
+    }
+
+    return res.status(200).json({ photoURL });
+  } catch (error) {
+    console.error('Error getting profile photo URL:', error);
+    return res.status(500).json({ message: 'Failed to get profile photo URL' });
   }
 };

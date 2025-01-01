@@ -255,7 +255,7 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
         <div className="flex items-center gap-4 mb-4">
           <div className="relative">
             <img
-              src={avatarSrc}
+              src={`/${post.photoURL}` || avatarSrc}
               alt={post.userInfo?.author || 'User'}
               className="w-12 h-12 rounded-full bg-indigo-100"
               onError={(e) => {
@@ -327,7 +327,7 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
           {/* Comment Form */}
           <form onSubmit={submitComment} className='p-4 flex gap-3 sticky top-0 bg-gray-50 z-10'>
             <img
-              src={post.avatar || avatarSrc}
+              src={`/${post.photoURL}` || avatarSrc}
               alt="Your avatar"
               className="w-8 h-8 rounded-full"
             />
@@ -354,7 +354,7 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
             {post.comments && post.comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <img
-                  src={comment.avatar || avatarSrc}
+                  src={`/${comment.photoURL}` || avatarSrc}
                   alt={comment.author}
                   className="w-8 h-8 rounded-full"
                 />

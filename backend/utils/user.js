@@ -154,5 +154,29 @@ exports.formatActivityForDisplay = (activity) => {
     };
   }
 };
-  
+
+
+exports.getProfilePhotoURl = async (uid) => {
+
+  try {
+    
+      // Get profile photo URL from Firestore
+      userDoc = await db.collection('profiles').doc(uid).get()
+
+      if (!userDoc.exists) {
+        console.log(`No user found with uid: ${uid}`);
+        return null; // Return null if user profile does not exist
+      }
+
+      const userData = userDoc.data();
+      const photoURL = userData.photoURL;
+      console.log(`Found user profile photo URL: ${photoURL} for uid: ${uid}`);
+      return photoURL;
+
+    } catch (error) {
+      console.error('Error fetching user profile photo URL:', error);
+      return null; // Return null if error occurs
+    }
+
+}
   

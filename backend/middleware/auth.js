@@ -2,6 +2,7 @@ const { admin } = require('../config/firebase');
 const { PUBLIC_ROUTES, AUTH_ROUTES } = require('../utils/constants');
 const generateUserChatToken = require('../services/chatService').generateUserChatToken;
 
+
 const checkAuth = async (req, res, next) => {
     const sessionCookie = req.cookies.session;
     const chatToken = req.cookies.chatToken;

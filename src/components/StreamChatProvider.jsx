@@ -81,10 +81,12 @@ export function StreamChatProvider({ children }) {
 
   useEffect(() => {
     getUser();
-  }, []);
-
-  useEffect(() => {
     getToken();
+
+    // Cleanup function
+    return () => {
+      setClientReady(false); // Reset ready state on unmount
+    };
   }, []);
 
   useEffect(() => {
@@ -94,11 +96,12 @@ export function StreamChatProvider({ children }) {
           const user = {
             id: currentUser.uid,
             name: currentUser.displayName,
-            role: 'admin',
+            role: 'user',
             image: currentUser.photoURL,
           };
 
           if (chatClient.userID) {
+            await chatClient.disconnectUser();
             await chatClient.disconnectUser();
           }
 
@@ -118,11 +121,11 @@ export function StreamChatProvider({ children }) {
 
     return () => {
       if (chatClient.userID) {
-        chatClient.disconnectUser();
-        // setupClient();
+        // chatClient.disconnectUser();
+        setupClient();
       }
-      videoClient.disconnectUser();
-      // setupClient();
+      // videoClient.disconnectUser();
+      setupClient();
     };
   }, [currentUser, chatToken]);
 

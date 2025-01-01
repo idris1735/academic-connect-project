@@ -1,7 +1,7 @@
 const { db } = require('../config/database');
 const { FieldValue } = require('firebase-admin/firestore');
 const { getUserNameByUid } = require('../utils/user');
-const { createChannel, getChannel } = require('../services/chatService'); // Import chat service
+const { createChannel, getChannel, addMembersToChannel } = require('../services/chatService'); // Import chat service
 
 
 
@@ -165,7 +165,7 @@ exports.createMessageRoom = async (req, res) => {
       }
       const userProfileRef = db.collection('profiles').doc(creatorId);
       await userProfileRef.update({
-        'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role': 'admin' })
+        'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role': 'channel_moderator' })
        });
     }
 
@@ -457,12 +457,16 @@ exports.createResearchRoomForPost = async (creatorId, name, postId, description)
     }
 
     
-    // Update user's profile to include the new discussion room
-     const profileRef = db.collection('profiles').doc(creatorId);
+  // Update user's profile to include the new discussion room
+    const profileRef = db.collection('profiles').doc(creatorId);
 
-     await profileRef.update({
-       'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role': 'admin' })
-      });
+    await profileRef.update({
+      'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomRef.id, 'role': 'channel_moderator' })
+    });
+
+    const channel = await createChannel(creatorId, [], roomRef.id, 'RR', roomData.name);
+
+
 
     return {
       success: true,
@@ -475,7 +479,7 @@ exports.createResearchRoomForPost = async (creatorId, name, postId, description)
     console.error('Error creating research room for post:', error);
     await roomRef.delete();
     await profileRef.update({
-     'messageRooms.researchRooms': FieldValue.arrayRemove({'room': roomRef.id, 'role': 'admin' })
+     'messageRooms.researchRooms': FieldValue.arrayRemove({'room': roomRef.id, 'role': 'channel_moderator' })
     });
     return {
       success: false,
@@ -517,7 +521,25 @@ exports.joinRoom = async (req, res) => {
     await profileRef.update({
       'messageRooms.researchRooms': FieldValue.arrayUnion({'room': roomId, 'role': 'channel_member' })
   });
-  
+
+   // Add member to channel
+   try{
+    await addMembersToChannel(`research_${roomId}`, [userId])
+   } catch(error){
+    await roomRef.update({
+      participants: FieldValue.arrayRemove(userId),
+    })
+    await profileRef.update({
+     'messageRooms.researchRooms': FieldValue.arrayRemove({'room': roomId, 'role': 'channel_member' })
+    });
+
+     console.error('Error adding members to channel:', error);
+     return res.status(500).json({
+      message: 'Failed to add members to channel',
+      error: error.message
+    });
+   }
+
 
   return res.status(200).json({'message': 'User has been added to the discussion room' });
   } catch (error) {
