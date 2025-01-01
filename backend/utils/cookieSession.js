@@ -1,46 +1,31 @@
-const { admin } = require('../config/firebase');
-const { SESSION_EXPIRY } = require('./constants');
-const generateUserChatToken = require('../services/chatService').generateUserChatToken;
+const admin = require('../config/firebase')
 
-const createCookieSession = async (req, res, idToken, user) => {
+const createCookieSession = async (req, res, idToken) => {
   try {
-    const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn: SESSION_EXPIRY });
+    // Session duration: 5 days
+    const expiresIn = 5 * 24 * 60 * 60 * 1000
+
+    const sessionCookie = await admin.auth().createSessionCookie(idToken, {
+      expiresIn,
+    })
+
+    // Set cookie options
     const options = {
-      maxAge: SESSION_EXPIRY,
+      maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    };
-    res.cookie('session', sessionCookie, options);
+      sameSite: 'lax',
+      path: '/',
+    }
 
-    req.session.user = {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-    };
+    // Set the cookie
+    res.cookie('session', sessionCookie, options)
+
+    return sessionCookie
   } catch (error) {
-    console.error('Error creating session cookie:', error);
-    throw error;
+    console.error('Error creating session cookie:', error)
+    throw error
   }
-};
-
-
-const AddChatToken = async (req, res, user) => {
-
-  const chatToken = await generateUserChatToken(user.uid);
-
-  const options = {
-    maxAge: SESSION_EXPIRY,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-  };
-  res.cookie('chatToken', chatToken, options)
 }
 
-
-
-module.exports = {createCookieSession, AddChatToken};
-
-
-
+module.exports = { createCookieSession }

@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
+      },
+    ]
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
@@ -8,20 +16,19 @@ const nextConfig = {
     })
     return config
   },
-  rewrites: async () => {
-    return [
-      {
-        source: '/api/:path*',
-        destination: '/api/:path*',
-      },
-    ]
-  },
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
   images: {
-    domains: [],
+    domains: ['firebasestorage.googleapis.com'],
     formats: ['image/avif', 'image/webp'],
+  },
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.css$/,
+      use: ['style-loader', 'css-loader', 'postcss-loader'],
+    })
+    return config
   },
   eslint: {
     ignoreDuringBuilds: false,

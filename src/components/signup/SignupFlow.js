@@ -1,104 +1,77 @@
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import UserTypeSelection from './UserTypeSelection'
+'use client'
+
+import { useSignupStore } from '@/lib/store/signupStore'
+import { UserTypeSelection } from './UserTypeSelection'
+import { EmailVerificationStep } from './EmailVerificationStep'
+import IndividualForm from './IndividualForm'
 import CorporateForm from './CorporateForm'
 import InstitutionForm from './InstitutionForm'
-import IndividualForm from './IndividualForm'
-import GeneralSignupForm from './GeneralSignupForm'
+import { ProgressSteps } from './ProgressSteps'
+import { motion, AnimatePresence } from 'framer-motion'
+import ConfirmationStep from './ConfirmationStep'
 
-const SignupFlow = () => {
-  const [step, setStep] = useState(1)
-  const [userType, setUserType] = useState(null)
-  const [subOption, setSubOption] = useState(null)
-  const [formData, setFormData] = useState({})
-
-  const handleUserTypeSelect = (type, option) => {
-    setUserType(type)
-    setSubOption(option)
-    setStep(2)
-  }
-
-  const handleFormComplete = (data) => {
-    setFormData((prevData) => ({ ...prevData, ...data }))
-    setStep((prevStep) => prevStep + 1)
-  }
+export function SignupFlow() {
+  const { step, userType, subOption, formData, setStep } = useSignupStore(
+    (state) => ({
+      step: state.step,
+      userType: state.userType,
+      subOption: state.subOption,
+      formData: state.formData,
+      setStep: state.setStep,
+    })
+  )
 
   const handleBack = () => {
-    setStep((prevStep) => prevStep - 1)
+    setStep(step - 1)
   }
 
-  const handleFinalSubmit = async (data) => {
-    const finalData = { ...formData, ...data }
-    console.log('Final submission data:', finalData)
-    // Typically, you would send the data to your backend
-    // await submitToBackend(finalData)
-    alert('Registration completed successfully!')
-    // Reset the form or redirect to a success page
+  const handleComplete = (data) => {
+    // Handle form completion
+    console.log('Completed with data:', data)
   }
 
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        return <UserTypeSelection onSelect={handleUserTypeSelect} />
-      case 2:
+  const renderForm = () => {
+    if (!userType) return null
+
         switch (userType) {
+      case 'individual':
+        return <IndividualForm />
           case 'corporate':
-            return (
-              <CorporateForm
-                onComplete={handleFormComplete}
-                onBack={handleBack}
-                subOption={subOption}
-              />
-            )
+        return <CorporateForm subOption={subOption} />
           case 'institution':
-            return (
-              <InstitutionForm
-                onComplete={handleFormComplete}
-                onBack={handleBack}
-                subOption={subOption}
-              />
-            )
-          case 'individual':
-            return (
-              <IndividualForm
-                onComplete={handleFormComplete}
-                onBack={handleBack}
-              />
-            )
-          default:
-            return null
-        }
-      case 3:
-        return (
-          <GeneralSignupForm
-            onComplete={handleFinalSubmit}
-            onBack={handleBack}
-            userType={userType}
-            preSignupData={formData}
-          />
-        )
+        return <InstitutionForm subOption={subOption} />
       default:
         return null
     }
   }
 
   return (
-    <div className='min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-md w-full space-y-8'>
+    <div className='min-h-screen bg-gradient-to-b from-primary/5 via-background to-background'>
+      <div className='container mx-auto px-4 py-8'>
+        <ProgressSteps />
+
         <AnimatePresence mode='wait'>
           <motion.div
             key={step}
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
+            className='mt-8'
           >
-            {renderStep()}
+            {step === 1 && <UserTypeSelection />}
+            {step === 2 && <EmailVerificationStep />}
+            {step === 3 && renderForm()}
+            {step === 4 && (
+              <ConfirmationStep
+                formData={formData}
+                onBack={handleBack}
+                onComplete={handleComplete}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
     </div>
   )
 }
-
-export default SignupFlow

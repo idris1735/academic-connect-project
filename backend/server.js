@@ -1,98 +1,65 @@
-const express = require('express');
-const next = require('next');
-const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const { auth } = require('./config/firebase');
-const admin = require('./config/firebase');
-const socketService = require('./services/socketService');
+const express = require('express')
+const cookieParser = require('cookie-parser')
+const session = require('express-session')
+const cors = require('cors')
+const checkAuth = require('./middleware/auth')
+const { PUBLIC_ROUTES } = require('./utils/constants')
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
-const handle = app.getRequestHandler();
+const app = express()
 
-const server = express();
+// Enable CORS with specific options
+app.use(
+  cors({
+    origin: 'http://localhost:3000', // Your frontend URL
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+)
 
-// Middleware
-server.use(express.json());
-server.use(cookieParser());
-server.use(
+// Basic middleware
+app.use(express.json())
+app.use(cookieParser())
+app.use(
   session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
-      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 1000,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
     },
   })
-);
+)
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-const postRoutes = require('./routes/posts');
-const profileRoutes = require('./routes/profile');
-const networkRoutes = require('./routes/network');
-const notificationRoutes = require('./routes/notification');
-const messageRoutes = require('./routes/messages');
-const workflowRoutes = require('./routes/workflows');
-const connectionRoutes = require('./routes/connections');
-const chatRoutes = require('./routes/chats');
-// Import middleware
-const checkAuth = require('./middleware/auth');
-const errorHandler = require('./middleware/errorHandler');
+const authRoutes = require('./routes/auth')
+const postsRoutes = require('./routes/posts')
 
-// Wait for Next.js to be ready before starting the server
-app.prepare()
-  .then(() => {
-    // API routes
-    server.use('/auth', authRoutes);
-    server.use('/user', checkAuth, userRoutes);
-    server.use('/api/posts', checkAuth, postRoutes);
-    server.use('/api/users', checkAuth, userRoutes);
-    server.use('/api/profile', checkAuth, profileRoutes);
-    server.use('/api/network', checkAuth, networkRoutes);
-    server.use('/api/notifications', checkAuth, notificationRoutes);
-    server.use('/api/messages', checkAuth, messageRoutes);
-    server.use('/api/workflows', checkAuth, workflowRoutes);
-    server.use('/api/connections', checkAuth, connectionRoutes);
-    server.use('/api/chats', checkAuth, chatRoutes); 
+// API routes
+app.use('/api/auth', authRoutes)
+app.use('/api/posts', postsRoutes)
 
-    // Handle login route
-    server.get('/login', (req, res) => {
-      const sessionCookie = req.cookies.session;
-      if (sessionCookie) {
-        return res.redirect('/feeds');
-      }
-      return app.render(req, res, '/login');
-    });
+// Auth middleware for protected routes
+app.use((req, res, next) => {
+  if (PUBLIC_ROUTES.some((route) => req.path.startsWith(route))) {
+    return next()
+  }
+  return checkAuth(req, res, next)
+})
 
-    // Handle all other routes
-    server.get('*', checkAuth, (req, res) => {
-      return handle(req, res);
-    });
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err)
+  res.status(500).json({ message: 'Internal server error', error: err.message })
+})
 
-    // Error handling
-    server.use(errorHandler);
+// Start server on port 3001
+const PORT = 3001
+app.listen(PORT, () => {
+  console.log(`Backend server running on http://localhost:${PORT}`)
+})
 
-    // Start server
-    const httpServer = server.listen(3000, (err) => {
-      if (err) throw err;
-      console.log('> Ready on http://localhost:3000');
-    });
-
-    // Initialize socket service
-    socketService.initialize(httpServer);
-
-    // Export for use in other services
-    exports.socketServer = socketService;
-  })
-  .catch((err) => {
-    console.error('Error starting server:', err);
-    process.exit(1);
-  });
-
-// Export for testing
-module.exports = server;
-
+module.exports = app

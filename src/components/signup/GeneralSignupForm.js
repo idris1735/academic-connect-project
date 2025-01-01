@@ -16,7 +16,12 @@ import {
 } from '@/components/ui/select'
 import PropTypes from 'prop-types'
 
-const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
+const GeneralSignupForm = ({
+  onComplete,
+  onBack,
+  userType,
+  preSignupData = {},
+}) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -27,7 +32,6 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
     country: '',
     termsAccepted: false,
     userType,
-
     ...preSignupData,
   })
 
@@ -46,39 +50,9 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setIsLoading(true)
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords don\'t match')
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch('/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        onComplete(data.redirectTo)
-      } else {
-        setError(data.error)
-      }
-    } catch (error) {
-      console.error('Signup error:', error)
-      setError('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
-    }
+  const handleNext = () => {
+    // Navigate to the confirmation step
+    onComplete(formData) // Pass the form data to the next step
   }
 
   const isFormValid =
@@ -121,7 +95,7 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
           </motion.div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className='space-y-6'>
+          <form className='space-y-6'>
             {error && (
               <div className='p-3 text-sm text-red-500 bg-red-50 rounded-md'>
                 {error}
@@ -230,34 +204,6 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
               </Select>
             </div>
 
-            {/* Dynamic Fields for User Types */}
-            {userType === 'individual' && (
-              <div className='space-y-2'>
-                <Label htmlFor='occupation'>Occupation</Label>
-                <Input
-                  id='occupation'
-                  name='occupation'
-                  value={formData.occupation}
-                  onChange={handleInputChange}
-                  placeholder='Enter your occupation'
-                  required
-                />
-              </div>
-            )}
-            {(userType === 'corporate' || userType === 'institution') && (
-              <div className='space-y-2'>
-                <Label htmlFor='jobTitle'>Job Title</Label>
-                <Input
-                  id='jobTitle'
-                  name='jobTitle'
-                  value={formData.jobTitle}
-                  onChange={handleInputChange}
-                  placeholder='Enter your job title'
-                  required
-                />
-              </div>
-            )}
-
             {/* Terms and Conditions */}
             <div className='flex items-center space-x-2'>
               <Input
@@ -286,8 +232,12 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
               >
                 Back
               </Button>
-              <Button type='submit' disabled={!isFormValid || isLoading}>
-                {isLoading ? 'Creating Account...' : 'Complete Registration'}
+              <Button
+                type='button'
+                onClick={handleNext}
+                disabled={!isFormValid || isLoading}
+              >
+                Next
               </Button>
             </div>
           </form>
@@ -295,26 +245,6 @@ const GeneralSignupForm = ({ onComplete, onBack, userType, preSignupData }) => {
       </Card>
     </motion.div>
   )
-}
-
-GeneralSignupForm.propTypes = {
-  onComplete: PropTypes.func.isRequired,
-  onBack: PropTypes.func.isRequired,
-  userType: PropTypes.oneOf(['individual', 'corporate', 'institution'])
-    .isRequired,
-  preSignupData: PropTypes.shape({
-    email: PropTypes.string,
-    firstName: PropTypes.string,
-    lastName: PropTypes.string,
-    dateOfBirth: PropTypes.string,
-    country: PropTypes.string,
-    occupation: PropTypes.string,
-    jobTitle: PropTypes.string,
-  }),
-}
-
-GeneralSignupForm.defaultProps = {
-  preSignupData: {},
 }
 
 export default GeneralSignupForm

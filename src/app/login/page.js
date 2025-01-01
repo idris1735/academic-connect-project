@@ -1,12 +1,12 @@
 // src/app/login/page.js
-import { Suspense } from 'react'
 import LoginPage from '@/components/LoginPage'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export default function Login() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <ErrorBoundary>
       <LoginPage />
-    </Suspense>
+    </ErrorBoundary>
   )
 }
 

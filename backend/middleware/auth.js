@@ -1,51 +1,37 @@
-const { admin } = require('../config/firebase');
-const { PUBLIC_ROUTES, AUTH_ROUTES } = require('../utils/constants');
-const generateUserChatToken = require('../services/chatService').generateUserChatToken;
+const { admin } = require('../config/firebase')
+const { PUBLIC_ROUTES } = require('../utils/constants')
 
 const checkAuth = async (req, res, next) => {
-    const sessionCookie = req.cookies.session;
-    const chatToken = req.cookies.chatToken;
+  // Skip auth for static files and public routes
+  if (
+    PUBLIC_ROUTES.some((route) => req.path.startsWith(route)) ||
+    req.path.includes('/_next/') ||
+    req.path.includes('/static/')
+  ) {
+    return next()
+  }
 
-    // Allow unprotected routes
-    if (
-        PUBLIC_ROUTES.includes(req.path) ||
-        AUTH_ROUTES.includes(req.path) || 
-        req.path.startsWith('/_next')
-    ) {
-        return next();
-    }
+  const sessionCookie = req.cookies.session
 
-    // Protect all other routes
-    if (!sessionCookie) {
-        console.log('Unauthorized access to:', req.path);
-        return res.status(401).redirect('/login');
-    }
+  if (!sessionCookie) {
+    console.log('No session cookie found')
+    return res.status(401).json({ message: 'No session found' })
+  }
 
-    try {
-        const decodedToken = await admin.auth().verifySessionCookie(sessionCookie, true);
-        console.log('Authenticated user:', decodedToken.email);
-        console.log(req.path);
-        console.log('Chat token:', chatToken);
-        req.user = decodedToken;
-        return next();
-    } catch (error) {
-        console.error('Session verification failed:', error.message);
-        
-        // Check specifically for internet connection error
-        if (error.message.includes('getaddrinfo EAI_AGAIN') || error.code === 'EAI_AGAIN') {
-            // Send a 503 status with a specific error code for connection issues
-            return res.status(503).json({
-                error: 'network_error',
-                message: 'Please check your internet connection and try again'
-            });
-        }
+  try {
+    const decodedToken = await admin
+      .auth()
+      .verifySessionCookie(sessionCookie, true)
+    console.log('Session verified for:', decodedToken.email)
+    req.user = decodedToken
+    return next()
+  } catch (error) {
+    console.error('Session verification failed:', error)
+    return res.status(401).json({
+      message: 'Invalid session',
+      error: error.message,
+    })
+  }
+}
 
-        // For other session errors, redirect to login
-        res.clearCookie('session');
-        return res.redirect('/login');
-    }
-};
-
-
-module.exports = checkAuth;
-
+module.exports = checkAuth

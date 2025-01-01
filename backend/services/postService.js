@@ -1,450 +1,166 @@
-const e = require('express');
-const { db } = require('../config/database');
-const { Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
-const { getDocs, collection, where } = require("firebase/firestore");
-const { query } = require('firebase/firestore');
-const { getUserNameByUid } = require('../utils/user');
-const { admin, storage } = require('../config/firebase');
-const { v4: uuidv4 } = require('uuid');
-const notificationService = require('../services/notificationService');
-const messageService = require('../services/messageService')
-const fs = require('fs/promises');
-const path = require('path');
-
+const { db } = require('../config/database')
+const admin = require('../config/firebase')
 
 exports.createPost = async (req, res) => {
   try {
-   
-    const user = req.user;
-    let attachmentUrl = null;
-    const storeInCloud = false;
+    const { content, category, location } = req.body
+    const userId = req.user.uid
 
-    
-    const { content, category, discussionName } = req.body;
-    const attachment = req.file;
-    let attachment_info;
-
-    if (attachment) {
-      console.log('Uploaded file:', attachment.originalname);
-      console.log('File size:', attachment.size);
-      console.log('File mime type:', attachment.mimetype);
-      console.log('File path on server:', attachment.path);
-      console.log('File type:', attachment.type);
-    } else {
-      console.log('No attachment uploaded');
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    // Handle file upload if there's an attachment
-    if (req.file && storeInCloud) {
-      const bucket = storage.bucket();
-      const fileExtension = attachment.originalname.split('.').pop();
-      const fileName = `posts/${uuidv4()}.${fileExtension}`;
-      
-      // Create a new blob in the bucket
-      const blob = bucket.file(fileName);
-      const blobStream = blob.createWriteStream({
-        metadata: {
-          contentType: attachment.mimetype,
-        },
-      });
-
-      // Return a promise to handle the upload
-      await new Promise((resolve, reject) => {
-        blobStream.on('error', (error) => {
-          console.error('Error uploading file:', error);
-          reject(error);
-        });
-
-        blobStream.on('finish', async () => {
-          // Make the file publicly accessible
-          await blob.makePublic();
-          
-          // Get the public URL
-          attachmentUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-          resolve();
-        });
-
-        blobStream.end(req.file.buffer);
-      });
-    }
-
-    if (attachment) {
-
-      const buffer = attachment.buffer;
-      const fileExtension = path.extname(attachment.originalname);
-      let uploadPath;
-      let fileType;
-    
-      if (attachment.mimetype.startsWith('image/')) {
-        fileType = 'images';
-      } else if (attachment.mimetype.startsWith('video/')) {
-        fileType = 'videos';
-      } else if (attachment.mimetype.startsWith('application/')) {
-        fileType = 'applications';
-      } else {
-        throw new Error('Invalid file type');
-      }
-    
-      uploadPath = path.join(process.cwd(), 'public', 'uploads', fileType, `${uuidv4()}${fileExtension}`);
-    
-      await fs.mkdir(path.dirname(uploadPath), { recursive: true });
-      await fs.writeFile(uploadPath, buffer);
-      //  // Write the file to the local storage
-      // fs.writeFileSync(uploadPath, attachment.buffer);
-      // attachmentUrl = uploadPath; // Store the local path or URL as needed
-      attachmentUrl = path.relative(path.join(process.cwd(), 'public'), uploadPath);
-      attachment_info = {
-        name: attachment.originalname,
-        fileType,
-        url: attachmentUrl,
-      }
-    
-
-      // const fileExtension = attachment.originalname.split('.').pop();
-      // let uploadPath;
-
-      // // Determine the upload path based on file type
-      // if (attachment.mimetype.startsWith('image/')) {
-      //   uploadPath = path.join(__dirname, '../../attachments/images', `${uuidv4()}.${fileExtension}`);
-      // } else if (req.file.mimetype.startsWith('video/')) {
-      //   uploadPath = path.join(__dirname, '../../attachments/videos', `${uuidv4()}.${fileExtension}`);
-      // } else if (req.file.mimetype.startsWith('application/')) {
-      //   uploadPath = path.join(__dirname, '../../attachments/documents', `${uuidv4()}.${fileExtension}`);
-      // } else {
-      //   return res.status(400).json({ message: 'Invalid file type' });
-      // }
-
-      // // Write the file to the local storage
-      // fs.writeFileSync(uploadPath, attachment.buffer);
-      // attachmentUrl = uploadPath; // Store the local path or URL as needed
-    }
-
-    // Create the post document
-    const postRef = db.collection('posts').doc();
-    const postID = postRef.id;
-    
-    
-
-    const postData = {
-      id: postID,
-      uid: user.uid,
-      timeStamp: admin.firestore.FieldValue.serverTimestamp(),
-      postCat: category,
+    const postRef = db.collection('posts').doc()
+    const post = {
+      id: postRef.id,
+      content,
+      category,
+      location,
+      authorId: userId,
+      userInfo: {
+        author: req.user.displayName || 'Anonymous',
+        photoURL: req.user.photoURL || null,
+        occupation: req.user.occupation || null,
+      },
       likesCount: 0,
       commentsCount: 0,
-      attachment: attachment_info,
-      discussion: null,
-    };
-
-    await postRef.set(postData);
-
-    // If a discussion name is provided, create a discussion object
-    if (discussionName && discussionName.trim()) {
-     //Create a discussion, that is a research room
-      let discussionResponse = await messageService.createResearchRoomForPost(user.uid, discussionName, postID);
-
-      if (discussionResponse.success) {
-        // Link the discussion to the post
-        console.log('Created discussion room:', discussionResponse.room);
-        postData.discussion = {
-          id: discussionResponse.room.id,
-          name: discussionResponse.room.name,
-        }
-      } else {
-        console.error('Failed to create discussion:', discussionResponse.error);
-        // Handle the error as needed
-        postRef.delete();
-        return res.status(500).json({ 
-          message: 'Failed to create discussion for post', 
-          error: discussionResponse.error 
-        });
-      }
+      timeStamp: admin.firestore.FieldValue.serverTimestamp(),
+      likes: [],
+      comments: [],
     }
 
+    await postRef.set(post)
 
-    const PostContentRef = postRef.collection('postContent').doc();
-    const postContentID = PostContentRef.id;
-    await PostContentRef.set({
-        id: postContentID,//-
-        uid: user.uid,//-
-        content: content,//-
-        updatedAt: FieldValue.serverTimestamp(),//-
-      });//-
-
-
-    // Create a research room with the discussion ID
-    
-    
-    const name = await getUserNameByUid(user.uid);
-    const fullPost = {
-      ...postData,
-      content,
-      userInfo: {
-        author: name,
-      }
-    };
-
-    return res.status(200).json({ 
-      message: 'Post created successfully', 
-      post: fullPost 
-    });
-
+    return res.status(201).json({
+      message: 'Post created successfully',
+      post: {
+        ...post,
+        timeStamp: new Date().toISOString(), // Convert for frontend
+      },
+    })
   } catch (error) {
-    console.error('Error creating post:', error);
-    return res.status(500).json({ 
-      message: 'Failed to create post', 
-      error: error.message 
-    });
+    console.error('Error creating post:', error)
+    return res.status(500).json({ error: 'Failed to create post' })
   }
-};
+}
 
 exports.getPosts = async (req, res) => {
-  const uid = req.params.uid;
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 5;
-  const startAfter = (page - 1) * limit;
-
   try {
-    // Base query
-    let query = db.collection('posts');
+    const { page = 1, limit = 5 } = req.query
+    const offset = (page - 1) * parseInt(limit)
 
-    // Add user filter
-    if (uid) {
-      query = query.where('uid', '==', uid);
-    } else {
-      query = query.where('uid', '==', req.user.uid);
-    }
+    // Get posts from Firestore with pagination
+    const postsRef = db.collection('posts')
+    const query = postsRef
+      .orderBy('timeStamp', 'desc')
+      .limit(parseInt(limit))
+      .offset(offset)
 
-    // Get the paginated data
-    const postsSnapshot = await query
-      .limit(limit)
-      .offset(startAfter)
-      .get();
+    const snapshot = await query.get()
+    const posts = []
 
-    if (postsSnapshot.empty) {
-      return res.status(200).json({ 
-        message: 'No posts found', 
-        posts: [],
-        hasMore: false
-      });
-    }
-
-    // Use a Map to ensure unique posts
-    const postsMap = new Map();
-    
-    // Process posts in parallel for better performance
-    await Promise.all(postsSnapshot.docs.map(async (doc) => {
-      const postData = doc.data();
-      
-      // Skip if we already have this post
-      if (postsMap.has(doc.id)) return;
-      
-      // Get post content
-      const contentDoc = await doc.ref.collection('postContent')
-        .limit(1)
-        .get();
-      
-      // Get comments
-      const commentsSnapshot = await doc.ref.collection('comments')
-        .orderBy('timestamp', 'desc')
-        .limit(10)
-        .get();
-      
-      const comments = commentsSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate().toISOString()
-      }));
-
-      const content = contentDoc.docs[0]?.data()?.content;
-
-      postsMap.set(doc.id, {
-        id: doc.id,
-        uid: postData.uid,
-        content: content,
+    snapshot.forEach((doc) => {
+      const postData = doc.data()
+      posts.push({
+        ...postData,
         timeStamp: postData.timeStamp?.toDate().toISOString(),
-        category: postData.postCat,
-        likesCount: postData.likesCount || 0,
-        commentsCount: postData.commentsCount || 0,
-        comments: comments,
-        discussion: postData.discussion || null, 
-        attachment: postData.attachment || null,
-        userInfo: {
-          author: await getUserNameByUid(postData.uid),
-        }
-      });
-    }));
+      })
+    })
 
-    // Convert map to array
-    const posts = Array.from(postsMap.values());
+    // Check if there are more posts
+    const nextQuery = postsRef
+      .orderBy('timeStamp', 'desc')
+      .limit(1)
+      .offset(offset + parseInt(limit))
+    const nextSnapshot = await nextQuery.get()
 
     return res.status(200).json({
-      message: 'Posts retrieved successfully',
       posts,
-      hasMore: posts.length === limit,
-      currentPage: page
-    });
-
+      hasMore: !nextSnapshot.empty,
+    })
   } catch (error) {
-    console.error('Error retrieving posts:', error);
-    return res.status(500).json({ 
-      message: 'Failed to retrieve posts', 
-      error: error.message 
-    });
+    console.error('Error fetching posts:', error)
+    return res.status(500).json({ error: 'Failed to fetch posts' })
   }
-};
+}
 
 exports.likePost = async (req, res) => {
   try {
-    const { postId } = req.params;
-    const userId = req.user.uid;
+    const postId = req.params.postId
+    const userId = req.user.uid
 
-    // Get reference to the post
-    const postRef = db.collection('posts').doc(postId);
-    const postDoc = await postRef.get();
+    const postRef = db.collection('posts').doc(postId)
+    const post = await postRef.get()
 
-    if (!postDoc.exists) {
-      return res.status(404).json({ message: 'Post not found' });
+    if (!post.exists) {
+      return res.status(404).json({ error: 'Post not found' })
     }
 
-    // Get post content first
-    const contentDoc = await postRef.collection('postContent')
-      .limit(1)
-      .get();
+    const postData = post.data()
+    const likes = postData.likes || []
+    const isLiked = likes.includes(userId)
 
-    // Check if user has already liked the post
-    const likeRef = postRef.collection('likes').doc(userId);
-    const likeDoc = await likeRef.get();
-
-    let newLikeCount;
-    if (likeDoc.exists) {
-      // User already liked the post, remove the like
-      await likeRef.delete();
+    if (isLiked) {
+      // Unlike the post
       await postRef.update({
-        likesCount: FieldValue.increment(-1)
-      });
-      newLikeCount = (postDoc.data().likesCount || 1) - 1;
-
-      // Delete the notification
-      const notificationsRef = db.collection('notifications')
-        .doc(postDoc.data().uid)
-        .collection('user_notifications')
-        .where('type', '==', 'POST_LIKE')
-        .where('data.postId', '==', postId)
-        .where('data.senderId', '==', userId);
-
-      const notificationDocs = await notificationsRef.get();
-      
-      // Delete all matching notifications in a batch
-      const batch = db.batch();
-      notificationDocs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-
+        likes: admin.firestore.FieldValue.arrayRemove(userId),
+        likesCount: admin.firestore.FieldValue.increment(-1),
+      })
     } else {
-      // Add new like
-      await likeRef.set({
-        userId,
-        timestamp: FieldValue.serverTimestamp()
-      });
+      // Like the post
       await postRef.update({
-        likesCount: FieldValue.increment(1)
-      });
-      newLikeCount = (postDoc.data().likesCount || 0) + 1;
-
-      // Create notification for post owner
-      if (postDoc.data().uid === userId) {    // Change this to postDoc.data().uid !== userId
-        await notificationService.createNotification(postDoc.data().uid, 'POST_LIKE', {
-          senderId: userId,
-          senderName: await getUserNameByUid(userId),
-          postId: postId,
-          postContent: contentDoc.docs[0]?.data()?.content || '',
-          message: 'liked your post',
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
+        likes: admin.firestore.FieldValue.arrayUnion(userId),
+        likesCount: admin.firestore.FieldValue.increment(1),
+      })
     }
 
-    return res.status(200).json({ 
-      message: likeDoc.exists ? 'Like removed' : 'Post liked',
-      liked: !likeDoc.exists,
-      likesCount: newLikeCount
-    });
+    return res.status(200).json({
+      message: isLiked ? 'Post unliked' : 'Post liked',
+      likesCount: postData.likesCount + (isLiked ? -1 : 1),
+    })
   } catch (error) {
-    console.error('Error liking post:', error);
-    return res.status(500).json({ message: 'Failed to like post', error: error.message });
+    console.error('Error liking/unliking post:', error)
+    return res.status(500).json({ error: 'Failed to update post like' })
   }
-};
+}
 
 exports.addComment = async (req, res) => {
   try {
-    const { postId } = req.params;
-    const { content } = req.body;
-    const userId = req.user.uid;
+    const postId = req.params.postId
+    const userId = req.user.uid
+    const { content } = req.body
 
-    // Get reference to the post
-    const postRef = db.collection('posts').doc(postId);
-    const postDoc = await postRef.get();
-
-    if (!postDoc.exists) {
-      return res.status(404).json({ message: 'Post not found' });
-    }
-
-    // Get post content first
-    const contentDoc = await postRef.collection('postContent')
-      .limit(1)
-      .get();
-
-    // Create new comment
-    const commentRef = postRef.collection('comments').doc();
-    const commentId = commentRef.id;
-    
-    // Get user name for the comment
-    const userName = await getUserNameByUid(userId);
-
-    const commentData = {
-      id: commentId,
+    const commentRef = db
+      .collection('posts')
+      .doc(postId)
+      .collection('comments')
+      .doc()
+    const comment = {
+      id: commentRef.id,
       content,
-      userId,
-      author: userName,
-      timestamp: FieldValue.serverTimestamp()
-    };
-
-    // Save the comment
-    await commentRef.set(commentData);
-
-    // Update comment count
-    await postRef.update({
-      commentsCount: FieldValue.increment(1)
-    });
-
-    // Create notification for post owner
-    if (postDoc.data().uid === userId) {   // Change this to postDoc.data().uid !== userId
-      await notificationService.createNotification(postDoc.data().uid, 'POST_COMMENT', {
-        senderId: userId,
-        senderName: await getUserNameByUid(userId),
-        postId: postId,
-        commentId: commentId,
-        commentContent: content,
-        postContent: contentDoc.docs[0]?.data()?.content || '',
-        message: 'commented on your post',
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
-      });
+      authorId: userId,
+      userInfo: {
+        author: req.user.displayName || 'Anonymous',
+        photoURL: req.user.photoURL || null,
+      },
+      timeStamp: admin.firestore.FieldValue.serverTimestamp(),
     }
 
-    // Prepare the response data with the current timestamp
-    const responseComment = {
-      ...commentData,
-      timestamp: new Date().toISOString()
-    };
+    await commentRef.set(comment)
 
-    return res.status(200).json({ 
+    // Update comment count on post
+    await db
+      .collection('posts')
+      .doc(postId)
+      .update({
+        commentsCount: admin.firestore.FieldValue.increment(1),
+      })
+
+    return res.status(201).json({
       message: 'Comment added successfully',
-      comment: responseComment
-    });
+      comment: {
+        ...comment,
+        timeStamp: new Date().toISOString(),
+      },
+    })
   } catch (error) {
-    console.error('Error adding comment:', error);
-    return res.status(500).json({ message: 'Failed to add comment', error: error.message });
+    console.error('Error adding comment:', error)
+    return res.status(500).json({ error: 'Failed to add comment' })
   }
-};
+}

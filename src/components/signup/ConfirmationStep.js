@@ -20,11 +20,16 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
   const handleConfirm = async () => {
     setLoading(true)
     try {
-      const response = await authApi.signup({
+      const signupData = {
         ...formData,
         userType,
         subOption,
-      })
+        password: formData.password || formData.confirmPassword, // Ensure password is included
+      }
+
+      console.log('Submitting signup data:', signupData) // Debug log
+
+      const response = await authApi.signup(signupData)
 
       if (response.user) {
         toast({
@@ -37,12 +42,15 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
 
         // Navigate to feeds
         router.push('/feeds')
+      } else {
+        throw new Error('No user data received')
       }
     } catch (error) {
       console.error('Signup error:', error)
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create account',
+        description:
+          error.message || 'Failed to create account. Please try again.',
         variant: 'destructive',
       })
     } finally {
@@ -60,6 +68,15 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
             {formData?.occupation && <p>Occupation: {formData.occupation}</p>}
             {formData?.researchInterests && (
               <p>Research Interests: {formData.researchInterests}</p>
+            )}
+            {formData?.researchWorks && (
+              <p>
+                Research Works:{' '}
+                {Array.isArray(formData.researchWorks)
+                  ? formData.researchWorks.length
+                  : 0}{' '}
+                files uploaded
+              </p>
             )}
           </div>
         )
@@ -80,6 +97,9 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
                 <p>
                   Official Email: {formData?.officialEmail || 'Not provided'}
                 </p>
+                {formData?.logo && <p>Logo: Uploaded</p>}
+                {formData?.address && <p>Address: {formData.address}</p>}
+                {formData?.website && <p>Website: {formData.website}</p>}
               </>
             ) : (
               <>
@@ -88,7 +108,10 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
                   Employee Email: {formData?.employeeEmail || 'Not provided'}
                 </p>
                 <p>Job Title: {formData?.jobTitle || 'Not provided'}</p>
-                <p>Department: {formData?.department || 'Not provided'}</p>
+                {formData?.department && (
+                  <p>Department: {formData.department}</p>
+                )}
+                <p>Access Code: {formData?.accessCode || 'Not provided'}</p>
               </>
             )}
           </div>
@@ -108,12 +131,25 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
             <p>
               Institution Type: {formData?.institutionType || 'Not provided'}
             </p>
+            <p>
+              State:{' '}
+              {formData?.state === 'all'
+                ? 'All States'
+                : formData?.state || 'Not provided'}
+            </p>
             {subOption === 'Admin' ? (
               <>
                 <p>Admin Name: {formData?.adminName || 'Not provided'}</p>
                 <p>
                   Official Email: {formData?.officialEmail || 'Not provided'}
                 </p>
+                <p>
+                  Administrator Access Code:{' '}
+                  {formData?.adminAccessCode || 'Not provided'}
+                </p>
+                {formData?.institutionLogo && <p>Logo: Uploaded</p>}
+                {formData?.address && <p>Address: {formData.address}</p>}
+                {formData?.website && <p>Website: {formData.website}</p>}
               </>
             ) : (
               <>
@@ -121,6 +157,8 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
                 <p>Staff Email: {formData?.staffEmail || 'Not provided'}</p>
                 <p>Department: {formData?.department || 'Not provided'}</p>
                 <p>Position: {formData?.position || 'Not provided'}</p>
+                <p>Staff ID: {formData?.staffId || 'Not provided'}</p>
+                <p>Access Code: {formData?.accessCode || 'Not provided'}</p>
               </>
             )}
           </div>
@@ -136,9 +174,10 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
       className='w-full max-w-md mx-auto'
     >
-      <Card>
+      <Card className='relative overflow-hidden'>
         <CardHeader>
           <Button
             variant='ghost'
@@ -150,15 +189,18 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
             <span className='sr-only'>Go back</span>
           </Button>
           <CardTitle>Confirm Your Details</CardTitle>
+          <p className='text-sm text-muted-foreground'>
+            Please review the information below before proceeding.
+          </p>
         </CardHeader>
         <CardContent>
           <div className='mt-4'>
             <h3 className='font-semibold'>
               {userType === 'individual'
                 ? 'Personal Information'
-                : `${
-                    userType === 'corporate' ? 'Organization' : 'Institution'
-                  } ${subOption} Details`}
+                : userType === 'corporate'
+                ? `Organization ${subOption} Details`
+                : `Institution ${subOption} Details`}
             </h3>
             {renderSummary()}
           </div>

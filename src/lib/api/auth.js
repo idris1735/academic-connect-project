@@ -1,31 +1,17 @@
-import { firebaseService } from '@/lib/services/firebaseService'
+import { auth } from '@/app/firebase-config'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 
+// Authentication API service
 export const authApi = {
   signup: async (formData) => {
     try {
-      // First create Firebase user
-      const firebaseUser = await firebaseService.signUp(
-        formData.email,
-        formData.password
-      )
-
-      // Get ID token
-      const idToken = await firebaseUser.getIdToken()
-
-      // Send to backend
       const response = await fetch('http://localhost:3001/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
         },
         credentials: 'include',
-        body: JSON.stringify({
-          email: formData.email,
-          userType: formData.userType,
-          subOption: formData.subOption,
-          formData: formData,
-        }),
+        body: JSON.stringify(formData),
       })
 
       if (!response.ok) {
@@ -40,46 +26,57 @@ export const authApi = {
     }
   },
 
-  login: async (credentials) => {
+  verifyEmail: async (email, code) => {
     try {
-      // First authenticate with Firebase
-      const firebaseUser = await firebaseService.signIn(
-        credentials.email,
-        credentials.password
+      const response = await fetch(
+        'http://localhost:3001/api/auth/verify-email',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, code }),
+        }
       )
-
-      // Get ID token
-      const idToken = await firebaseUser.getIdToken()
-
-      // Exchange for session cookie
-      const response = await fetch('http://localhost:3001/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials),
-      })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Login failed')
+        throw new Error(errorData.message || 'Email verification failed')
       }
 
-      return await response.json()
+      return response.json()
     } catch (error) {
-      console.error('Login error:', error)
-      throw error
+      if (error.message) throw error
+      throw new Error('Failed to verify email')
     }
   },
 
+  verifyOrganization: async (code, type) => {
+    try {
+      const response = await fetch('/api/auth/verify-organization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code, type }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(
+          error.error?.message || 'Organization verification failed'
+        )
+      }
+
+      return response.json()
+    } catch (error) {
+      throw new Error(error.message)
+    }
+  },
+
+  // Add logout function
   logout: async () => {
     try {
-      await firebaseService.signOut()
-
-      const response = await fetch('http://localhost:3001/api/auth/logout', {
-        method: 'POST',
+      const response = await fetch('/api/auth/logout', {
+        method: 'GET',
         credentials: 'include',
       })
 
@@ -87,9 +84,57 @@ export const authApi = {
         throw new Error('Logout failed')
       }
 
-      return await response.json()
+      return response.json()
     } catch (error) {
-      console.error('Logout error:', error)
+      throw new Error(error.message)
+    }
+  },
+
+  login: async (credentials) => {
+    try {
+      // First, authenticate with Firebase
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        credentials.email,
+        credentials.password
+      )
+
+      // Get the ID token
+      const idToken = await userCredential.user.getIdToken()
+
+      // Store the token
+      localStorage.setItem('idToken', idToken)
+
+      // Then send the token to your backend
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: credentials.email,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Login failed')
+      }
+
+      const responseData = await response.json()
+      return {
+        user: userCredential.user,
+        ...responseData,
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        throw new Error(
+          'Unable to connect to server. Please check your internet connection.'
+        )
+      }
       throw error
     }
   },

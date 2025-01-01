@@ -2,20 +2,11 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import {
-  Loader2,
-  Building2,
-  Users,
-  Factory,
-  Briefcase,
-  MapPin,
-  Mail,
-  Lock,
-  ArrowLeft,
-} from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -25,85 +16,217 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/ui/use-toast'
+import { useSignupStore } from '@/lib/store/signupStore'
 
-const CorporateForm = ({ onComplete, onBack, subOption }) => {
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_FILE_TYPES = ['.pdf', '.doc', '.docx', '.jpg', '.png']
+
+export function CorporateForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [formData, setFormData] = useState({
-    organizationName: '',
-    organizationType: '',
-    industry: '',
-    adminName: '',
-    officialEmail: '',
-    password: '',
-    logo: null,
-    address: '',
-    website: '',
-    accessCode: '',
-    employeeName: '',
-    employeeEmail: '',
-    jobTitle: '',
-    department: '',
+  const { toast } = useToast()
+
+  const { setStep, updateFormData, formData, subOption } = useSignupStore(
+    (state) => ({
+      setStep: state.setStep,
+      updateFormData: state.updateFormData,
+      formData: state.formData,
+      subOption: state.subOption,
+    })
+  )
+
+  const [form, setForm] = useState({
+    organizationName: formData?.organizationName || '',
+    organizationType: formData?.organizationType || '',
+    industry: formData?.industry || '',
+    adminName: formData?.adminName || '',
+    officialEmail: formData?.officialEmail || '',
+    password: formData?.password || '',
+    logo: formData?.logo || null,
+    address: formData?.address || '',
+    website: formData?.website || '',
+    accessCode: formData?.accessCode || '',
+    employeeName: formData?.employeeName || '',
+    employeeEmail: formData?.employeeEmail || '',
+    jobTitle: formData?.jobTitle || '',
+    department: formData?.department || '',
   })
+
+  const validateForm = () => {
+    // Base validation for fields required for both Admin and Employee
+    if (!form.organizationName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter organization name',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!form.organizationType) {
+      toast({
+        title: 'Error',
+        description: 'Please select organization type',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!form.industry.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter industry',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    // Additional validation for Admin-specific fields
+    if (subOption === 'Admin') {
+      if (!form.adminName.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please enter admin name',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (!form.officialEmail.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please enter official email',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (form.password.length < 8) {
+        toast({
+          title: 'Error',
+          description: 'Password must be at least 8 characters long',
+          variant: 'destructive',
+        })
+        return false
+      }
+    }
+
+    // Additional validation for Employee-specific fields
+    if (subOption === 'Employee') {
+      if (!form.employeeName.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please enter employee name',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (!form.employeeEmail.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please enter employee email',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (!form.jobTitle.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please enter job title',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (!form.accessCode.trim()) {
+        toast({
+          title: 'Error',
+          description: 'Please enter access code',
+          variant: 'destructive',
+        })
+        return false
+      }
+    }
+
+    return true
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSelectChange = (name) => (value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const validateFile = (file) => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'Error',
+        description: `File size should not exceed ${
+          MAX_FILE_SIZE / 1024 / 1024
+        }MB`,
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
+    if (!ALLOWED_FILE_TYPES.includes(fileExtension)) {
+      toast({
+        title: 'Error',
+        description: `Only ${ALLOWED_FILE_TYPES.join(', ')} files are allowed`,
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    return true
   }
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, logo: e.target.files[0] }))
+    const file = e.target.files?.[0]
+    if (file && validateFile(file)) {
+      setForm((prev) => ({ ...prev, logo: file }))
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!validateForm()) return
+
     setIsLoading(true)
+    try {
+      // Simulate form submission with progress
+      for (let i = 0; i <= 100; i += 20) {
+        setProgress(i)
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
 
-    // Simulate progress
-    for (let i = 0; i <= 100; i += 20) {
-      setProgress(i)
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // Update global state
+      updateFormData(form)
+
+      toast({
+        title: 'Success',
+        description: 'Your information has been saved successfully',
+      })
+
+      // Move to next step
+      setStep(4)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save your information. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
+      setProgress(0)
     }
-
-    onComplete(formData)
-    setIsLoading(false)
-  }
-
-  const isFormValid = () => {
-    // Base validation for fields required for both Admin and Employee
-    const baseFieldsValid =
-      formData.organizationName?.trim() &&
-      formData.organizationType?.trim() &&
-      formData.industry?.trim()
-
-    // Additional validation for Admin-specific fields
-    if (subOption === 'Admin') {
-      return (
-        baseFieldsValid &&
-        formData.adminName?.trim() &&
-        formData.officialEmail?.trim() &&
-        formData.password?.trim()
-      )
-    }
-
-    // Additional validation for Employee-specific fields
-    if (subOption === 'Employee') {
-      return (
-        baseFieldsValid &&
-        formData.employeeName?.trim() &&
-        formData.employeeEmail?.trim() &&
-        formData.jobTitle?.trim()
-      )
-    }
-
-    return false
   }
 
   return (
@@ -126,7 +249,8 @@ const CorporateForm = ({ onComplete, onBack, subOption }) => {
           <Button
             variant='ghost'
             className='absolute left-2 top-2'
-            onClick={onBack}
+            onClick={() => setStep(2)}
+            disabled={isLoading}
           >
             <ArrowLeft className='h-4 w-4' />
             <span className='sr-only'>Go back</span>
@@ -155,7 +279,7 @@ const CorporateForm = ({ onComplete, onBack, subOption }) => {
               <Input
                 id='organizationName'
                 name='organizationName'
-                value={formData.organizationName}
+                value={form.organizationName}
                 onChange={handleInputChange}
                 placeholder='Enter organization name'
                 required
@@ -168,16 +292,17 @@ const CorporateForm = ({ onComplete, onBack, subOption }) => {
               <Label htmlFor='organizationType'>Organization Type</Label>
               <Select
                 onValueChange={handleSelectChange('organizationType')}
-                value={formData.organizationType}
+                value={form.organizationType}
               >
                 <SelectTrigger>
                   <SelectValue placeholder='Select organization type' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='corporate'>Corporate</SelectItem>
-                  <SelectItem value='government'>Government</SelectItem>
-                  <SelectItem value='non_profit'>Non-Profit</SelectItem>
-                  <SelectItem value='other'>Other</SelectItem>
+                  {organizationTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -188,7 +313,7 @@ const CorporateForm = ({ onComplete, onBack, subOption }) => {
               <Input
                 id='industry'
                 name='industry'
-                value={formData.industry}
+                value={form.industry}
                 onChange={handleInputChange}
                 placeholder='Enter industry or sector'
                 required
@@ -199,110 +324,154 @@ const CorporateForm = ({ onComplete, onBack, subOption }) => {
             {/* Admin-Specific Fields */}
             {subOption === 'Admin' && (
               <>
-                <Input
-                  id='adminName'
-                  name='adminName'
-                  value={formData.adminName}
-                  onChange={handleInputChange}
-                  placeholder='Admin Name'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='officialEmail'
-                  name='officialEmail'
-                  type='email'
-                  value={formData.officialEmail}
-                  onChange={handleInputChange}
-                  placeholder='Admin Email'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='password'
-                  name='password'
-                  type='password'
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder='Password'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='logo'
-                  name='logo'
-                  type='file'
-                  onChange={handleFileChange}
-                  accept='image/*'
-                />
-                <Textarea
-                  id='address'
-                  name='address'
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder='Enter organization address'
-                  rows={3}
-                />
-                <Input
-                  id='website'
-                  name='website'
-                  type='url'
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  placeholder='Website'
-                />
+                <div className='space-y-2'>
+                  <Label htmlFor='adminName'>Admin Name</Label>
+                  <Input
+                    id='adminName'
+                    name='adminName'
+                    value={form.adminName}
+                    onChange={handleInputChange}
+                    placeholder='Enter admin name'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='officialEmail'>Official Email</Label>
+                  <Input
+                    id='officialEmail'
+                    name='officialEmail'
+                    type='email'
+                    value={form.officialEmail}
+                    onChange={handleInputChange}
+                    placeholder='Enter official email'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='password'>Password</Label>
+                  <Input
+                    id='password'
+                    name='password'
+                    type='password'
+                    value={form.password}
+                    onChange={handleInputChange}
+                    placeholder='Create password'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='logo'>Organization Logo</Label>
+                  <Input
+                    id='logo'
+                    name='logo'
+                    type='file'
+                    onChange={handleFileChange}
+                    accept='image/*'
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='address'>Address</Label>
+                  <Textarea
+                    id='address'
+                    name='address'
+                    value={form.address}
+                    onChange={handleInputChange}
+                    placeholder='Enter organization address'
+                    rows={3}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='website'>Website</Label>
+                  <Input
+                    id='website'
+                    name='website'
+                    type='url'
+                    value={form.website}
+                    onChange={handleInputChange}
+                    placeholder='Enter website URL'
+                    disabled={isLoading}
+                  />
+                </div>
               </>
             )}
 
             {/* Employee-Specific Fields */}
             {subOption === 'Employee' && (
               <>
-                <Input
-                  id='employeeName'
-                  name='employeeName'
-                  value={formData.employeeName}
-                  onChange={handleInputChange}
-                  placeholder='Employee Name'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='employeeEmail'
-                  name='employeeEmail'
-                  type='email'
-                  value={formData.employeeEmail}
-                  onChange={handleInputChange}
-                  placeholder='Employee Email'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='jobTitle'
-                  name='jobTitle'
-                  value={formData.jobTitle}
-                  onChange={handleInputChange}
-                  placeholder='Job Title'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='department'
-                  name='department'
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  placeholder='Department'
-                  required
-                  disabled={isLoading}
-                />
-                <Input
-                  id='accessCode'
-                  name='accessCode'
-                  value={formData.accessCode}
-                  onChange={handleInputChange}
-                  placeholder='Access Code'
-                  required
-                  disabled={isLoading}
-                />
+                <div className='space-y-2'>
+                  <Label htmlFor='employeeName'>Employee Name</Label>
+                  <Input
+                    id='employeeName'
+                    name='employeeName'
+                    value={form.employeeName}
+                    onChange={handleInputChange}
+                    placeholder='Enter your full name'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='employeeEmail'>Employee Email</Label>
+                  <Input
+                    id='employeeEmail'
+                    name='employeeEmail'
+                    type='email'
+                    value={form.employeeEmail}
+                    onChange={handleInputChange}
+                    placeholder='Enter your work email'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='jobTitle'>Job Title</Label>
+                  <Input
+                    id='jobTitle'
+                    name='jobTitle'
+                    value={form.jobTitle}
+                    onChange={handleInputChange}
+                    placeholder='Enter your job title'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='department'>Department</Label>
+                  <Input
+                    id='department'
+                    name='department'
+                    value={form.department}
+                    onChange={handleInputChange}
+                    placeholder='Enter your department'
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='accessCode'>Access Code</Label>
+                  <Input
+                    id='accessCode'
+                    name='accessCode'
+                    value={form.accessCode}
+                    onChange={handleInputChange}
+                    placeholder='Enter organization access code'
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
               </>
             )}
           </form>
@@ -311,21 +480,21 @@ const CorporateForm = ({ onComplete, onBack, subOption }) => {
         <CardFooter className='flex flex-col gap-4'>
           <Button
             onClick={handleSubmit}
-            type='submit'
             className='w-full'
-            disabled={!isFormValid() || isLoading}
+            disabled={isLoading}
           >
-            {isLoading
-              ? (
+            {isLoading ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Processing...
               </>
-                )
-              : (
-                  'Continue'
-                )}
+            ) : (
+              'Continue'
+            )}
           </Button>
+          <p className='text-xs text-center text-muted-foreground'>
+            Your information helps us personalize your research experience
+          </p>
         </CardFooter>
       </Card>
     </motion.div>
