@@ -26,6 +26,12 @@ import {
   MoreHorizontal,
   Bell,
   Badge,
+  MicOff,
+  CameraOff,
+  Camera,
+  MonitorOff,
+  MonitorUp,
+  PhoneOff,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -132,6 +138,653 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   const audioChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
   const { toast } = useToast();
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [inCall, setInCall] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [peerConnection, setPeerConnection] = useState(null);
+  const [screenStream, setScreenStream] = useState(null);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const screenVideoRef = useRef(null);
+  const [pendingCandidates, setPendingCandidates] = useState([]);
+
+  // WebRTC configuration
+  const configuration = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ],
+  };
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+    if (screenVideoRef.current && screenStream) {
+      screenVideoRef.current.srcObject = screenStream;
+    }
+  }, [localStream, remoteStream, screenStream]);
+
+  const setupPeerConnection = () => {
+    const pc = new RTCPeerConnection(configuration);
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        const candidateString = JSON.stringify(event.candidate);
+        if (candidateString.length > 4000) {
+          const chunks = candidateString.match(/.{1,4000}/g) || [];
+          chunks.forEach((chunk, index) => {
+            sendCallSignal("ice-candidate-chunk", {
+              chunk,
+              index,
+              total: chunks.length,
+              isLast: index === chunks.length - 1,
+              targetUserId: Object.keys(peerConnection).find(
+                (key) => peerConnection[key] === pc
+              ),
+            });
+          });
+        } else {
+          sendCallSignal("ice-candidate", {
+            candidate: event.candidate,
+            targetUserId: Object.keys(peerConnection).find(
+              (key) => peerConnection[key] === pc
+            ),
+          });
+        }
+      }
+    };
+
+    pc.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        const userId = Object.keys(peerConnection).find(
+          (key) => peerConnection[key] === pc
+        );
+        if (event.track.kind === "video") {
+          if (
+            event.track.label.includes("screen") ||
+            event.track.label.includes("display")
+          ) {
+            setScreenStream(event.streams[0]);
+          } else {
+            setRemoteStream((prev) => ({
+              ...prev,
+              [userId]: event.streams[0],
+            }));
+          }
+        } else {
+          setRemoteStream((prev) => {
+            const stream = prev[userId];
+            if (stream) {
+              stream.addTrack(event.track);
+              return { ...prev };
+            }
+            return { ...prev, [userId]: event.streams[0] };
+          });
+        }
+      }
+    };
+
+    return pc;
+  };
+
+  const compressSessionDescription = (description) => {
+    const { type, sdp } = description;
+    const compressedSdp = sdp
+      .split("\n")
+      .filter(
+        (line) =>
+          !line.startsWith("a=ice-options:") &&
+          !line.startsWith("a=msid-semantic:") &&
+          !line.startsWith("a=group:") &&
+          !line.startsWith("a=rtcp-rsize")
+      )
+      .join("\n");
+
+    return { type, sdp: compressedSdp };
+  };
+
+  const startCall = async (isVideo) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: isVideo,
+      });
+
+      setLocalStream(stream);
+      setIsVideoCall(isVideo);
+      setInCall(true);
+
+      // Create peer connections for each member
+      const members = room.members.filter(
+        (member) => member.uid !== chatClient.user.id
+      );
+
+      // Initialize peer connections for each member
+      const peerConnections = {};
+
+      for (const member of members) {
+        const pc = setupPeerConnection();
+        peerConnections[member.uid] = pc;
+
+        // Add local tracks to each peer connection
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+        // Create and send offer to each member
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const compressedOffer = compressSessionDescription(offer);
+        const offerData = JSON.stringify(compressedOffer);
+
+        if (offerData.length > 4000) {
+          const chunks = offerData.match(/.{1,4000}/g);
+          for (let i = 0; i < chunks.length; i++) {
+            await sendCallSignal("call-offer-chunk", {
+              chunk: chunks[i],
+              index: i,
+              total: chunks.length,
+              isLast: i === chunks.length - 1,
+              isVideoCall: isVideo,
+              targetUserId: member.uid,
+            });
+          }
+        } else {
+          await sendCallSignal("call-offer", {
+            offer: compressedOffer,
+            isVideoCall: isVideo,
+            targetUserId: member.uid,
+          });
+        }
+      }
+
+      setPeerConnection(peerConnections);
+
+      toast({
+        title: "Group Call Started",
+        description: `Starting ${isVideo ? "video" : "voice"} call with ${
+          members.length
+        } participants`,
+      });
+    } catch (error) {
+      console.error("Error starting call:", error);
+      toast({
+        title: "Error",
+        description: "Could not start call: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const acceptCall = async () => {
+    try {
+      if (!incomingCall) return;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: incomingCall.isVideoCall,
+      });
+
+      setLocalStream(stream);
+      setIsVideoCall(incomingCall.isVideoCall);
+      setInCall(true);
+
+      const pc = setupPeerConnection();
+      const peerConnections = { [incomingCall.callerId]: pc };
+      setPeerConnection(peerConnections);
+
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      await pc.setRemoteDescription(
+        new RTCSessionDescription(incomingCall.offer)
+      );
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      const compressedAnswer = compressSessionDescription(answer);
+      await sendCallSignal("call-answer", {
+        answer: compressedAnswer,
+        targetUserId: incomingCall.callerId,
+      });
+
+      toast({
+        title: "Call Connected",
+        description: "You have joined the call",
+      });
+
+      setIncomingCall(null);
+    } catch (error) {
+      console.error("Error accepting call:", error);
+      toast({
+        title: "Error",
+        description: "Could not accept call: " + error.message,
+        variant: "destructive",
+      });
+      setIncomingCall(null);
+    }
+  };
+
+  const declineCall = async () => {
+    await sendCallSignal("call-declined");
+    setIncomingCall(null);
+  };
+
+  const endCall = async () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+    }
+    if (screenStream) {
+      screenStream.getTracks().forEach((track) => track.stop());
+    }
+    if (peerConnection) {
+      // Close all peer connections
+      Object.values(peerConnection).forEach((pc) => {
+        if (pc && typeof pc.close === "function") {
+          pc.close();
+        }
+      });
+    }
+
+    if (inCall) {
+      await sendCallSignal("call-ended");
+    }
+
+    setLocalStream(null);
+    setRemoteStream(null);
+    setScreenStream(null);
+    setPeerConnection(null);
+    setInCall(false);
+    setIsVideoCall(false);
+    setIsScreenSharing(false);
+  };
+
+  const toggleMute = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoEnabled(!isVideoEnabled);
+    }
+  };
+
+  const startScreenShare = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false, // Disable audio to reduce data size
+      });
+
+      setScreenStream(stream);
+      setIsScreenSharing(true);
+
+      if (peerConnection) {
+        const videoTrack = stream.getVideoTracks()[0];
+
+        // Handle screen sharing for each peer connection
+        for (const [userId, pc] of Object.entries(peerConnection)) {
+          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+
+          if (sender) {
+            await sender.replaceTrack(videoTrack);
+          } else {
+            pc.addTrack(videoTrack, stream);
+          }
+
+          // Create a compressed offer for each peer
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+
+          const compressedOffer = compressSessionDescription(offer);
+          const offerString = JSON.stringify(compressedOffer);
+
+          // Split offer into chunks if needed
+          if (offerString.length > 4000) {
+            const chunks = offerString.match(/.{1,4000}/g) || [];
+            for (let i = 0; i < chunks.length; i++) {
+              await sendCallSignal("screen-share-offer-chunk", {
+                chunk: chunks[i],
+                index: i,
+                total: chunks.length,
+                isLast: i === chunks.length - 1,
+                targetUserId: userId,
+              });
+            }
+          } else {
+            await sendCallSignal("screen-share-offer", {
+              offer: compressedOffer,
+              targetUserId: userId,
+            });
+          }
+        }
+      }
+
+      // Handle stream stop
+      stream.getVideoTracks()[0].onended = () => {
+        stopScreenShare();
+      };
+    } catch (error) {
+      console.error("Error starting screen share:", error);
+      toast({
+        title: "Error",
+        description: "Could not start screen sharing: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopScreenShare = async () => {
+    try {
+      if (screenStream) {
+        screenStream.getTracks().forEach((track) => track.stop());
+
+        // Revert to camera if it was a video call
+        if (isVideoCall && localStream) {
+          const videoTrack = localStream.getVideoTracks()[0];
+
+          // Handle reverting for each peer connection
+          for (const [userId, pc] of Object.entries(peerConnection)) {
+            const sender = pc
+              .getSenders()
+              .find((s) => s.track?.kind === "video");
+            if (sender && videoTrack) {
+              await sender.replaceTrack(videoTrack);
+            }
+          }
+        }
+
+        setScreenStream(null);
+        setIsScreenSharing(false);
+
+        await sendCallSignal("screen-share-ended");
+
+        // Update the video display
+        if (remoteVideoRef.current && remoteStream) {
+          const mainStream = Object.values(remoteStream)[0];
+          if (mainStream) {
+            remoteVideoRef.current.srcObject = mainStream;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error stopping screen share:", error);
+      toast({
+        title: "Error",
+        description: "Could not stop screen sharing: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendCallSignal = async (type, data = {}) => {
+    const signalMessages = {
+      "ice-candidate": "🔄 Connecting...",
+      "ice-candidate-chunk": "🔄 Establishing connection...",
+      "call-offer": "📞 Starting call...",
+      "call-offer-chunk": "📞 Initiating call...",
+      "call-answer": "✅ Call connected",
+      "call-answer-chunk": "✅ Joining call...",
+      "screen-share-offer": "🖥️ Starting screen share...",
+      "screen-share-offer-chunk": "🖥️ Preparing screen share...",
+      "screen-share-answer": "✅ Screen share connected",
+      "screen-share-ended": "🖥️ Screen sharing ended",
+      "call-declined": "❌ Call declined",
+      "call-ended": "📞 Call ended",
+    };
+
+    const message = {
+      text: signalMessages[type] || "📞 Call in progress...",
+      custom: {
+        type,
+        ...data,
+        isCallSignal: true,
+      },
+    };
+
+    try {
+      await channel.sendMessage(message);
+    } catch (error) {
+      console.error("Error sending call signal:", error);
+      toast({
+        title: "Error",
+        description: "Could not send call signal: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Add this effect to handle ringtone
+  useEffect(() => {
+    const audio = new Audio("/ringtone.mp3");
+    audio.loop = true;
+
+    if (incomingCall) {
+      audio
+        .play()
+        .catch((error) => console.error("Error playing ringtone:", error));
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [incomingCall]);
+
+  // Add this effect for handling messages and calls
+  useEffect(() => {
+    if (!channel) return;
+
+    let offerChunks = {};
+    let answerChunks = {};
+    let candidateChunks = {};
+    let screenShareOfferChunks = {};
+
+    const handleMessage = async (event) => {
+      const message = event.message;
+      const isTargetUser = message.custom?.targetUserId === chatClient.user.id;
+
+      // Handle regular chat messages
+      if (!message.custom?.isCallSignal) {
+        // Message list will update automatically through Stream Chat SDK
+        if (message.user.id !== chatClient.user.id) {
+          toast({
+            title: "New Message",
+            description: `${message.user.name}: ${message.text}`,
+          });
+        }
+        return;
+      }
+
+      // Handle call signals
+      message.text = "";
+
+      try {
+        switch (message.custom?.type) {
+          case "call-offer-chunk": {
+            if (!isTargetUser) break;
+
+            const { chunk, index, total, isLast, isVideoCall } = message.custom;
+            if (!offerChunks[total]) {
+              offerChunks[total] = new Array(total).fill(null);
+            }
+            offerChunks[total][index] = chunk;
+
+            if (isLast && offerChunks[total].every((chunk) => chunk !== null)) {
+              const offerData = offerChunks[total].join("");
+              try {
+                const offer = JSON.parse(offerData);
+                if (!inCall) {
+                  setIncomingCall({
+                    offer,
+                    isVideoCall,
+                    caller: message.user.name,
+                    callerId: message.user.id,
+                  });
+
+                  // Play ringtone
+                  const audio = new Audio("/ringtone.mp3");
+                  audio.loop = true;
+                  audio
+                    .play()
+                    .catch((error) =>
+                      console.error("Error playing ringtone:", error)
+                    );
+
+                  toast({
+                    title: "Incoming Call",
+                    description: `${
+                      isVideoCall ? "Video" : "Voice"
+                    } call from ${message.user.name}`,
+                  });
+                }
+              } catch (error) {
+                console.error("Error parsing offer:", error);
+              }
+              delete offerChunks[total];
+            }
+            break;
+          }
+
+          case "call-offer":
+            if (isTargetUser && !inCall) {
+              setIncomingCall({
+                offer: message.custom.offer,
+                isVideoCall: message.custom.isVideoCall,
+                caller: message.user.name,
+                callerId: message.user.id,
+              });
+
+              // Play ringtone
+              const audio = new Audio("/ringtone.mp3");
+              audio.loop = true;
+              audio
+                .play()
+                .catch((error) =>
+                  console.error("Error playing ringtone:", error)
+                );
+
+              toast({
+                title: "Incoming Call",
+                description: `${
+                  message.custom.isVideoCall ? "Video" : "Voice"
+                } call from ${message.user.name}`,
+              });
+            }
+            break;
+
+          case "call-answer":
+            if (
+              isTargetUser &&
+              peerConnection &&
+              peerConnection[message.user.id]
+            ) {
+              await peerConnection[message.user.id].setRemoteDescription(
+                new RTCSessionDescription(message.custom.answer)
+              );
+              // Process any pending candidates for this peer
+              while (pendingCandidates.length > 0) {
+                const candidate = pendingCandidates.shift();
+                if (candidate.userId === message.user.id) {
+                  await peerConnection[message.user.id].addIceCandidate(
+                    new RTCIceCandidate(candidate.candidate)
+                  );
+                }
+              }
+            }
+            break;
+
+          case "ice-candidate":
+            if (message.custom.targetUserId === chatClient.user.id) {
+              if (
+                peerConnection &&
+                peerConnection[message.user.id]?.remoteDescription
+              ) {
+                await peerConnection[message.user.id].addIceCandidate(
+                  new RTCIceCandidate(message.custom.candidate)
+                );
+              } else {
+                setPendingCandidates((prev) => [
+                  ...prev,
+                  {
+                    userId: message.user.id,
+                    candidate: message.custom.candidate,
+                  },
+                ]);
+              }
+            }
+            break;
+
+          case "call-declined":
+            if (isTargetUser) {
+              // If someone declines, end the call for everyone
+              endCall();
+              toast({
+                title: "Call Declined",
+                description: `${message.user.name} declined the call`,
+              });
+            }
+            break;
+
+          case "call-ended":
+            // When call ends, cleanup for everyone
+            endCall();
+            toast({
+              title: "Call Ended",
+              description: "The call has ended",
+            });
+            break;
+
+          // ... rest of the cases ...
+        }
+      } catch (error) {
+        console.error("Error handling WebRTC message:", error);
+      }
+    };
+
+    channel.on("message.new", handleMessage);
+    return () => {
+      channel.off("message.new", handleMessage);
+      offerChunks = {};
+      answerChunks = {};
+      candidateChunks = {};
+      screenShareOfferChunks = {};
+    };
+  }, [channel, peerConnection, inCall, pendingCandidates]);
+
+  // Add cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+      if (screenStream) {
+        screenStream.getTracks().forEach((track) => track.stop());
+      }
+      if (peerConnection) {
+        Object.values(peerConnection).forEach((pc) => {
+          if (pc && typeof pc.close === "function") {
+            pc.close();
+          }
+        });
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (room) {
@@ -153,26 +806,36 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   }, [room]);
 
   useEffect(() => {
-    if (channel) {
-      // Listen for incoming calls
-      const handleIncomingCall = (event) => {
-        const { call } = event;
-        setActiveCall(call);
+    if (!channel) return;
+
+    const handleIncomingStreamCall = async (call) => {
+      setIncomingCall(call);
+      toast({
+        title: "Incoming Call",
+        description: `${
+          call.data?.custom?.isVideoCall ? "Video" : "Voice"
+        } call from ${call.data?.custom?.roomName}`,
+      });
+    };
+
+    const handleCallEnded = (call) => {
+      if (activeCall?.id === call.id) {
+        setActiveCall(null);
         toast({
-          title: "Incoming Call",
-          description: `${
-            call.type === "video" ? "Video" : "Voice"
-          } call from ${call.creator.name}`,
+          title: "Call Ended",
+          description: "The call has ended",
         });
-      };
+      }
+    };
 
-      channel.on("call.incoming", handleIncomingCall);
+    videoClient.on("call.incoming", handleIncomingStreamCall);
+    videoClient.on("call.ended", handleCallEnded);
 
-      return () => {
-        channel.off("call.incoming", handleIncomingCall);
-      };
-    }
-  }, [channel]);
+    return () => {
+      videoClient.off("call.incoming", handleIncomingStreamCall);
+      videoClient.off("call.ended", handleCallEnded);
+    };
+  }, [channel, activeCall]);
 
   const handleAddMember = async (user) => {
     try {
@@ -398,119 +1061,311 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     }
   };
 
-  const handleStartCall = async (isVideoCall) => {
-    if (!channel) return;
-
+  const handleStartCall = async (isVideo) => {
     try {
-      // Request permissions first
-      let permissions;
-      try {
-        permissions = await navigator.mediaDevices.getUserMedia({
-          video: isVideoCall,
-          audio: true,
-        });
-      } catch (error) {
-        if (error.name === "NotAllowedError") {
-          toast({
-            title: "Permission Denied",
-            description:
-              "Please allow access to camera and microphone in your browser settings",
-            variant: "destructive",
-          });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: isVideo,
+      });
+
+      setLocalStream(stream);
+      setIsVideoCall(isVideo);
+      setInCall(true);
+
+      // Create peer connections for each member
+      const members = room.members.filter(
+        (member) => member.uid !== chatClient.user.id
+      );
+
+      // Initialize peer connections for each member
+      const peerConnections = {};
+
+      for (const member of members) {
+        const pc = setupPeerConnection();
+        peerConnections[member.uid] = pc;
+
+        // Add local tracks to each peer connection
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+        // Create and send offer to each member
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const compressedOffer = compressSessionDescription(offer);
+        const offerData = JSON.stringify(compressedOffer);
+
+        if (offerData.length > 4000) {
+          const chunks = offerData.match(/.{1,4000}/g);
+          for (let i = 0; i < chunks.length; i++) {
+            await sendCallSignal("call-offer-chunk", {
+              chunk: chunks[i],
+              index: i,
+              total: chunks.length,
+              isLast: i === chunks.length - 1,
+              isVideoCall: isVideo,
+              targetUserId: member.uid,
+            });
+          }
         } else {
-          toast({
-            title: "Device Error",
-            description: "Unable to access camera or microphone",
-            variant: "destructive",
+          await sendCallSignal("call-offer", {
+            offer: compressedOffer,
+            isVideoCall: isVideo,
+            targetUserId: member.uid,
           });
         }
-        return;
       }
 
-      const callId = `${channel.id}_${Date.now()}`;
-      const call = videoClient.call("default", callId);
-
-      await call.getOrCreate({
-        data: {
-          custom: {
-            channelId: channel.id,
-            channelType: channel.type,
-          },
-        },
-        members: Object.keys(channel.state.members),
-        ring: true,
-      });
-
-      // Use the already-acquired stream when joining
-      await call.join({
-        create: true,
-        data: {
-          member: {
-            role: "user",
-          },
-        },
-        audio: {
-          track: permissions.getAudioTracks()[0],
-          enabled: true,
-        },
-        video: isVideoCall
-          ? {
-              track: permissions.getVideoTracks()[0],
-              enabled: true,
-            }
-          : undefined,
-      });
-
-      setActiveCall(call);
-      await channel.sendMessage({
-        text: `Started a ${isVideoCall ? "video" : "voice"} call`,
-        custom_type: "call_started",
-        callId: callId,
-        callType: isVideoCall ? "video" : "audio",
-      });
+      setPeerConnection(peerConnections);
 
       toast({
-        title: "Call Started",
-        description: `${isVideoCall ? "Video" : "Voice"} call is now active`,
+        title: "Group Call Started",
+        description: `Starting ${isVideo ? "video" : "voice"} call with ${
+          members.length
+        } participants`,
       });
     } catch (error) {
       console.error("Error starting call:", error);
       toast({
         title: "Error",
-        description: "Failed to start call: " + error.message,
+        description: "Could not start call: " + error.message,
         variant: "destructive",
       });
     }
   };
+
+  const CallUI = ({ call }) => {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/90">
+        <StreamVideo client={videoClient}>
+          <StreamCall call={call}>
+            <div className="relative h-full flex flex-col">
+              <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+                <div className="text-white">
+                  <h3 className="text-lg font-semibold">{room?.name}</h3>
+                  <p className="text-sm opacity-80">
+                    {call.state.participants.size} participants
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <SpeakerLayout
+                  participantsBarPosition="right"
+                  participantsBarWidth={300}
+                />
+              </div>
+
+              <div className="absolute bottom-4 left-4 right-4 flex justify-center items-center gap-4 z-10">
+                <CallControls />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={async () => {
+                    await call.leave();
+                    setActiveCall(null);
+                  }}
+                >
+                  <PhoneOff className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </StreamCall>
+        </StreamVideo>
+      </div>
+    );
+  };
+
+  const IncomingCallOverlay = ({
+    caller,
+    isVideoCall,
+    onAccept,
+    onDecline,
+  }) => {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80">
+        <div className="flex flex-col items-center p-8 rounded-lg bg-white/10 backdrop-blur-sm">
+          <div className="w-24 h-24 rounded-full bg-primary/20 mb-6 flex items-center justify-center">
+            {isVideoCall ? (
+              <Video className="w-12 h-12 text-white" />
+            ) : (
+              <Phone className="w-12 h-12 text-white" />
+            )}
+          </div>
+          <h2 className="text-2xl font-semibold mb-2 text-white">
+            Incoming Call
+          </h2>
+          <p className="text-gray-200 mb-2">{caller || "Unknown Caller"}</p>
+          <p className="text-gray-200 mb-8">
+            {isVideoCall ? "Video" : "Voice"} Call
+          </p>
+          <div className="flex gap-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600"
+              onClick={onDecline}
+            >
+              <PhoneOff className="w-8 h-8 text-white" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600"
+              onClick={onAccept}
+            >
+              <Phone className="w-8 h-8 text-white" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const audio = new Audio("/ringtone.mp3");
+    audio.loop = true;
+
+    if (incomingCall) {
+      audio
+        .play()
+        .catch((error) => console.error("Error playing ringtone:", error));
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [incomingCall]);
 
   if (!channel) return null;
 
   return (
     <div className="flex flex-col h-full">
       <Tabs defaultValue="chat" className="flex-1">
-        {activeCall && (
-          <div className="fixed inset-0 z-50 bg-black/80">
-            <StreamVideo client={videoClient}>
-              <StreamCall call={activeCall}>
-                <div className="relative h-full flex flex-col">
-                  <div className="flex-1">
-                    <SpeakerLayout participantsBarPosition="bottom" />
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center gap-4 bg-gradient-to-t from-black/50">
-                    <CallControls />
-                    <Button
-                      variant="destructive"
-                      onClick={async () => {
-                        await activeCall.leave();
-                        setActiveCall(null);
-                      }}
-                    >
-                      End Call
-                    </Button>
-                  </div>
+        {incomingCall && (
+          <IncomingCallOverlay
+            caller={incomingCall.caller}
+            isVideoCall={incomingCall.isVideoCall}
+            onAccept={acceptCall}
+            onDecline={declineCall}
+          />
+        )}
+
+        {inCall && (
+          <div className="fixed inset-0 z-50 bg-black">
+            <div className="relative h-full flex flex-col">
+              <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/50 z-10">
+                <div className="text-white">
+                  <h3 className="text-lg font-semibold">{room?.name}</h3>
+                  <p className="text-sm opacity-80">
+                    {isVideoCall ? "Video" : "Voice"} Call
+                  </p>
                 </div>
-              </StreamCall>
-            </StreamVideo>
+              </div>
+
+              <div className="flex-1 relative">
+                {isVideoCall ? (
+                  <div className="h-full relative">
+                    {isScreenSharing && screenStream ? (
+                      <div className="absolute inset-0">
+                        <video
+                          ref={screenVideoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-contain bg-black"
+                        />
+                      </div>
+                    ) : remoteStream && Object.keys(remoteStream).length > 0 ? (
+                      <video
+                        ref={remoteVideoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-black">
+                        <p className="text-white text-lg">
+                          Waiting for others to join...
+                        </p>
+                      </div>
+                    )}
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="absolute bottom-20 right-4 w-[240px] aspect-video rounded-lg overflow-hidden shadow-lg object-cover bg-black/50"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-white">
+                      <div className="w-24 h-24 rounded-full bg-primary/20 mb-6 mx-auto flex items-center justify-center">
+                        <Phone className="w-12 h-12" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">
+                        Voice Call in Progress
+                      </h3>
+                      <p className="text-sm opacity-80">{room?.name}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 p-4 bg-gradient-to-t from-black/50">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? (
+                    <MicOff className="h-5 w-5 text-white" />
+                  ) : (
+                    <Mic className="h-5 w-5 text-white" />
+                  )}
+                </Button>
+                {isVideoCall && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full bg-white/10 hover:bg-white/20"
+                      onClick={toggleVideo}
+                    >
+                      {isVideoEnabled ? (
+                        <Camera className="h-5 w-5 text-white" />
+                      ) : (
+                        <CameraOff className="h-5 w-5 text-white" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full bg-white/10 hover:bg-white/20"
+                      onClick={
+                        isScreenSharing ? stopScreenShare : startScreenShare
+                      }
+                    >
+                      {isScreenSharing ? (
+                        <MonitorOff className="h-5 w-5 text-white" />
+                      ) : (
+                        <MonitorUp className="h-5 w-5 text-white" />
+                      )}
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={endCall}
+                >
+                  <PhoneOff className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -221,7 +221,7 @@ exports.updateAvatar = async (req, res) => {
     const fileName = `${userId}_${Date.now()}${fileExtension}`;
     
     // Store in the Next.js public directory
-    const uploadPath = path.join(process.cwd(), 'public', 'uploads', fileType, 'avatars', fileName);
+    const uploadPath = path.join(process.cwd(), 'public', 'uploads', 'images', 'avatars', fileName);
     const publicUrl = path.relative(path.join(process.cwd(), 'public'), uploadPath);
 
 
