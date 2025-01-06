@@ -16,12 +16,8 @@ export const useNotifications = () => {
     const fetchNotifications = async () => {
       try {
         // Check if the API endpoint exists first
-        const response = await fetch("/api/notifications", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }).catch(() => null); // Catch network errors and return null
+        const response = await fetch('/api/notifications/get_notifications');
+
 
         // If the response doesn't exist or isn't ok, don't throw an error
         if (!response?.ok) {
@@ -31,7 +27,7 @@ export const useNotifications = () => {
 
         const data = await response.json();
         if (isMounted) {
-          dispatch(setNotifications(data));
+          dispatch(setNotifications(data.notifications));
         }
       } catch (error) {
         console.warn("Error fetching notifications:", error);
