@@ -2,71 +2,162 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import {
-  Loader2,
-  User,
-  Mail,
-  Lock,
-  BookOpen,
-  Upload,
-  ArrowLeft,
-} from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import PropTypes from 'prop-types'
+import { useToast } from '@/components/ui/use-toast'
+import { useSignupStore } from '@/lib/store/signupStore'
 
-const IndividualForm = ({ onComplete, onBack }) => {
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_FILE_TYPES = ['.pdf', '.doc', '.docx']
+
+export function IndividualForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    occupation: '',
-    researchInterests: '',
-    researchWorks: [],
+  const { toast } = useToast()
+
+  const { setStep, updateFormData, formData } = useSignupStore((state) => ({
+    setStep: state.setStep,
+    updateFormData: state.updateFormData,
+    formData: state.formData,
+  }))
+
+  const [form, setForm] = useState({
+    fullName: formData?.fullName || '',
+    password: formData?.password || '',
+    occupation: formData?.occupation || '',
+    researchInterests: formData?.researchInterests || '',
+    researchWorks: formData?.researchWorks || [],
   })
+
+  const validateForm = () => {
+    if (!form.fullName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your full name',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (form.password.length < 8) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 8 characters long',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!form.occupation.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your occupation',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!form.researchInterests.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please describe your research interests',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (form.researchWorks.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please upload at least one research work',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    return true
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const validateFile = (file) => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'Error',
+        description: `File size should not exceed ${
+          MAX_FILE_SIZE / 1024 / 1024
+        }MB`,
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
+    if (!ALLOWED_FILE_TYPES.includes(fileExtension)) {
+      toast({
+        title: 'Error',
+        description: `Only ${ALLOWED_FILE_TYPES.join(', ')} files are allowed`,
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    return true
   }
 
   const handleFileChange = (e) => {
-    if (e.target.files) {
-      setFormData((prev) => ({
+    const files = Array.from(e.target.files)
+    const validFiles = files.filter(validateFile)
+
+    if (validFiles.length > 0) {
+      setForm((prev) => ({
         ...prev,
-        researchWorks: Array.from(e.target.files),
+        researchWorks: validFiles,
       }))
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!validateForm()) return
+
     setIsLoading(true)
+    try {
+      // Simulate form submission with progress
+      for (let i = 0; i <= 100; i += 20) {
+        setProgress(i)
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
 
-    // Simulate form submission with progress
-    for (let i = 0; i <= 100; i += 20) {
-      setProgress(i)
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // Update global state
+      updateFormData(form)
+
+      toast({
+        title: 'Success',
+        description: 'Your information has been saved successfully',
+      })
+
+      // Move to next step
+      setStep(4)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save your information. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
+      setProgress(0)
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onComplete(formData)
-    setIsLoading(false)
   }
-
-  const isFormValid =
-    formData.fullName &&
-    formData.email &&
-    formData.password &&
-    formData.occupation &&
-    formData.researchInterests &&
-    formData.researchWorks.length >= 2
 
   return (
     <motion.div
@@ -88,7 +179,8 @@ const IndividualForm = ({ onComplete, onBack }) => {
           <Button
             variant='ghost'
             className='absolute left-2 top-2'
-            onClick={onBack}
+            onClick={() => setStep(2)}
+            disabled={isLoading}
           >
             <ArrowLeft className='h-4 w-4' />
             <span className='sr-only'>Go back</span>
@@ -115,24 +207,9 @@ const IndividualForm = ({ onComplete, onBack }) => {
               <Input
                 id='fullName'
                 name='fullName'
-                value={formData.fullName}
+                value={form.fullName}
                 onChange={handleInputChange}
                 placeholder='Enter your full name'
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Email */}
-            <div className='space-y-2'>
-              <Label htmlFor='email'>Email</Label>
-              <Input
-                id='email'
-                name='email'
-                type='email'
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder='Enter your email address'
                 required
                 disabled={isLoading}
               />
@@ -145,7 +222,7 @@ const IndividualForm = ({ onComplete, onBack }) => {
                 id='password'
                 name='password'
                 type='password'
-                value={formData.password}
+                value={form.password}
                 onChange={handleInputChange}
                 placeholder='Create a password'
                 required
@@ -159,7 +236,7 @@ const IndividualForm = ({ onComplete, onBack }) => {
               <Input
                 id='occupation'
                 name='occupation'
-                value={formData.occupation}
+                value={form.occupation}
                 onChange={handleInputChange}
                 placeholder='Enter your current occupation'
                 required
@@ -173,7 +250,7 @@ const IndividualForm = ({ onComplete, onBack }) => {
               <Textarea
                 id='researchInterests'
                 name='researchInterests'
-                value={formData.researchInterests}
+                value={form.researchInterests}
                 onChange={handleInputChange}
                 placeholder='Describe your research interests'
                 rows={3}
@@ -190,13 +267,13 @@ const IndividualForm = ({ onComplete, onBack }) => {
                 name='researchWorks'
                 type='file'
                 onChange={handleFileChange}
-                accept='.pdf,.doc,.docx'
+                accept={ALLOWED_FILE_TYPES.join(',')}
                 multiple
                 required
                 disabled={isLoading}
               />
               <p className='text-sm text-muted-foreground'>
-                Upload at least two research works (PDF, DOC, or DOCX)
+                Upload at least one research work (PDF, DOC, or DOCX)
               </p>
             </div>
           </form>
@@ -206,18 +283,16 @@ const IndividualForm = ({ onComplete, onBack }) => {
           <Button
             onClick={handleSubmit}
             className='w-full'
-            disabled={!isFormValid || isLoading}
+            disabled={isLoading}
           >
-            {isLoading
-              ? (
+            {isLoading ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Processing...
               </>
-                )
-              : (
-                  'Continue'
-                )}
+            ) : (
+              'Continue'
+            )}
           </Button>
           <p className='text-xs text-center text-muted-foreground'>
             Your information helps us personalize your research experience
@@ -226,11 +301,6 @@ const IndividualForm = ({ onComplete, onBack }) => {
       </Card>
     </motion.div>
   )
-}
-
-IndividualForm.propTypes = {
-  onComplete: PropTypes.func.isRequired,
-  onBack: PropTypes.func.isRequired,
 }
 
 export default IndividualForm

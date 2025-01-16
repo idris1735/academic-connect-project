@@ -1,11 +1,26 @@
 module.exports = {
-    PUBLIC_ROUTES: ['/login', '/signup', '/', '/static', '_next/*', '/api/custom-route', '/google-login', '/placeholder.svg', '/favicon.ico', '/__nextjs_original-stack-frame'],
-    SESSION_EXPIRY: 60 * 60 * 24 * 5 * 1000, // 5 days
-    AUTH_ROUTES: ['/auth/login', '/auth/google-login', '/auth/signup', '/auth/logout'],
+  PUBLIC_ROUTES: [
+    '/login',
+    '/signup',
+    '/',
+    '/static',
+    '_next/*',
+    '/api/custom-route',
+    '/google-login',
+    '/placeholder.svg',
+    '/favicon.ico',
+    '/__nextjs_original-stack-frame',
+  ],
+  SESSION_EXPIRY: 60 * 60 * 24 * 5 * 1000, // 5 days
+  AUTH_ROUTES: [
+    '/auth/login',
+    '/auth/google-login',
+    '/auth/signup',
+    '/auth/logout',
+  ],
 
-    // Chat API keys
-    CHAT_API_KEY: '',
-    CHAT_API_SECRET: ''
-  };
-  
-
+  // Chat API keys
+  CHAT_API_KEY: 'gmfrb5nraect',
+  CHAT_API_SECRET:
+    'sc8h2q9ccepzk9tk8ssyw6s37xgcvk7xnnrduyhza7u8xh6t9ghucupqqssssga9',
+}
