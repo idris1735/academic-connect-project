@@ -15,7 +15,6 @@ test.json
 
 # next.js
 /.next/
-/out/
 
 # production
 /build
