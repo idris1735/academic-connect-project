@@ -206,19 +206,27 @@ export default function MessageSidebar({
             <DialogHeader>
               <DialogTitle>Create a New Workflow</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <Input
-                placeholder="Workflow Name"
-                value={newWorkflowName}
-                onChange={(e) => setNewWorkflowName(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={handleCreateWorkflow}
-              className="w-full bg-[#22C55E] hover:bg-[#16A34A] text-white"
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateWorkflow();
+              }}
             >
-              Create Workflow
-            </Button>
+              <div className="grid gap-4 py-4">
+                <Input
+                  placeholder="Workflow Name"
+                  value={newWorkflowName}
+                  onChange={(e) => setNewWorkflowName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-[#22C55E] hover:bg-[#16A34A] text-white"
+              >
+                Create Workflow
+              </Button>
+            </form>
           </DialogContent>
         </Dialog>
       </div>

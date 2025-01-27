@@ -115,9 +115,6 @@ function CallUI({ onEndCall }) {
       }
     };
 
-    setupTracks();
-
-    // Listen for track updates
     const handleTrackStarted = (event) => {
       const { participant, track } = event;
       if (participant.local) {
@@ -140,36 +137,27 @@ function CallUI({ onEndCall }) {
       }
     };
 
+    setupTracks();
     callObject.on("track-started", handleTrackStarted);
     callObject.on("track-stopped", handleTrackStopped);
 
     return () => {
       callObject.off("track-started", handleTrackStarted);
       callObject.off("track-stopped", handleTrackStopped);
+      // Cleanup tracks
+      if (callObject) {
+        callObject.setLocalAudio(false);
+        callObject.setLocalVideo(false);
+      }
     };
-  }, [callObject]);
+  }, [callObject]); // Only depend on callObject
 
   const toggleMute = useCallback(async () => {
     if (!callObject) return;
     try {
-      // Get current audio track state
-      const tracks = callObject.participants().local.tracks;
-      const audioTrack = tracks?.audio?.track;
-
-      if (audioTrack) {
-        // Toggle the track directly
-        audioTrack.enabled = !audioTrack.enabled;
-        // Update Daily.co's state
-        await callObject.setLocalAudio(!isMuted);
-        setIsMuted(!audioTrack.enabled);
-
-        toast({
-          title: audioTrack.enabled ? "Unmuted" : "Muted",
-          description: audioTrack.enabled
-            ? "Microphone is now on"
-            : "Microphone is now off",
-        });
-      }
+      const newMuted = !isMuted;
+      await callObject.setLocalAudio(!newMuted);
+      setIsMuted(newMuted);
     } catch (error) {
       console.error("Error toggling audio:", error);
       toast({
@@ -178,29 +166,14 @@ function CallUI({ onEndCall }) {
         variant: "destructive",
       });
     }
-  }, [callObject, isMuted, toast]);
+  }, [callObject, isMuted]);
 
   const toggleVideo = useCallback(async () => {
     if (!callObject) return;
     try {
-      // Get current video track state
-      const tracks = callObject.participants().local.tracks;
-      const videoTrack = tracks?.video?.track;
-
-      if (videoTrack) {
-        // Toggle the track directly
-        videoTrack.enabled = !videoTrack.enabled;
-        // Update Daily.co's state
-        await callObject.setLocalVideo(!isVideoEnabled);
-        setIsVideoEnabled(!videoTrack.enabled);
-
-        toast({
-          title: videoTrack.enabled ? "Video On" : "Video Off",
-          description: videoTrack.enabled
-            ? "Camera is now on"
-            : "Camera is now off",
-        });
-      }
+      const newVideoEnabled = !isVideoEnabled;
+      await callObject.setLocalVideo(newVideoEnabled);
+      setIsVideoEnabled(newVideoEnabled);
     } catch (error) {
       console.error("Error toggling video:", error);
       toast({
@@ -209,7 +182,7 @@ function CallUI({ onEndCall }) {
         variant: "destructive",
       });
     }
-  }, [callObject, isVideoEnabled, toast]);
+  }, [callObject, isVideoEnabled]);
 
   const handleScreenShare = useCallback(async () => {
     try {
@@ -227,6 +200,41 @@ function CallUI({ onEndCall }) {
       });
     }
   }, [isSharingScreen, startScreenShare, stopScreenShare]);
+
+  // Monitor call object state
+  useEffect(() => {
+    if (!callObject) return;
+
+    const handleJoined = () => {
+      console.log("Successfully joined the meeting");
+    };
+
+    const handleLeft = () => {
+      console.log("Left the meeting");
+      // Reset states when leaving
+      setIsMuted(false);
+      setIsVideoEnabled(true);
+    };
+
+    const handleError = (error) => {
+      console.error("Daily.co error:", error);
+      toast({
+        title: "Call Error",
+        description: error.errorMsg || "An error occurred during the call",
+        variant: "destructive",
+      });
+    };
+
+    callObject.on("joined-meeting", handleJoined);
+    callObject.on("left-meeting", handleLeft);
+    callObject.on("error", handleError);
+
+    return () => {
+      callObject.off("joined-meeting", handleJoined);
+      callObject.off("left-meeting", handleLeft);
+      callObject.off("error", handleError);
+    };
+  }, [callObject, toast]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
@@ -458,50 +466,6 @@ export default function MessageView({ conversation, onToggleSidebar }) {
       });
     }
   };
-
-  // Monitor call object state
-  useEffect(() => {
-    if (!callObject) return;
-
-    const handleJoined = () => {
-      console.log("Successfully joined the meeting");
-    };
-
-    const handleLeft = () => {
-      console.log("Left the meeting");
-    };
-
-    const handleError = (error) => {
-      console.error("Daily.co error:", error);
-      toast({
-        title: "Call Error",
-        description: error.errorMsg || "An error occurred during the call",
-        variant: "destructive",
-      });
-    };
-
-    const handleParticipantJoined = (event) => {
-      console.log("Participant joined:", event.participant);
-    };
-
-    const handleParticipantLeft = (event) => {
-      console.log("Participant left:", event.participant);
-    };
-
-    callObject.on("joined-meeting", handleJoined);
-    callObject.on("left-meeting", handleLeft);
-    callObject.on("error", handleError);
-    callObject.on("participant-joined", handleParticipantJoined);
-    callObject.on("participant-left", handleParticipantLeft);
-
-    return () => {
-      callObject.off("joined-meeting", handleJoined);
-      callObject.off("left-meeting", handleLeft);
-      callObject.off("error", handleError);
-      callObject.off("participant-joined", handleParticipantJoined);
-      callObject.off("participant-left", handleParticipantLeft);
-    };
-  }, [callObject]);
 
   useEffect(() => {
     if (conversation) {

@@ -25,6 +25,7 @@ import {
   Linkedin,
   Twitter,
   Globe,
+  Pencil,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleEditMode, setPosts } from "@/redux/features/profileSlice";
@@ -260,7 +261,6 @@ export function ProfileTabs({ data, isOrganization }) {
   const tabItems = [
     { value: "overview", label: "Overview" },
     { value: "publications", label: "Publications" },
-    { value: "peer-reviews", label: "Peer Reviews" },
     { value: "posts", label: "Posts" },
     ...(!pid || isOwnProfile ? [{ value: "settings", label: "Settings" }] : []),
     ...(isOrganization ? [{ value: "members", label: "Members" }] : []),
@@ -479,7 +479,9 @@ export function ProfileTabs({ data, isOrganization }) {
   const handleToggleVisibility = (id) => {
     setPeerReviews((prevReviews) =>
       prevReviews.map((review) =>
-        review.id === id ? { ...review, visibility: !review.visibility } : review
+        review.id === id
+          ? { ...review, visibility: !review.visibility }
+          : review
       )
     );
     toast({
@@ -513,14 +515,16 @@ export function ProfileTabs({ data, isOrganization }) {
       fileName: "AI in Healthcare Research.pdf",
       uploadDate: new Date().toISOString(),
       fileSize: "1.2 MB",
-      downloadLink: "https://example.com/download/ai_in_healthcare_research.pdf",
+      downloadLink:
+        "https://example.com/download/ai_in_healthcare_research.pdf",
     },
     {
       id: 2,
       fileName: "Climate Change Mitigation Strategies.docx",
       uploadDate: new Date().toISOString(),
       fileSize: "850 KB",
-      downloadLink: "https://example.com/download/climate_change_mitigation_strategies.docx",
+      downloadLink:
+        "https://example.com/download/climate_change_mitigation_strategies.docx",
     },
   ];
 
@@ -533,11 +537,11 @@ export function ProfileTabs({ data, isOrganization }) {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast({
-        title: 'Error',
-        description: 'Please select an image file',
-        variant: 'destructive'
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive",
       });
       return;
     }
@@ -545,44 +549,94 @@ export function ProfileTabs({ data, isOrganization }) {
     // Validate file size (e.g., 5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: 'Error',
-        description: 'File size should be less than 5MB',
-        variant: 'destructive'
+        title: "Error",
+        description: "File size should be less than 5MB",
+        variant: "destructive",
       });
       return;
     }
 
     setIsUploadingAvatar(true);
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append("avatar", file);
 
     try {
-      const response = await fetch('/api/profile/update-avatar', {
-        method: 'POST',
-        body: formData
+      const response = await fetch("/api/profile/update-avatar", {
+        method: "POST",
+        body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update avatar');
+        throw new Error("Failed to update avatar");
       }
 
       const data = await response.json();
-      
+
       toast({
-        title: 'Success',
-        description: 'Profile photo updated successfully'
+        title: "Success",
+        description: "Profile photo updated successfully",
       });
 
       // Refresh the page to show new avatar
       window.location.reload();
     } catch (error) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleDeletePublication = async (pubId) => {
+    try {
+      const response = await fetch(`/api/publications/${pubId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete publication");
+
+      setPublications((prevPubs) => prevPubs.filter((pub) => pub.id !== pubId));
+      toast({
+        title: "Success",
+        description: "Publication deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditPublication = async (pubId, newFileName) => {
+    try {
+      const response = await fetch(`/api/publications/${pubId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: newFileName }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update publication");
+
+      setPublications((prevPubs) =>
+        prevPubs.map((pub) =>
+          pub.id === pubId ? { ...pub, fileName: newFileName } : pub
+        )
+      );
+      toast({
+        title: "Success",
+        description: "Publication updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -717,57 +771,79 @@ export function ProfileTabs({ data, isOrganization }) {
               </h3>
               <div className="space-y-4">
                 {isLoadingPubs ? (
-                  <p>Loading publications...</p> // Loading state
+                  <p>Loading publications...</p>
                 ) : publications.length > 0 ? (
                   publications.map((pub) => (
-                    <div key={pub.id} className="flex items-center justify-between border p-4 rounded-md shadow-sm">
+                    <div
+                      key={pub.id}
+                      className="flex items-center justify-between border p-4 rounded-md shadow-sm"
+                    >
                       <div className="flex items-center">
                         <FileText className="h-6 w-6 text-gray-500 mr-2" />
                         <div>
-                          <h4 className="font-medium text-gray-900">{pub.fileName}</h4>
-                          <p className="text-sm text-gray-500">Uploaded on: {new Date(pub.uploadDate).toLocaleDateString()}</p>
-                          <p className="text-sm text-gray-500">Size: {pub.fileSize}</p>
+                          <h4 className="font-medium text-gray-900">
+                            {pub.fileName}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            Uploaded on:{" "}
+                            {new Date(pub.uploadDate).toLocaleDateString()}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Size: {pub.fileSize}
+                          </p>
                         </div>
                       </div>
-                      <a
-                        href={pub.downloadLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 flex items-center"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={pub.downloadLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800 flex items-center"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </a>
+                        {isOwnProfile && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newName = window.prompt(
+                                  "Enter new name:",
+                                  pub.fileName
+                                );
+                                if (newName && newName !== pub.fileName) {
+                                  handleEditPublication(pub.id, newName);
+                                }
+                              }}
+                              className="text-gray-600 hover:text-gray-900"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    "Are you sure you want to delete this publication?"
+                                  )
+                                ) {
+                                  handleDeletePublication(pub.id);
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))
                 ) : (
-                  <p>No publications available.</p> // No publications state
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="peer-reviews">
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Peer Reviews
-              </h3>
-              <div className="space-y-6">
-                {isLoadingReviews ? (
-                  <p>Loading peer reviews...</p> // Loading state
-                ) : peerReviews.length > 0 ? (
-                  peerReviews.map((review) => (
-                    <PeerReview
-                      key={review.id}
-                      review={review}
-                      onToggleVisibility={handleToggleVisibility}
-                      onEdit={handleEdit}
-                    />
-                  ))
-                ) : (
-                  <p>No peer reviews available.</p> // No reviews state
+                  <p>No publications available.</p>
                 )}
               </div>
             </CardContent>
@@ -790,28 +866,28 @@ export function ProfileTabs({ data, isOrganization }) {
 
 const SettingsTab = ({ data }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [updatingSocial, setUpdatingSocial] = useState('');
+  const [updatingSocial, setUpdatingSocial] = useState("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
-  
+
   const [formData, setFormData] = useState({
-    gender: data.gender || '',
-    department: data.department || '',
-    location: data.location || '',
+    gender: data.gender || "",
+    department: data.department || "",
+    location: data.location || "",
     emailNotifications: data.settings?.notifications?.email ?? true,
     pushNotifications: data.settings?.notifications?.push ?? true,
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    confirmDelete: false
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    confirmDelete: false,
   });
 
   const [socialLinks, setSocialLinks] = useState({
-    instagram: data.socialLinks?.instagram || '',
-    linkedin: data.socialLinks?.linkedin || '',
-    twitter: data.socialLinks?.twitter || '',
-    website: data.socialLinks?.website || ''
+    instagram: data.socialLinks?.instagram || "",
+    linkedin: data.socialLinks?.linkedin || "",
+    twitter: data.socialLinks?.twitter || "",
+    website: data.socialLinks?.website || "",
   });
 
   const handleAvatarClick = () => {
@@ -823,11 +899,11 @@ const SettingsTab = ({ data }) => {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast({
-        title: 'Error',
-        description: 'Please select an image file',
-        variant: 'destructive'
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive",
       });
       return;
     }
@@ -835,41 +911,41 @@ const SettingsTab = ({ data }) => {
     // Validate file size (e.g., 5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: 'Error',
-        description: 'File size should be less than 5MB',
-        variant: 'destructive'
+        title: "Error",
+        description: "File size should be less than 5MB",
+        variant: "destructive",
       });
       return;
     }
 
     setIsUploadingAvatar(true);
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append("avatar", file);
 
     try {
-      const response = await fetch('/api/profile/update-avatar', {
-        method: 'POST',
-        body: formData
+      const response = await fetch("/api/profile/update-avatar", {
+        method: "POST",
+        body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update avatar');
+        throw new Error("Failed to update avatar");
       }
 
       const data = await response.json();
-      
+
       toast({
-        title: 'Success',
-        description: 'Profile photo updated successfully'
+        title: "Success",
+        description: "Profile photo updated successfully",
       });
 
       // Refresh the page to show new avatar
       window.location.reload();
     } catch (error) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsUploadingAvatar(false);
@@ -878,36 +954,36 @@ const SettingsTab = ({ data }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleProfileUpdate = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/profile/update-profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/profile/update-profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gender: formData.gender,
           department: formData.department,
-          location: formData.location
-        })
+          location: formData.location,
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to update profile');
+      if (!response.ok) throw new Error("Failed to update profile");
 
       toast({
-        title: 'Success',
-        description: 'Profile updated successfully'
+        title: "Success",
+        description: "Profile updated successfully",
       });
     } catch (error) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -917,43 +993,43 @@ const SettingsTab = ({ data }) => {
   const handlePasswordUpdate = async () => {
     if (formData.newPassword !== formData.confirmPassword) {
       toast({
-        title: 'Error',
-        description: 'New passwords do not match',
-        variant: 'destructive'
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/profile/update-password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/profile/update-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           currentPassword: formData.currentPassword,
-          newPassword: formData.newPassword
-        })
+          newPassword: formData.newPassword,
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to update password');
+      if (!response.ok) throw new Error("Failed to update password");
 
       toast({
-        title: 'Success',
-        description: 'Password updated successfully'
+        title: "Success",
+        description: "Password updated successfully",
       });
 
       // Clear password fields
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       }));
     } catch (error) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -963,26 +1039,27 @@ const SettingsTab = ({ data }) => {
   const handleNotificationUpdate = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/profile/update-notifications', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/profile/update-notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           emailNotifications: formData.emailNotifications,
-          pushNotifications: formData.pushNotifications
-        })
+          pushNotifications: formData.pushNotifications,
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to update notification settings');
+      if (!response.ok)
+        throw new Error("Failed to update notification settings");
 
       toast({
-        title: 'Success',
-        description: 'Notification settings updated successfully'
+        title: "Success",
+        description: "Notification settings updated successfully",
       });
     } catch (error) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -992,33 +1069,33 @@ const SettingsTab = ({ data }) => {
   const handleDeleteAccount = async () => {
     if (!formData.confirmDelete) {
       toast({
-        title: 'Error',
-        description: 'Please confirm account deletion',
-        variant: 'destructive'
+        title: "Error",
+        description: "Please confirm account deletion",
+        variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/profile/delete-account', {
-        method: 'DELETE'
+      const response = await fetch("/api/profile/delete-account", {
+        method: "DELETE",
       });
 
-      if (!response.ok) throw new Error('Failed to delete account');
+      if (!response.ok) throw new Error("Failed to delete account");
 
       toast({
-        title: 'Success',
-        description: 'Account deleted successfully'
+        title: "Success",
+        description: "Account deleted successfully",
       });
 
       // Redirect to login page
-      window.location.href = '/login';
+      window.location.href = "/login";
     } catch (error) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -1027,47 +1104,47 @@ const SettingsTab = ({ data }) => {
 
   const handleSocialLinkUpdate = async (platform) => {
     if (isLoading || updatingSocial) return;
-    
+
     setUpdatingSocial(platform);
     try {
       // Log the request payload for debugging
-      console.log('Updating social link:', {
+      console.log("Updating social link:", {
         platform,
-        url: socialLinks[platform]
+        url: socialLinks[platform],
       });
 
-      const response = await fetch('/api/profile/update-social-links', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json'
+      const response = await fetch("/api/profile/update-social-links", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           platform,
-          url: socialLinks[platform] || '' // Ensure url is never undefined
-        })
+          url: socialLinks[platform] || "", // Ensure url is never undefined
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update social link');
+        throw new Error(errorData.error || "Failed to update social link");
       }
 
       const data = await response.json();
-      console.log('Update response:', data); // Log the response
+      console.log("Update response:", data); // Log the response
 
       toast({
-        title: 'Success',
-        description: `${platform} link updated successfully`
+        title: "Success",
+        description: `${platform} link updated successfully`,
       });
     } catch (error) {
-      console.error('Error updating social link:', error);
+      console.error("Error updating social link:", error);
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
-      setUpdatingSocial('');
+      setUpdatingSocial("");
     }
   };
 
@@ -1076,7 +1153,7 @@ const SettingsTab = ({ data }) => {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <div className="relative group">
-            <Avatar 
+            <Avatar
               className="h-20 w-20 cursor-pointer"
               onClick={handleAvatarClick}
             >
@@ -1110,7 +1187,12 @@ const SettingsTab = ({ data }) => {
         <div className="grid gap-6">
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" defaultValue={data.name} className="max-w-md" disabled />
+            <Input
+              id="name"
+              defaultValue={data.name}
+              className="max-w-md"
+              disabled
+            />
           </div>
 
           <div className="grid gap-2">
@@ -1126,10 +1208,12 @@ const SettingsTab = ({ data }) => {
 
           <div className="grid gap-2">
             <Label htmlFor="gender">Gender</Label>
-            <Select 
+            <Select
               name="gender"
               value={formData.gender}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, gender: value }))
+              }
             >
               <SelectTrigger className="max-w-md">
                 <SelectValue placeholder="Select gender" />
@@ -1178,8 +1262,11 @@ const SettingsTab = ({ data }) => {
               <Switch
                 name="emailNotifications"
                 checked={formData.emailNotifications}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, emailNotifications: checked }))
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    emailNotifications: checked,
+                  }))
                 }
               />
             </div>
@@ -1193,15 +1280,15 @@ const SettingsTab = ({ data }) => {
               <Switch
                 name="pushNotifications"
                 checked={formData.pushNotifications}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, pushNotifications: checked }))
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    pushNotifications: checked,
+                  }))
                 }
               />
             </div>
-            <Button 
-              onClick={handleNotificationUpdate}
-              disabled={isLoading}
-            >
+            <Button onClick={handleNotificationUpdate} disabled={isLoading}>
               Update Notifications
             </Button>
           </div>
@@ -1213,26 +1300,36 @@ const SettingsTab = ({ data }) => {
             {Object.entries(socialLinks).map(([platform, url]) => (
               <div key={platform} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                  {platform === 'instagram' && <Instagram className="h-5 w-5 text-gray-600" />}
-                  {platform === 'linkedin' && <Linkedin className="h-5 w-5 text-gray-600" />}
-                  {platform === 'twitter' && <Twitter className="h-5 w-5 text-gray-600" />}
-                  {platform === 'website' && <Globe className="h-5 w-5 text-gray-600" />}
+                  {platform === "instagram" && (
+                    <Instagram className="h-5 w-5 text-gray-600" />
+                  )}
+                  {platform === "linkedin" && (
+                    <Linkedin className="h-5 w-5 text-gray-600" />
+                  )}
+                  {platform === "twitter" && (
+                    <Twitter className="h-5 w-5 text-gray-600" />
+                  )}
+                  {platform === "website" && (
+                    <Globe className="h-5 w-5 text-gray-600" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium capitalize">{platform}</p>
                   <Input
                     value={url}
-                    onChange={(e) => setSocialLinks(prev => ({
-                      ...prev,
-                      [platform]: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setSocialLinks((prev) => ({
+                        ...prev,
+                        [platform]: e.target.value,
+                      }))
+                    }
                     placeholder={`Enter your ${platform} URL`}
                     className="mt-1"
                     disabled={updatingSocial === platform}
                   />
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-28"
                   onClick={() => handleSocialLinkUpdate(platform)}
                   disabled={updatingSocial === platform}
@@ -1242,8 +1339,10 @@ const SettingsTab = ({ data }) => {
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Updating...</span>
                     </div>
+                  ) : url ? (
+                    "Update"
                   ) : (
-                    url ? 'Update' : 'Add'
+                    "Add"
                   )}
                 </Button>
               </div>
@@ -1287,9 +1386,14 @@ const SettingsTab = ({ data }) => {
                 className="max-w-md"
               />
             </div>
-            <Button 
+            <Button
               onClick={handlePasswordUpdate}
-              disabled={isLoading || !formData.currentPassword || !formData.newPassword || !formData.confirmPassword}
+              disabled={
+                isLoading ||
+                !formData.currentPassword ||
+                !formData.newPassword ||
+                !formData.confirmPassword
+              }
             >
               Update Password
             </Button>
@@ -1317,7 +1421,7 @@ const SettingsTab = ({ data }) => {
               </label>
             </div>
           </div>
-          <Button 
+          <Button
             variant="destructive"
             onClick={handleDeleteAccount}
             disabled={isLoading || !formData.confirmDelete}
@@ -1328,12 +1432,12 @@ const SettingsTab = ({ data }) => {
       </div>
 
       <div className="flex justify-end">
-        <Button 
+        <Button
           className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={handleProfileUpdate}
           disabled={isLoading}
         >
-          {isLoading ? 'Updating...' : 'Update Profile'}
+          {isLoading ? "Updating..." : "Update Profile"}
         </Button>
       </div>
     </div>

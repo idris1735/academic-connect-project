@@ -19,9 +19,15 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, User, Menu } from "lucide-react";
+import { Plus, User, Menu, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Workflow({
   workflow,
@@ -38,6 +44,8 @@ export default function Workflow({
   const [newTaskContent, setNewTaskContent] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingTask, setIsEditingTask] = useState(null);
+  const [editTaskContent, setEditTaskContent] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -168,6 +176,86 @@ export default function Workflow({
     }
   };
 
+  const handleEditTask = async (taskId) => {
+    try {
+      const task = tasks[taskId];
+      if (!task) return;
+
+      setIsEditingTask(taskId);
+      setEditTaskContent(task.content);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to edit task",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveEdit = async (taskId) => {
+    try {
+      if (!editTaskContent.trim()) return;
+
+      const updatedTasks = {
+        ...tasks,
+        [taskId]: {
+          ...tasks[taskId],
+          content: editTaskContent,
+        },
+      };
+
+      setTasks(updatedTasks);
+      setIsEditingTask(null);
+      setEditTaskContent("");
+
+      // Update task in backend
+      await onAssignTask(taskId, {
+        name: editTaskContent,
+      });
+
+      toast({
+        title: "Task Updated",
+        description: "Task has been updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      // Remove task from columns
+      const updatedColumns = { ...columns };
+      Object.keys(updatedColumns).forEach((columnId) => {
+        updatedColumns[columnId].taskIds = updatedColumns[
+          columnId
+        ].taskIds.filter((id) => id !== taskId);
+      });
+
+      // Remove task from tasks
+      const updatedTasks = { ...tasks };
+      delete updatedTasks[taskId];
+
+      setColumns(updatedColumns);
+      setTasks(updatedTasks);
+
+      toast({
+        title: "Task Deleted",
+        description: "Task has been deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAssignTask = async (taskId, user) => {
     try {
       await onAssignTask(taskId, {
@@ -217,15 +305,7 @@ export default function Workflow({
           <h2 className="text-2xl font-bold">{workflow?.name || "Workflow"}</h2>
         </div>
         <div className="flex space-x-2">
-          <form
-            onSubmit={handleAddTask}
-            className="flex space-x-2"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.shiftKey) {
-                e.preventDefault();
-              }
-            }}
-          >
+          <form onSubmit={handleAddTask} className="flex space-x-2">
             <Input
               placeholder="New task"
               value={newTaskContent}
@@ -256,56 +336,99 @@ export default function Workflow({
                       className="bg-white p-3 mb-2 rounded shadow"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <p className="text-sm">{task.content}</p>
-                        <Dialog
-                          open={selectedTaskId === taskId}
-                          onOpenChange={(open) =>
-                            setSelectedTaskId(open ? taskId : null)
-                          }
-                        >
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              {task.assignee ? (
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={task.assignee?.avatar} />
-                                  <AvatarFallback>
-                                    {task.assignee?.name?.[0] || "?"}
-                                  </AvatarFallback>
-                                </Avatar>
-                              ) : (
-                                <User className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Assign Task</DialogTitle>
-                            </DialogHeader>
-                            <Command>
-                              <CommandInput placeholder="Search members..." />
-                              <CommandEmpty>No members found.</CommandEmpty>
-                              <CommandGroup>
-                                {workflow?.members?.map((user) => (
-                                  <CommandItem
-                                    key={user.id}
-                                    onSelect={() =>
-                                      handleAssignTask(taskId, user)
-                                    }
-                                    className="flex items-center"
-                                  >
-                                    <Avatar className="h-6 w-6 mr-2">
-                                      <AvatarImage src={user.avatar} />
-                                      <AvatarFallback>
-                                        {user.name[0]}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    {user.name}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </Command>
-                          </DialogContent>
-                        </Dialog>
+                        {isEditingTask === taskId ? (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleSaveEdit(taskId);
+                            }}
+                            className="flex-1 mr-2"
+                          >
+                            <Input
+                              value={editTaskContent}
+                              onChange={(e) =>
+                                setEditTaskContent(e.target.value)
+                              }
+                              onBlur={() => handleSaveEdit(taskId)}
+                              autoFocus
+                            />
+                          </form>
+                        ) : (
+                          <p className="text-sm flex-1">{task.content}</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Dialog
+                            open={selectedTaskId === taskId}
+                            onOpenChange={(open) =>
+                              setSelectedTaskId(open ? taskId : null)
+                            }
+                          >
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                {task.assignee ? (
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={task.assignee?.avatar} />
+                                    <AvatarFallback>
+                                      {task.assignee?.name?.[0] || "?"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                ) : (
+                                  <User className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Assign Task</DialogTitle>
+                              </DialogHeader>
+                              <Command>
+                                <CommandInput placeholder="Search members..." />
+                                <CommandEmpty>No members found.</CommandEmpty>
+                                <CommandGroup>
+                                  {workflow?.members?.map((user) => (
+                                    <CommandItem
+                                      key={user.id}
+                                      onSelect={() =>
+                                        handleAssignTask(taskId, user)
+                                      }
+                                      className="flex items-center"
+                                    >
+                                      <Avatar className="h-6 w-6 mr-2">
+                                        <AvatarImage src={user.avatar} />
+                                        <AvatarFallback>
+                                          {user.name[0]}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      {user.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </DialogContent>
+                          </Dialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditTask(taskId)}
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteTask(taskId)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       <div className="flex justify-end space-x-1">
                         {column.id !== "todo" && (

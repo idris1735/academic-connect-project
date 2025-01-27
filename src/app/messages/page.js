@@ -105,8 +105,6 @@ function MessagesContent() {
       }
     };
 
-    
-
     fetchMessageRooms();
   }, []);
 
@@ -132,16 +130,16 @@ function MessagesContent() {
         schedule: [],
       };
 
-      const roomData = { ...newRoom, roomType: "RR", participants: []};
-      console.log(roomData)
+      const roomData = { ...newRoom, roomType: "RR", participants: [] };
+      console.log(roomData);
 
       const response = await fetch("/api/messages/rooms", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomData  }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomData }),
       });
       if (!response.ok) {
-        console.log(response)
+        console.log(response);
         throw new Error("Failed to create room");
       }
       const createdRoom = await response.json();
@@ -156,7 +154,7 @@ function MessagesContent() {
         description: `Your new room "${name}" has been created successfully.`,
       });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       toast({
         title: "Error",
         description: error.message,
