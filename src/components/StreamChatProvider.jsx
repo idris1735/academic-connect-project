@@ -8,7 +8,7 @@ import { StreamVideoClient } from '@stream-io/video-react-sdk';
 import 'stream-chat-react/dist/css/v2/index.css';
 
 const APP_CONFIG = {
-  
+ 
 };
 
 export const chatClient = StreamChat.getInstance(APP_CONFIG.apiKey);

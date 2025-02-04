@@ -1,1 +1,18 @@
-{}
+{
+  "../node_modules/@stream-io/video-react-sdk/dist/index.es.js -> ./latency-chart-Bj5OSYzg.es.js": {
+    "id": "../node_modules/@stream-io/video-react-sdk/dist/index.es.js -> ./latency-chart-Bj5OSYzg.es.js",
+    "files": []
+  },
+  "../node_modules/stream-chat-react/dist/components/MML/MML.js -> mml-react": {
+    "id": "../node_modules/stream-chat-react/dist/components/MML/MML.js -> mml-react",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_mml-react_dist_mml-react_esm_js.js"
+    ]
+  },
+  "../node_modules/stream-chat-react/dist/components/MessageInput/hooks/utils.js -> @stream-io/transliterate": {
+    "id": "../node_modules/stream-chat-react/dist/components/MessageInput/hooks/utils.js -> @stream-io/transliterate",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_stream-io_transliterate_dist_index_modern_js.js"
+    ]
+  }
+}

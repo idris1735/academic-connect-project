@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build && next export",
-    "start": "cross-env NODE_PATH=. nodemon backend/server.js",
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "start": "nodemon backend/server.js",
     "lint": "next lint"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.74.0",
     "@daily-co/daily-react": "^0.22.0",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
@@ -44,6 +45,7 @@
     "framer-motion": "^11.12.0",
     "fs": "^0.0.1-security",
     "ioredis": "^5.4.2",
+    "jotai": "^2.11.3",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "lucide-react": "^0.453.0",
@@ -52,7 +54,7 @@
     "next-csrf": "^0.2.1",
     "next-video": "^1.2.2",
     "nigerian-institutions": "^1.0.3",
-    "nodemon": "^3.1.7",
+    "nodemon": "^3.1.9",
     "path": "^0.12.7",
     "react": "^18.2.0",
     "react-day-picker": "^9.3.0",
