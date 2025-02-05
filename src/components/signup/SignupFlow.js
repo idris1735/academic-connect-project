@@ -9,6 +9,8 @@ import InstitutionForm from './InstitutionForm'
 import { ProgressSteps } from './ProgressSteps'
 import { motion, AnimatePresence } from 'framer-motion'
 import ConfirmationStep from './ConfirmationStep'
+import GeneralSignupForm from './GeneralSignupForm'
+
 
 export function SignupFlow() {
   const { step, userType, subOption, formData, setStep } = useSignupStore(
@@ -30,7 +32,7 @@ export function SignupFlow() {
     console.log('Completed with data:', data)
   }
 
-  const renderStep = () => {
+  const renderForm = () => {
     switch (step) {
       case 1:
         return <UserTypeSelection onSelect={handleUserTypeSelect} />

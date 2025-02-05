@@ -137,11 +137,18 @@ exports.getNetworkInfo = async (req, res) => {
 
     if (!status) {
       let connections = profileData?.connections?.connected
+      let researchRooms = profileData?.messageRooms?.researchRooms
       let connectionCount = profileData?.connectionStats?.totalConnections
       let connectionData = {
         connections,
-        connectionCount
+        connectionCount,
+        researchRooms
       }
+
+      // data = {
+      //   connectionData,
+      //   connections,
+      // }
 
       return res.status(200).json({ connectionData });
     }
@@ -168,5 +175,110 @@ exports.getNetworkInfo = async (req, res) => {
     return res.status(500).json({ message: 'Failed to get connections' });
   }
 }
+  
+exports.getPeopleYouMayKnow = async (req, res) => {
+  try {
+    const userID = req.user.uid;
+    
+    // Get current user's profile
+    const userProfileRef = db.collection('profiles').doc(userID);
+    const userProfile = await userProfileRef.get();
+    
+    if (!userProfile.exists) {
+      return res.status(404).json({ message: 'User profile not found' });
+    }
+
+    const userData = userProfile.data();
+    const userConnections = new Set(userData?.connections?.connected || []);
+    const userInstitution = userData.institution;
+    const userResearchInterests = new Set(userData.researchInterests || []);
+
+    // Get all connections of connections (2nd degree connections)
+    const secondDegreeConnections = new Map(); // Map to store potential connection and their scores
+
+    // Get profiles of all direct connections
+    const connectionProfiles = await Promise.all(
+      [...userConnections].map(connId => 
+        db.collection('profiles').doc(connId).get()
+      )
+    );
+
+    // Process each connection's connections
+    for (const connProfile of connectionProfiles) {
+      if (!connProfile.exists) continue;
+      
+      const connData = connProfile.data();
+      const theirConnections = connData?.connections?.connected || [];
+      
+      // For each connection of connection
+      for (const potentialConnection of theirConnections) {
+        // Skip if it's the user themselves or already a direct connection
+        if (potentialConnection === userID || userConnections.has(potentialConnection)) {
+          continue;
+        }
+        
+        // Increment mutual connection score
+        secondDegreeConnections.set(
+          potentialConnection, 
+          {
+            mutualCount: (secondDegreeConnections.get(potentialConnection)?.mutualCount || 0) + 1,
+            userId: potentialConnection
+          }
+        );
+      }
+    }
+
+    // Get full profiles and calculate relevance scores
+    const suggestionsWithScores = await Promise.all(
+      [...secondDegreeConnections.values()].map(async ({ userId, mutualCount }) => {
+        const profileDoc = await db.collection('profiles').doc(userId).get();
+        const profileData = profileDoc.data();
+
+        // Base score is number of mutual connections (weight: 1.0)
+        let relevanceScore = mutualCount;
+
+        // Add institution bonus if from same institution (weight: 0.5)
+        if (profileData.institution === userInstitution) {
+          relevanceScore += 0.5;
+        }
+
+        // Add research interests overlap bonus (weight: 0.3 per matching interest)
+        const theirInterests = new Set(profileData.researchInterests || []);
+        const commonInterests = [...userResearchInterests].filter(interest => 
+          theirInterests.has(interest)
+        );
+        relevanceScore += commonInterests.length * 0.3;
+
+        return {
+          id: userId,
+          userId: userId,
+          name: profileData.displayName,
+          role: profileData.role,
+          university: profileData.institution,
+          avatar: profileData.photoURL,
+          mutualConnections: mutualCount,
+          researchInterests: profileData.researchInterests || [],
+          commonInterests: commonInterests,
+          connectionStatus: 'none',
+          relevanceScore
+        };
+      })
+    );
+
+    // Sort by relevance score and take top 10
+    const suggestions = suggestionsWithScores
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 10);
+
+    return res.status(200).json({ suggestions });
+
+  } catch (error) {
+    console.error('Error getting people you may know:', error);
+    return res.status(500).json({ 
+      message: 'Failed to get suggestions',
+      error: error.message 
+    });
+  }
+};
   
 

@@ -1,10 +1,14 @@
 const { db } = require('../config/database');
 const { FieldValue } = require('firebase-admin/firestore');
 
+// Keep track of connected clients
+const clients = new Set();
+
 exports.createWorkflow = async (req, res) => {
   try {
     const { name, description } = req.body;
     const creatorId = req.user.uid;
+    console.log('Creating workflow:', { name, creatorId });
 
     if (!name) {
       return res.status(400).json({ 
@@ -26,14 +30,22 @@ exports.createWorkflow = async (req, res) => {
     };
 
     await workflowRef.set(workflowData);
+    console.log('Workflow created:', workflowData);
+
+    // Get the created workflow with proper timestamps
+    const createdWorkflow = await workflowRef.get();
+    const formattedWorkflow = {
+      ...workflowData,
+      members: workflowData.participants,
+      createdAt: new Date().toISOString(),
+      lastUpdate: new Date().toISOString()
+    };
+
+    console.log('Returning formatted workflow:', formattedWorkflow);
 
     return res.status(201).json({
       message: 'Workflow created successfully',
-      workflow: {
-        ...workflowData,
-        createdAt: new Date().toISOString(),
-        lastUpdate: new Date().toISOString()
-      }
+      workflow: formattedWorkflow
     });
   } catch (error) {
     console.error('Error creating workflow:', error);
@@ -134,9 +146,25 @@ exports.addTask = async (req, res) => {
       lastUpdate: FieldValue.serverTimestamp()
     });
 
+    // After successfully adding the task, notify all clients
+    const updatedWorkflow = await workflowRef.get();
+    const workflowData = {
+      id: updatedWorkflow.id,
+      ...updatedWorkflow.data(),
+      createdAt: updatedWorkflow.data().createdAt.toDate().toISOString(),
+      lastUpdate: updatedWorkflow.data().lastUpdate.toDate().toISOString()
+    };
+
+    const eventData = {
+      type: 'WORKFLOW_UPDATED',
+      changeType: 'task_added',
+      workflow: workflowData
+    };
+
     return res.status(201).json({
       message: 'Task added successfully',
-      task: taskData
+      task: taskData,
+      workflow: workflowData
     });
   } catch (error) {
     console.error('Error adding task:', error);
@@ -151,7 +179,7 @@ exports.updateTaskStatus = async (req, res) => {
   try {
     const { workflowId, taskId } = req.params;
     const { status } = req.body;
-    const userId = req.user.uid;
+    console.log('Updating task status:', { workflowId, taskId, status });
 
     if (!['To do', 'In Progress', 'Done'].includes(status)) {
       return res.status(400).json({ 
@@ -167,34 +195,54 @@ exports.updateTaskStatus = async (req, res) => {
     }
 
     const workflowData = workflow.data();
+    console.log('Current workflow data:', workflowData);
+
     const taskIndex = workflowData.tasks.findIndex(task => task.id === taskId);
 
     if (taskIndex === -1) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    // Use current timestamp instead of FieldValue.serverTimestamp()
-    const now = new Date().toISOString();
-    
-    // Update the task status
     const updatedTasks = [...workflowData.tasks];
     updatedTasks[taskIndex] = {
       ...updatedTasks[taskIndex],
       status,
-      lastUpdate: now
+      lastUpdate: new Date().toISOString()
     };
 
-    await workflowRef.update({
+    console.log('Updated task:', updatedTasks[taskIndex]);
+
+    // Force a document update with multiple fields
+    const updateData = {
       tasks: updatedTasks,
-      lastUpdate: FieldValue.serverTimestamp() // This is fine as it's not in an array
-    });
+      lastUpdate: FieldValue.serverTimestamp(),
+      _lastModified: FieldValue.serverTimestamp(),
+      _updateCount: FieldValue.increment(1) // Add this to force an update
+    };
+
+    await workflowRef.update(updateData);
+    console.log('Update operation completed');
+
+    // Get the latest data
+    const updatedWorkflow = await workflowRef.get();
+    const updatedWorkflowData = {
+      id: updatedWorkflow.id,
+      ...updatedWorkflow.data(),
+      createdAt: updatedWorkflow.data().createdAt.toDate().toISOString(),
+      lastUpdate: new Date().toISOString()
+    };
+    console.log('Final workflow data:', updatedWorkflowData);
+
+    const eventData = {
+      type: 'WORKFLOW_UPDATED',
+      changeType: 'task_updated',
+      workflow: updatedWorkflowData
+    };
 
     return res.status(200).json({
       message: 'Task status updated successfully',
-      task: {
-        ...updatedTasks[taskIndex],
-        lastUpdate: now
-      }
+      task: updatedTasks[taskIndex],
+      workflow: updatedWorkflowData
     });
   } catch (error) {
     console.error('Error updating task status:', error);
@@ -265,4 +313,88 @@ exports.addTaskComment = async (req, res) => {
       error: error.message 
     });
   }
+};
+
+exports.subscribeToWorkflowEvents = (req, res) => {
+  // Set headers for SSE and CORS
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
+  });
+
+  // Send initial connection message
+  res.write('data: {"type":"connected"}\n\n');
+
+  // Set up Firestore listener for the user's workflows
+  const userId = req.user.uid;
+  console.log('Setting up SSE connection for user:', userId);
+
+  const unsubscribe = db.collection('workflows')
+    .where('participants', 'array-contains', userId)
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        console.log('Document change detected:', change.type, change.doc.id);
+        
+        if (change.type === 'added' || change.type === 'modified') {
+          const workflow = { id: change.doc.id, ...change.doc.data() };
+          
+          // Format dates
+          if (workflow.createdAt) {
+            workflow.createdAt = workflow.createdAt.toDate().toISOString();
+          }
+          if (workflow.lastUpdate) {
+            workflow.lastUpdate = workflow.lastUpdate.toDate().toISOString();
+          }
+
+          // Format tasks dates and ensure proper task data structure
+          if (workflow.tasks) {
+            workflow.tasks = workflow.tasks.map(task => ({
+              ...task,
+              createdAt: task.createdAt?.toDate?.()?.toISOString() || task.createdAt,
+              lastUpdate: task.lastUpdate?.toDate?.()?.toISOString() || task.lastUpdate,
+              dueDate: task.dueDate?.toDate?.()?.toISOString() || task.dueDate,
+              status: task.status || 'To do'  // Ensure status is always present
+            }));
+          }
+
+          // Determine if this is a task update
+          const isTaskUpdate = workflow._lastModified && workflow.tasks;
+          const changeType = isTaskUpdate ? 'task_updated' : change.type;
+
+          const eventData = {
+            type: 'WORKFLOW_UPDATED',
+            changeType,
+            workflow
+          };
+          console.log('Sending event data:', eventData);
+
+          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+        }
+
+        if (change.type === 'removed') {
+          const eventData = {
+            type: 'WORKFLOW_REMOVED',
+            workflowId: change.doc.id
+          };
+          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+        }
+      });
+    }, error => {
+      console.error('Firestore listener error:', error);
+      res.write(`data: ${JSON.stringify({ type: 'ERROR', error: error.message })}\n\n`);
+    });
+
+  // Keep connection alive
+  const keepAlive = setInterval(() => {
+    res.write(': keepalive\n\n');
+  }, 30000);
+
+  // Clean up listener and interval when connection closes
+  req.on('close', () => {
+    unsubscribe();
+    clearInterval(keepAlive);
+  });
 };

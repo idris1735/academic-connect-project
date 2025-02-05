@@ -271,7 +271,11 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
                 <span className="text-sm text-indigo-600">• {post.category}</span>
               )}
             </div>
-            <p className="text-sm text-gray-600">{post.authorTitle || 'Academic Researcher'}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-gray-500">
+                {post.userInfo.connectionType === 'self' ? 'Your post' : ''}
+              </p>
+            </div>
             <p className="text-sm text-gray-500">
               {post.authorLocation || 'Loading...'} • {formattedTime}
             </p>

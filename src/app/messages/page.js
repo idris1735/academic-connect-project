@@ -13,15 +13,15 @@ import { Suspense } from "react";
 import Workflow from "@/components/Workflow";
 import { v4 as uuidv4 } from "uuid";
 
+import { useDispatch, useSelector } from "react-redux";
+import { createWorkflow, fetchWorkflows, addTask, updateTaskStatus, updateWorkflowFromWebsocket } from "@/redux/features/workflowSlice";
+
 function MessagesContent() {
+  const dispatch = useDispatch();
   const [activeView, setActiveView] = useState("messages");
   const [selectedItem, setSelectedItem] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
-  const [workflows, setWorkflows] = useState([
-    // { id: "wf1", name: "Research Project A", tasks: [], members: [] },
-    // { id: "wf2", name: "Grant Proposal Review", tasks: [], members: [] },
-  ]);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -30,59 +30,13 @@ function MessagesContent() {
 
   const [rooms, setRooms] = useState({
     directMessages: [],
-    researchRooms: [
-      // {
-      //   id: "rr1",
-      //   name: "AI Ethics Research",
-      //   avatar: "https://picsum.photos/seed/ai-ethics/200",
-      //   members: [
-      //     { id: "user1", name: "Alice Johnson" },
-      //     { id: "user2", name: "Bob Smith" },
-      //     { id: "user3", name: "Charlie Brown" },
-      //   ],
-      //   resources: [
-      //     { id: "res1", name: "AI Ethics Guidelines", url: "#" },
-      //     { id: "res2", name: "Recent Survey Results", url: "#" },
-      //   ],
-      //   schedule: [
-      //     { id: "sch1", name: "Weekly Meeting", date: "2023-06-15T10:00:00Z" },
-      //     {
-      //       id: "sch2",
-      //       name: "Ethics Panel Discussion",
-      //       date: "2023-06-20T14:00:00Z",
-      //     },
-      //   ],
-      // },
-      // {
-      //   id: "rr2",
-      //   name: "Quantum Computing",
-      //   avatar: "https://picsum.photos/seed/quantum/200",
-      //   members: [
-      //     { id: "user2", name: "Bob Smith" },
-      //     { id: "user4", name: "Diana Prince" },
-      //     { id: "user5", name: "Ethan Hunt" },
-      //   ],
-      //   resources: [
-      //     { id: "res3", name: "Quantum Algorithms Overview", url: "#" },
-      //     { id: "res4", name: "Quantum Hardware Comparison", url: "#" },
-      //   ],
-      //   schedule: [
-      //     {
-      //       id: "sch3",
-      //       name: "Quantum Theory Seminar",
-      //       date: "2023-06-18T11:00:00Z",
-      //     },
-      //     {
-      //       id: "sch4",
-      //       name: "Lab Experiment #42",
-      //       date: "2023-06-22T09:00:00Z",
-      //     },
-      //   ],
-      // },
-    ],
+    researchRooms: [],
   });
 
   const { toast } = useToast();
+
+
+  const workflows = useSelector((state) => state.workflow.workflows);
 
   useEffect(() => {
     const fetchMessageRooms = async () => {
@@ -103,10 +57,73 @@ function MessagesContent() {
           description: error.message,
         });
       }
-    };
+    }; 
+       
 
     fetchMessageRooms();
   }, []);
+
+  useEffect(() => {
+    // Fetch workflows when component mounts
+    dispatch(fetchWorkflows())
+      .unwrap()
+      .then((fetchedWorkflows) => {
+        console.log('Fetched workflows:', fetchedWorkflows);
+      })
+      .catch((err) => {
+        console.error('Error fetching workflows:', err);
+      });
+  }, [dispatch]);
+
+  // // Add polling for workflow updates
+  // useEffect(() => {
+  //   const pollInterval = setInterval(() => {
+  //     dispatch(fetchWorkflows())
+  //       .unwrap()
+  //       .catch((err) => {
+  //         console.error('Error polling workflows:', err);
+  //       });
+  //   }, 10000); // Poll every 10 seconds
+
+  //   return () => clearInterval(pollInterval);
+  // }, [dispatch]);
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/workflows/events');
+    console.log('EventSource created');
+
+    eventSource.onopen = () => {
+      console.log('SSE connection opened');
+    };
+
+    eventSource.onmessage = (event) => {
+      console.log('SSE message received:', event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Parsed SSE data:', data);
+        
+        if (data.type === 'connected') {
+          console.log('SSE connection established');
+        } else if (data.type === 'WORKFLOW_UPDATED') {
+          console.log('Dispatching workflow update:', data);
+          dispatch(updateWorkflowFromWebsocket(data));
+        } else {
+          console.log('Unknown event type:', data.type);
+        }
+      } catch (error) {
+        console.error('Error processing SSE message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+    };
+
+    return () => {
+      console.log('Closing SSE connection');
+      eventSource.close();
+    };
+  }, [dispatch]);
 
   const handleSelectItem = (item, type) => {
     setSelectedItem(item);
@@ -164,66 +181,62 @@ function MessagesContent() {
 
   const handleCreateWorkflow = async (name) => {
     try {
-      const newWorkflow = {
-        id: uuidv4(),
-        name,
-        tasks: [],
-        members: [],
-      };
-
-      setWorkflows((prevWorkflows) => [...prevWorkflows, newWorkflow]);
-
+      console.log('Creating workflow:', name);
+      const result = await dispatch(createWorkflow({ name })).unwrap();
+      console.log('Workflow created:', result);
+      
       toast({
         title: "Workflow Created",
         description: `Your new workflow "${name}" has been created successfully.`,
       });
+
+      return result.id;
     } catch (error) {
+      console.error('Error creating workflow:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create workflow",
+        variant: "destructive",
       });
-    }
+      throw error;
+    } 
   };
 
-  const handleAddTask = async (task) => {
+  const handleAddTask = async (task, title, description, assignedTo, dueDate, workflowId) => {
     try {
-      const newTaskId = uuidv4();
-      const newTask = {
-        id: newTaskId,
-        ...task,
-      };
-
-      setSelectedWorkflow((prevWorkflow) => ({
-        ...prevWorkflow,
-        tasks: [...prevWorkflow.tasks, newTask],
-      }));
-
+      const result = await dispatch(addTask({ 
+        workflowId, 
+        title, 
+        description, 
+        assignedTo, 
+        dueDate 
+      })).unwrap();
+      
       toast({
         title: "Task Added",
-        description: `Task "${task.name}" has been added successfully.`,
+        description: "New task has been added successfully.",
       });
 
-      return newTaskId;
+      return result.task.id; // Return the new task ID
     } catch (error) {
       console.error("Error adding task:", error);
       toast({
         title: "Error",
-        description: "Failed to add task",
+        description: error.message || "Failed to add task",
         variant: "destructive",
       });
       throw error;
     }
   };
 
-  const handleAssignTask = async (taskId, taskData) => {
+  const handleAssignTask = async (workflowId, taskId, taskData) => {
     try {
-      setSelectedWorkflow((prevWorkflow) => ({
-        ...prevWorkflow,
-        tasks: prevWorkflow.tasks.map((task) =>
-          task.id === taskId ? { ...task, ...taskData } : task
-        ),
-      }));
-
+      await dispatch(updateTaskStatus({ 
+        workflowId, 
+        taskId, 
+        status: taskData.status 
+      })).unwrap();
+      
       toast({
         title: "Task Updated",
         description: "Task has been updated successfully.",
@@ -232,7 +245,7 @@ function MessagesContent() {
       console.error("Error updating task:", error);
       toast({
         title: "Error",
-        description: "Failed to update task",
+        description: error.message || "Failed to update task",
         variant: "destructive",
       });
       throw error;
@@ -247,12 +260,14 @@ function MessagesContent() {
     if (id) {
       const fetchMessages = async () => {
         try {
-          const response = await fetch(`/api/messages/rooms/${id}`);
+          const response = await fetch(`/api/messages/rooms?id=${id}`);
           if (!response.ok) {
             throw new Error("Failed to fetch room data");
           }
+          console.log('GOt room data\n\n\n')
           const data = await response.json();
-          setSelectedItem(data.room);
+          console.log(data)
+          setSelectedItem(data.rooms);
           setActiveView(type === "DM" ? "messages" : "research");
         } catch (error) {
           toast({
@@ -283,7 +298,7 @@ function MessagesContent() {
               onCreateWorkflow={handleCreateWorkflow}
               onCreateRoom={handleCreateRoom}
               rooms={rooms}
-              workflows={workflows}
+              workflows={workflows ? workflows : []}
               isSidebarOpen={isSidebarOpen}
               onToggleSidebar={toggleSidebar}
             />

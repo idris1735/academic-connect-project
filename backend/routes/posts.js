@@ -29,8 +29,10 @@ router.post(
   postService.createPost
 );
 router.get("/get_posts", postService.getPosts);
+router.get("/get_posts_by_uid", postService.getPostsByUid);
 router.post("/:postId/like", postService.likePost);
 router.post("/:postId/comment", postService.addComment);
 router.post('/:postId/comments/:commentId/like', postService.likeComment);
+router.get('/events', postService.subscribeToPostEvents);
 
 module.exports = router;

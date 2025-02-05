@@ -86,7 +86,10 @@ export function PeopleYouMayKnow() {
                     {suggestion.researchInterests.map((interest, index) => (
                       <span 
                         key={index} 
-                        className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full"
+                        className="bg-data = {
+      //   connectionData,
+      //   connections,
+      // }indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full"
                       >
                         {interest}
                       </span>

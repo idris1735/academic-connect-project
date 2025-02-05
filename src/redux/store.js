@@ -3,6 +3,7 @@ import profileReducer from './features/profileSlice'
 import networkReducer from './features/networkSlice'
 import feedsReducer from './features/feedsSlice'
 import notificationsReducer from './features/notificationsSlice'
+import workflowReducer from './features/workflowSlice'
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     network: networkReducer,
     feeds: feedsReducer,
     notifications: notificationsReducer,
+    workflow: workflowReducer,
   },
 })
 

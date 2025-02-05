@@ -30,7 +30,7 @@ exports.createMessageRoom = async (req, res) => {
 
   try {
      console.log(req.body)
-    const { roomType, participants, name, description, postId } = req.body.roomData;
+    const { roomType, participants, name, description, postId } = req.body.roomData || req.body;
     const creatorId = req.user.uid;
 
     // Validate room type
@@ -280,8 +280,6 @@ exports.getUserRooms = async (req, res) => {
     const userId = req.user.uid;
     const { id, type, sort = 'latest' } = req.query;
     let query;
-
-   
 
     if (id) {
       query = db.collection('messageRooms').where('id', '==', id )

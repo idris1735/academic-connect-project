@@ -21,6 +21,8 @@ export default function FeedsPage() {
   const [filter, setFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const POSTS_PER_PAGE = 5 // Number of posts to load at a time
+  const [hasNewPosts, setHasNewPosts] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(null)
 
   // Initial load of posts
   useEffect(() => {
@@ -60,35 +62,38 @@ export default function FeedsPage() {
     initialFetch()
   }, [])
 
-  const fetchPosts = async () => {
+  const loadMorePosts = async () => {
     if (!hasMore || isLoading) return;
-
+    
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/posts/get_posts?page=${page}&limit=${POSTS_PER_PAGE}`);
+      const nextPage = page + 1;
+      const response = await fetch(`/api/posts/get_posts?page=${nextPage}&limit=${POSTS_PER_PAGE}`);
       const data = await response.json();
       
       if (response.ok) {
-        const newPosts = data.posts.map(post => ({
-          ...post,
-          authorTitle: 'Research Assistant | Computer Science | MIT',
-          authorLocation: 'Cambridge, MA',
-          connectionDegree: '1st',
-          avatar: 'https://picsum.photos/seed/currentuser/200',
-          timestamp: post.timeStamp || new Date().toISOString(),
-        }));
-
-        // Append new posts to existing ones without replacing the entire array
         setPosts(prevPosts => {
-          const postsMap = new Map([...prevPosts, ...newPosts].map(post => [post.id, post]));
-          return Array.from(postsMap.values());
-        });
+          const enrichedNewPosts = data.posts.map((post) => ({
+            ...post,
+            authorTitle: post.userInfo?.occupation || 'Research Assistant',
+            authorLocation: post.userInfo?.location || 'Unknown Location',
+            connectionDegree: post.userInfo?.connectionType === 'self' ? 'You' : '1st',
+            avatar: post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
+            timestamp: post.timeStamp || new Date().toISOString(),
+          }));
 
+          const newPosts = [...prevPosts, ...enrichedNewPosts];
+          // Remove duplicates based on post ID
+          const uniquePosts = Array.from(
+            new Map(newPosts.map(post => [post.id, post])).values()
+          );
+          return uniquePosts;
+        });
         setHasMore(data.hasMore);
-        setPage(prev => prev + 1);
+        setPage(nextPage);
       }
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      console.error('Error loading more posts:', error);
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +109,7 @@ export default function FeedsPage() {
 
     if (windowHeight + scrollPosition >= documentHeight - 1000) {
       if (!isLoading && hasMore) {
-        fetchPosts()
+        loadMorePosts()
       }
     }
   }, [isLoading, hasMore, isInitialLoad])
@@ -188,6 +193,94 @@ export default function FeedsPage() {
              post.content.toLowerCase().includes(searchQuery.toLowerCase())
     })
 
+  // Add this effect to get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/users/current');
+        const data = await response.json();
+        setCurrentUserId(data.uid);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    getCurrentUser();
+  }, []);
+
+  // Update the SSE listener
+  useEffect(() => {
+    if (!currentUserId) return; // Don't set up listener until we have the user ID
+    
+    const eventSource = new EventSource('/api/posts/events');
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'NEW_POST') {
+          const postAuthorId = data.post.uid;
+          
+          if (postAuthorId === currentUserId) {
+            // If it's the current user's post, add it immediately to the feed
+            const enrichedPost = {
+              ...data.post,
+              authorTitle: data.post.userInfo?.occupation || 'Research Assistant',
+              authorLocation: data.post.userInfo?.location || 'Unknown Location',
+              connectionDegree: 'You',
+              avatar: data.post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
+              timestamp: data.post.timeStamp || new Date().toISOString(),
+            };
+            setPosts(prevPosts => [enrichedPost, ...prevPosts]);
+          } else {
+            // If it's from a connection, show the new posts button
+            setHasNewPosts(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error processing SSE message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE Error:', error);
+      eventSource.close();
+    };
+
+    return () => eventSource.close();
+  }, [currentUserId]); // Add currentUserId as dependency
+
+  const refreshFeed = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/posts/get_posts?page=1&limit=${POSTS_PER_PAGE}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
+      }
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        const enrichedPosts = data.posts.map((post) => ({
+          ...post,
+          authorTitle: post.userInfo?.occupation || 'Research Assistant',
+          authorLocation: post.userInfo?.location || 'Unknown Location',
+          connectionDegree: post.userInfo?.connectionType === 'self' ? 'You' : '1st',
+          avatar: post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
+          timestamp: post.timeStamp || new Date().toISOString(),
+        }));
+
+        setPosts(enrichedPosts);
+        setHasMore(data.hasMore);
+        setPage(2);
+        setHasNewPosts(false);
+      }
+    } catch (error) {
+      console.error('Error refreshing feed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isInitialLoad) {
     return <LoadingSpinner />
   }
@@ -219,6 +312,18 @@ export default function FeedsPage() {
                   <option value="publication">Publication</option>
                 </select>
               </div>
+
+              {hasNewPosts && (
+                <button 
+                  onClick={refreshFeed}
+                  className="w-full py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors duration-200"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="animate-pulse h-2 w-2 bg-indigo-600 rounded-full"></span>
+                    New posts available! Click to refresh
+                  </div>
+                </button>
+              )}
 
               <div className="space-y-4 bg-gray-50 rounded-lg p-4">
                 {filteredPosts.map(post => (

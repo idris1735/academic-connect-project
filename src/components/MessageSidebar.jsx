@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 
+
 export default function MessageSidebar({
   onSelectDM,
   onSelectResearchRoom,
@@ -48,6 +49,7 @@ export default function MessageSidebar({
   const [filteredWorkflows, setFilteredWorkflows] = useState(workflows);
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [isCreateWorkflowOpen, setIsCreateWorkflowOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function MessageSidebar({
       workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredWorkflows(filteredWf);
+    console.log('here filetefworkflows', filteredWorkflows);
   }, [searchQuery, rooms, workflows]);
 
   const handleCreateRoom = () => {
@@ -82,19 +85,22 @@ export default function MessageSidebar({
     setIsCreateRoomOpen(false);
   };
 
-  const handleCreateWorkflow = () => {
+  const handleCreateWorkflow = async () => {
+
     if (newWorkflowName.trim() === "") {
-      toast({
-        title: "Error",
-        description: "Workflow name cannot be empty.",
-        variant: "destructive",
-      });
-      return;
-    }
-    onCreateWorkflow(newWorkflowName);
-    setNewWorkflowName("");
-    setIsCreateWorkflowOpen(false);
+          toast({
+            title: "Error",
+            description: "Workflow name cannot be empty.",
+            variant: "destructive",
+          });
+          return;
+        }
+   
+      onCreateWorkflow(newWorkflowName);
+      setNewWorkflowName("");
+      setIsCreateWorkflowOpen(false);
   };
+
 
   return (
     <div

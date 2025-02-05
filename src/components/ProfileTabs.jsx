@@ -281,7 +281,7 @@ export function ProfileTabs({ data, isOrganization }) {
             setIsLoadingPosts(true);
             setPage(1);
             const response = await fetch(
-              `/api/posts/get_posts?uid=${data.uid}&page=1&limit=${POSTS_PER_PAGE}`
+              `/api/posts/get_posts_by_uid?uid=${data.uid}&page=1&limit=${POSTS_PER_PAGE}`
             );
             const responseData = await response.json();
 
@@ -339,7 +339,7 @@ export function ProfileTabs({ data, isOrganization }) {
     try {
       setIsLoadingPosts(true);
       const response = await fetch(
-        `/api/posts/get_posts?uid=${data.uid}&page=${page}&limit=${POSTS_PER_PAGE}`
+        `/api/posts/get_posts_by_uid?uid=${data.uid}&page=${page}&limit=${POSTS_PER_PAGE}`
       );
       const responseData = await response.json();
 

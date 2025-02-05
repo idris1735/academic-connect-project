@@ -28,6 +28,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { updateTaskStatus } from "@/redux/features/workflowSlice";
+
 
 export default function Workflow({
   workflow,
@@ -60,7 +62,7 @@ export default function Workflow({
       workflow.tasks.forEach((task) => {
         taskMap[task.id] = {
           id: task.id,
-          content: task.name,
+          content: task.name || task.title,
           assignee: task.assignedTo
             ? {
                 id: task.assignedTo,
@@ -100,7 +102,7 @@ export default function Workflow({
 
       const task = tasks[taskId];
       if (task) {
-        await onAssignTask(taskId, {
+        await onAssignTask(workflow.id, taskId, {
           ...task,
           status: newStatus,
         });
@@ -125,13 +127,15 @@ export default function Workflow({
 
     try {
       setIsSubmitting(true);
+      console.log('Creating a new task')
       const newTask = {
         name: newTaskContent,
         status: "To do",
         assignedTo: null,
       };
 
-      const newTaskId = await onAddTask(newTask);
+      const newTaskId = await onAddTask(newTask, newTask.name, '', null, null, workflow.id);
+      console.log(newTaskId)
       if (!newTaskId) {
         setIsSubmitting(false);
         return;

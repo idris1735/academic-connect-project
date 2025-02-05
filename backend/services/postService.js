@@ -10,7 +10,9 @@ const notificationService = require('../services/notificationService');
 const messageService = require('../services/messageService')
 const fs = require('fs/promises');
 const path = require('path');
+const exp = require('constants');
 
+const clients = new Set();
 
 exports.createPost = async (req, res) => {
   try {
@@ -178,6 +180,26 @@ exports.createPost = async (req, res) => {
       }
     };
 
+    // Add this to createPost function after post creation
+    const eventData = {
+      type: 'NEW_POST',
+      post: {
+        ...fullPost,
+        uid: user.uid,
+        timeStamp: new Date().toISOString(),
+        userInfo: {
+          ...fullPost.userInfo,
+          connectionType: 'connection'
+        }
+      }
+    };
+
+    clients.forEach(client => {
+      if (client.userId !== user.uid) {
+        client.res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+      }
+    });
+
     return res.status(200).json({ 
       message: 'Post created successfully', 
       post: fullPost 
@@ -193,15 +215,26 @@ exports.createPost = async (req, res) => {
 };
 
 exports.getPosts = async (req, res) => {
-  const uid = req.params.uid || req.user.uid;
+  const currentUserId = req.user.uid;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 5;
   const startAfter = (page - 1) * limit;
 
   try {
-    // Base query
-    let query = db.collection('posts').where('uid', '==', uid);
+    // Get user's connections first
+    const userDoc = await db.collection('profiles').doc(currentUserId).get();
+    const userData = userDoc.data();
+    const connections = userData?.connections?.connected || [];
+    
+    // Include current user in the authors list
+    const authorIds = [currentUserId, ...connections];
 
+    console.log('Fetching posts for users:', authorIds);
+
+    // Modified query to get posts from user and their connections
+    let query = db.collection('posts')
+      .where('uid', 'in', authorIds)
+      .orderBy('timeStamp', 'desc'); // Sort by newest first
 
     // Get the paginated data
     const postsSnapshot = await query
@@ -246,6 +279,15 @@ exports.getPosts = async (req, res) => {
 
       const content = contentDoc.docs[0]?.data()?.content;
 
+      // Get author details
+      const authorName = await getUserNameByUid(postData.uid);
+      const authorPhotoURL = await getProfilePhotoURl(postData.uid);
+      
+      // Determine connection type
+      const connectionType = postData.uid === currentUserId 
+        ? 'self' 
+        : 'connection';
+
       postsMap.set(doc.id, {
         id: doc.id,
         uid: postData.uid,
@@ -258,15 +300,16 @@ exports.getPosts = async (req, res) => {
         discussion: postData.discussion || null, 
         attachment: postData.attachment || null,
         userInfo: {
-          author: await getUserNameByUid(uid),
+          author: authorName,
+          connectionType: connectionType
         },
-        // Ad the photoURL
-        photoURL: await getProfilePhotoURl(uid),
+        photoURL: authorPhotoURL,
       });
     }));
 
-    // Convert map to array
-    const posts = Array.from(postsMap.values());
+    // Convert map to array and sort by timestamp
+    const posts = Array.from(postsMap.values())
+      .sort((a, b) => new Date(b.timeStamp) - new Date(a.timeStamp));
 
     return res.status(200).json({
       message: 'Posts retrieved successfully',
@@ -498,3 +541,123 @@ exports.likeComment = async (req, res) => {
     return res.status(500).json({ message: 'Failed to like comment', error: error.message });
   }
 };
+
+
+exports.getPostsByUid = async (req, res) => {
+  const uid = req.params.uid || req.user.uid;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const startAfter = (page - 1) * limit;
+
+  try {
+    // Base query
+    let query = db.collection('posts').where('uid', '==', uid);
+
+
+    // Get the paginated data
+    const postsSnapshot = await query
+      .limit(limit)
+      .offset(startAfter)
+      .get();
+
+    if (postsSnapshot.empty) {
+      return res.status(200).json({ 
+        message: 'No posts found', 
+        posts: [],
+        hasMore: false
+      });
+    }
+
+    // Use a Map to ensure unique posts
+    const postsMap = new Map();
+    
+    // Process posts in parallel for better performance
+    await Promise.all(postsSnapshot.docs.map(async (doc) => {
+      const postData = doc.data();
+      
+      // Skip if we already have this post
+      if (postsMap.has(doc.id)) return;
+      
+      // Get post content
+      const contentDoc = await doc.ref.collection('postContent')
+        .limit(1)
+        .get();
+      
+      // Get comments
+      const commentsSnapshot = await doc.ref.collection('comments')
+        .orderBy('timestamp', 'desc')
+        .limit(10)
+        .get();
+      
+      const comments = await Promise.all(commentsSnapshot.docs.map(async (doc) => ({
+        ...doc.data(),
+        photoURL: await getProfilePhotoURl(doc.data().userId),
+        timestamp: doc.data().timestamp?.toDate().toISOString()
+      })));
+
+      const content = contentDoc.docs[0]?.data()?.content;
+
+      postsMap.set(doc.id, {
+        id: doc.id,
+        uid: postData.uid,
+        content: content,
+        timeStamp: postData.timeStamp?.toDate().toISOString(),
+        category: postData.postCat,
+        likesCount: postData.likesCount || 0,
+        commentsCount: postData.commentsCount || 0,
+        comments: comments,
+        discussion: postData.discussion || null, 
+        attachment: postData.attachment || null,
+        userInfo: {
+          author: await getUserNameByUid(uid),
+        },
+        // Ad the photoURL
+        photoURL: await getProfilePhotoURl(uid),
+      });
+    }));
+
+    // Convert map to array
+    const posts = Array.from(postsMap.values());
+
+    return res.status(200).json({
+      message: 'Posts retrieved successfully',
+      posts,
+      hasMore: posts.length === limit,
+      currentPage: page
+    });
+
+  } catch (error) {
+    console.error('Error retrieving posts:', error);
+    return res.status(500).json({ 
+      message: 'Failed to retrieve posts', 
+      error: error.message 
+    });
+  }
+};
+
+exports.subscribeToPostEvents = (req, res) => {
+  const headers = {
+    'Content-Type': 'text/event-stream',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache'
+  };
+  res.writeHead(200, headers);
+
+  const clientId = Date.now();
+  const newClient = {
+    id: clientId,
+    userId: req.user.uid,
+    res
+  };
+  clients.add(newClient);
+
+  const keepAlive = setInterval(() => {
+    res.write(': keepalive\n\n');
+  }, 30000);
+
+  req.on('close', () => {
+    clients.delete(newClient);
+    clearInterval(keepAlive);
+  });
+};
+

@@ -17,4 +17,7 @@ router.patch('/:workflowId/tasks/:taskId/status', workflowService.updateTaskStat
 // Add comment to task
 router.post('/:workflowId/tasks/:taskId/comments', workflowService.addTaskComment);
 
+// SSE endpoint for workflow updates
+router.get('/events', workflowService.subscribeToWorkflowEvents);
+
 module.exports = router;

@@ -5,6 +5,8 @@ const messageService = require("../services/messageService");
 // Get user's message rooms
 router.get("/rooms", messageService.getUserRooms);
 
+
+
 // Create a new message room
 router.post("/rooms", messageService.createMessageRoom);
 

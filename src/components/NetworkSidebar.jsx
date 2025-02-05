@@ -25,7 +25,7 @@ export function NetworkSidebar() {
         // Simulate an APi call for groups, conferences and publications
         setNetworkCounts({
           connections: data.connectionData.connectionCount,
-          groups: 0,
+          groups: (data.connectionData.researchRooms).length || 0,
           conferences: 0,
           publications: 0,
         })
