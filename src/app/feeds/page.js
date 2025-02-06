@@ -10,6 +10,7 @@ import Post from '@/components/Post'
 import RightSidebar from '../../components/RightSidebar'
 import SearchBar from '../../components/SearchBar'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { toast } from '@/components/ui/use-toast'
 
 export default function FeedsPage() {
   const dispatch = useDispatch()
@@ -23,6 +24,9 @@ export default function FeedsPage() {
   const POSTS_PER_PAGE = 5 // Number of posts to load at a time
   const [hasNewPosts, setHasNewPosts] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [hasReachedBottom, setHasReachedBottom] = useState(false)
+  const [isLoadingNew, setIsLoadingNew] = useState(false)
+  const [noPostsFound, setNoPostsFound] = useState(false)
 
   // Initial load of posts
   useEffect(() => {
@@ -99,20 +103,67 @@ export default function FeedsPage() {
     }
   };
 
-  // Update the scroll handler to use window scroll
+  // Update the scroll handler to only manage hasReachedBottom
   const handleScroll = useCallback(() => {
-    if (isInitialLoad) return // Don't trigger scroll loading during initial load
+    if (isInitialLoad) return;
     
-    const scrollPosition = window.scrollY
-    const windowHeight = window.innerHeight
-    const documentHeight = document.documentElement.scrollHeight
+    const scrollPosition = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
 
     if (windowHeight + scrollPosition >= documentHeight - 1000) {
       if (!isLoading && hasMore) {
-        loadMorePosts()
+        loadMorePosts();
+      }
+      // Set hasReachedBottom when user sees "No more posts"
+      if (!hasMore) {
+        setHasReachedBottom(true);
       }
     }
-  }, [isLoading, hasMore, isInitialLoad])
+  }, [isLoading, hasMore, isInitialLoad]);
+
+  // Add a function to check for new posts
+  const checkForNewPosts = async () => {
+    try {
+      setIsLoadingNew(true);
+      setNoPostsFound(false); // Reset the no posts state
+      const response = await fetch(`/api/posts/get_posts?page=1&limit=${POSTS_PER_PAGE}`);
+      const data = await response.json();
+      
+      if (response.ok && data.posts.length > 0) {
+        const enrichedPosts = data.posts.map((post) => ({
+          ...post,
+          authorTitle: post.userInfo?.occupation || 'Research Assistant',
+          authorLocation: post.userInfo?.location || 'Unknown Location',
+          connectionDegree: post.userInfo?.connectionType === 'self' ? 'You' : '1st',
+          avatar: post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
+          timestamp: post.timeStamp || new Date().toISOString(),
+        }));
+
+        // Check if we have any new posts
+        const newPosts = enrichedPosts.filter(
+          newPost => !posts.some(existingPost => existingPost.id === newPost.id)
+        );
+
+        if (newPosts.length > 0) {
+          setPosts([...newPosts, ...posts]);
+          setHasNewPosts(false);
+          setHasReachedBottom(false);
+        } else {
+          setNoPostsFound(true); // Set no posts found state
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for new posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check for new posts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingNew(false);
+    }
+  };
 
   // Update scroll listener to use window
   useEffect(() => {
@@ -207,80 +258,6 @@ export default function FeedsPage() {
     getCurrentUser();
   }, []);
 
-  // Update the SSE listener
-  useEffect(() => {
-    if (!currentUserId) return; // Don't set up listener until we have the user ID
-    
-    const eventSource = new EventSource('/api/posts/events');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'NEW_POST') {
-          const postAuthorId = data.post.uid;
-          
-          if (postAuthorId === currentUserId) {
-            // If it's the current user's post, add it immediately to the feed
-            const enrichedPost = {
-              ...data.post,
-              authorTitle: data.post.userInfo?.occupation || 'Research Assistant',
-              authorLocation: data.post.userInfo?.location || 'Unknown Location',
-              connectionDegree: 'You',
-              avatar: data.post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
-              timestamp: data.post.timeStamp || new Date().toISOString(),
-            };
-            setPosts(prevPosts => [enrichedPost, ...prevPosts]);
-          } else {
-            // If it's from a connection, show the new posts button
-            setHasNewPosts(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error processing SSE message:', error);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-      eventSource.close();
-    };
-
-    return () => eventSource.close();
-  }, [currentUserId]); // Add currentUserId as dependency
-
-  const refreshFeed = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/posts/get_posts?page=1&limit=${POSTS_PER_PAGE}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
-      }
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        const enrichedPosts = data.posts.map((post) => ({
-          ...post,
-          authorTitle: post.userInfo?.occupation || 'Research Assistant',
-          authorLocation: post.userInfo?.location || 'Unknown Location',
-          connectionDegree: post.userInfo?.connectionType === 'self' ? 'You' : '1st',
-          avatar: post.userInfo?.photoURL || 'https://picsum.photos/seed/currentuser/200',
-          timestamp: post.timeStamp || new Date().toISOString(),
-        }));
-
-        setPosts(enrichedPosts);
-        setHasMore(data.hasMore);
-        setPage(2);
-        setHasNewPosts(false);
-      }
-    } catch (error) {
-      console.error('Error refreshing feed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   if (isInitialLoad) {
     return <LoadingSpinner />
   }
@@ -313,15 +290,35 @@ export default function FeedsPage() {
                 </select>
               </div>
 
-              {hasNewPosts && (
+              {hasReachedBottom && (
                 <button 
-                  onClick={refreshFeed}
-                  className="w-full py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors duration-200"
+                  onClick={checkForNewPosts}
+                  disabled={isLoadingNew}
+                  className="w-full py-3 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors duration-200 flex items-center justify-center gap-2"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="animate-pulse h-2 w-2 bg-indigo-600 rounded-full"></span>
-                    New posts available! Click to refresh
-                  </div>
+                  {isLoadingNew ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Checking for new posts...</span>
+                    </>
+                  ) : noPostsFound ? (
+                    <>
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      No new posts found. Try again
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Load new posts
+                    </>
+                  )}
                 </button>
               )}
 

@@ -96,23 +96,6 @@ exports.createPost = async (req, res) => {
       }
     
 
-      // const fileExtension = attachment.originalname.split('.').pop();
-      // let uploadPath;
-
-      // // Determine the upload path based on file type
-      // if (attachment.mimetype.startsWith('image/')) {
-      //   uploadPath = path.join(__dirname, '../../attachments/images', `${uuidv4()}.${fileExtension}`);
-      // } else if (req.file.mimetype.startsWith('video/')) {
-      //   uploadPath = path.join(__dirname, '../../attachments/videos', `${uuidv4()}.${fileExtension}`);
-      // } else if (req.file.mimetype.startsWith('application/')) {
-      //   uploadPath = path.join(__dirname, '../../attachments/documents', `${uuidv4()}.${fileExtension}`);
-      // } else {
-      //   return res.status(400).json({ message: 'Invalid file type' });
-      // }
-
-      // // Write the file to the local storage
-      // fs.writeFileSync(uploadPath, attachment.buffer);
-      // attachmentUrl = uploadPath; // Store the local path or URL as needed
     }
 
     // Create the post document

@@ -26,6 +26,8 @@ import {
   Twitter,
   Globe,
   Pencil,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleEditMode, setPosts } from "@/redux/features/profileSlice";
@@ -228,6 +230,11 @@ export function ProfileTabs({ data, isOrganization }) {
   const { toast } = useToast(); // Toast for notifications
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [currentPublication, setCurrentPublication] = useState(null);
+  const [newPublicationName, setNewPublicationName] = useState('');
+  const [loading, setLoading] = useState(false); // Added loading state
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -402,18 +409,83 @@ export function ProfileTabs({ data, isOrganization }) {
     }
   }, [activeTab, data?.uid]);
 
-  useEffect(() => {
-    if (activeTab === "peer-reviews" && data?.uid) {
-      fetchPeerReviews();
-    }
-  }, [activeTab, data?.uid]);
+
+ 
+  const formatFirestoreTimestamp = (timestamp) => {
+    if (!timestamp) return 'Invalid date';
+  
+    // Convert Firestore Timestamp to JavaScript Date
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'Invalid date';
+  
+    // Extract components
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'short' }); // Get short month name
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+    // Determine the suffix for the day (st, nd, rd, th)
+    const suffix = (day) => {
+      if (day > 3 && day < 21) return 'th'; // Catch 11th-13th
+      switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+  
+    return `${day}${suffix(day)}, ${month} ${year}, ${hours}:${minutes}`;
+  };
 
   const fetchPublications = async () => {
     setIsLoadingPubs(true);
     try {
-      // Simulate fetching data (replace with actual API call)
-      const pubs = dummyPublications; // Use dummy data for now
-      setPublications(pubs);
+      let response;
+      if (isOwnProfile) {
+        response = await fetch("/api/profile/publications");
+      } else {
+        response = await fetch("/api/profile/publications", {
+          method: 'POST',
+          body: JSON.stringify({ uid:data?.uid }),
+          headers: {
+            'Content-Type': 'application/json', // Ensure the content type is set
+          },
+        });
+      }
+      if (!response.ok) {
+        throw new Error('Failed to fetch publications');
+      }
+      const pubs = await response.json();
+
+      // Iterate through pubs to create download links and format dates
+      const updatedPubs = await Promise.all(pubs.map(async pub => {
+        // Fetch the file using the publication URL
+        const fileResponse = await fetch(`/${pub.publicationUrl}`);
+        if (!fileResponse.ok) {
+          throw new Error('Failed to fetch file');
+        }
+         // Check if the response is a Blob
+        const contentType = fileResponse.headers.get('Content-Type');
+        console.log('Content-Type:', contentType);
+
+        // Ensure the response is a Blob
+        const fileBlob = await fileResponse.blob(); // Get the file as a Blob
+        if (!fileBlob || !(fileBlob instanceof Blob)) {
+          throw new Error('Response is not a valid Blob');
+        }
+        const downloadLink = URL.createObjectURL(fileBlob); // Create a temporary download link
+        console.log('pub.uploadDate:', pub.uploadDate);
+        const formattedDate = formatFirestoreTimestamp(pub.uploadDate); // Assuming pub.uploadDate is a Firestore Timestamp
+        return {
+          ...pub,
+          downloadLink, // Add the temporary download link
+          uploadDate: formattedDate, // Update the upload date to a formatted string
+        };
+      }));
+
+      setPublications(updatedPubs); // Update the state with the modified publications
     } catch (error) {
       console.error("Error fetching publications:", error);
       toast({
@@ -423,24 +495,6 @@ export function ProfileTabs({ data, isOrganization }) {
       });
     } finally {
       setIsLoadingPubs(false);
-    }
-  };
-
-  const fetchPeerReviews = async () => {
-    setIsLoadingReviews(true);
-    try {
-      // Simulate fetching data (replace with actual API call)
-      const reviews = [dummyPeerReview]; // Use dummy data for now
-      setPeerReviews(reviews);
-    } catch (error) {
-      console.error("Error fetching peer reviews:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load peer reviews.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingReviews(false);
     }
   };
 
@@ -476,57 +530,12 @@ export function ProfileTabs({ data, isOrganization }) {
     setPosts(posts.filter((post) => post.id !== postId));
   };
 
-  const handleToggleVisibility = (id) => {
-    setPeerReviews((prevReviews) =>
-      prevReviews.map((review) =>
-        review.id === id
-          ? { ...review, visibility: !review.visibility }
-          : review
-      )
-    );
-    toast({
-      title: "Visibility Toggled",
-      description: `Peer review visibility has been updated.`,
-    });
-  };
 
   const handleEdit = (id) => {
     console.log("Edit review:", id);
     // Implement your edit logic here (e.g., open a modal to edit the review)
   };
 
-  const dummyPeerReview = {
-    id: 1,
-    author: {
-      name: "John Doe",
-      avatar: "https://picsum.photos/seed/johndoe/200",
-      title: "Senior Researcher",
-    },
-    relationship: "Colleague",
-    date: new Date().toISOString(),
-    content:
-      "This is a sample peer review content. It provides feedback on the research paper.",
-    visibility: true,
-  };
-
-  const dummyPublications = [
-    {
-      id: 1,
-      fileName: "AI in Healthcare Research.pdf",
-      uploadDate: new Date().toISOString(),
-      fileSize: "1.2 MB",
-      downloadLink:
-        "https://example.com/download/ai_in_healthcare_research.pdf",
-    },
-    {
-      id: 2,
-      fileName: "Climate Change Mitigation Strategies.docx",
-      uploadDate: new Date().toISOString(),
-      fileSize: "850 KB",
-      downloadLink:
-        "https://example.com/download/climate_change_mitigation_strategies.docx",
-    },
-  ];
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -590,20 +599,76 @@ export function ProfileTabs({ data, isOrganization }) {
     }
   };
 
-  const handleDeletePublication = async (pubId) => {
+  const handleToggleVisibility = async (publicationId) => {
+    setLoading(true); // Set loading to true when the action starts
     try {
-      const response = await fetch(`/api/publications/${pubId}`, {
-        method: "DELETE",
+      const publication = publications.find(pub => pub.id === publicationId);
+      const newVisibility = !publication.isPublic;
+      
+      const response = await fetch(`/api/profile/action-publication?action=visibility`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicationId, isPublic: newVisibility }),
       });
 
-      if (!response.ok) throw new Error("Failed to delete publication");
+      if (!response.ok) {
+        throw new Error('Failed to update publication visibility');
+      }
 
-      setPublications((prevPubs) => prevPubs.filter((pub) => pub.id !== pubId));
+      setPublications((prev) =>
+        prev.map((pub) =>
+          pub.id === publicationId ? { ...pub, isPublic: newVisibility } : pub
+        )
+      );
+
       toast({
         title: "Success",
-        description: "Publication deleted successfully",
+        description: "Publication visibility updated successfully.",
       });
     } catch (error) {
+      console.error('Error updating publication visibility:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false); // Reset loading state after the action completes
+    }
+  };
+
+  const handleEditPublication = async (publicationId, publicationName, fileType) => {
+    console.log('Save publication');
+    try {
+      const response = await fetch('/api/profile/action-publication?action=edit', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicationId, publicationName, fileType }), // Send the publication ID and new name
+      });
+      console.log('sent request');
+
+      if (!response.ok) {
+        throw new Error('Failed to update publication');
+      }
+      console.log('response ok');
+      // Update the local state
+      setPublications((prev) =>
+        prev.map((pub) =>
+          pub.id === publicationId ? { ...pub, fileName: publicationName } : pub
+        )
+      );
+      console.log('updated state');
+      toast({
+        title: "Success",
+        description: "Publication name updated successfully.",
+      });
+      setEditModalOpen(false);
+    } catch (error) {
+      console.error('Error updating publication:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -612,32 +677,97 @@ export function ProfileTabs({ data, isOrganization }) {
     }
   };
 
-  const handleEditPublication = async (pubId, newFileName) => {
+  const handleDeletePublication = async (publicationId, publicationUrl, publicationName) => {
     try {
-      const response = await fetch(`/api/publications/${pubId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: newFileName }),
+      const response = await fetch(`/api/profile/action-publication`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicationId, publicationUrl, publicationName }), // Send the publication ID
       });
 
-      if (!response.ok) throw new Error("Failed to update publication");
+      if (!response.ok) {
+        throw new Error('Failed to delete publication');
+      }
 
-      setPublications((prevPubs) =>
-        prevPubs.map((pub) =>
-          pub.id === pubId ? { ...pub, fileName: newFileName } : pub
-        )
-      );
+      // Update the local state
+      setPublications((prev) => prev.filter((pub) => pub.id !== publicationId));
       toast({
         title: "Success",
-        description: "Publication updated successfully",
+        description: "Publication deleted successfully.",
       });
+      setDeleteModalOpen(false);
     } catch (error) {
+      console.error('Error deleting publication:', error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
     }
+  };
+
+  const handleAddPublication = async () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf, .doc, .docx, .ppt, .pptx'; // Accept only document types
+    fileInput.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        try {
+          const fileName = file.name;
+          const fileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB'; // Convert size to MB
+          const downloadLink = URL.createObjectURL(file); // Create a temporary URL for the file
+
+          const formData = new FormData()
+          formData.append('file', file);
+          formData.append('fileName', fileName);
+          formData.append('fileSize', fileSize);
+
+          
+          const response = await fetch('/api/profile/add-publication', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            toast({
+              title: "Error",
+              description: `Failed to add publication, ${response.statusText}`,
+              variant: "destructive",
+            });
+            return;
+          } 
+          const data = await response.json();
+
+          const newPublication = {
+            id: data.pub.id, // Simple ID generation
+            fileName,
+            uploadDate: 'Just now',
+            fileSize,
+            fileType: data.pub.fileType,
+            downloadLink,
+            publicationUrl: data.pub.publicationUrl,
+            isPublic: data.pub.isPublic,
+          };
+          console.log(newPublication);  
+          setPublications((prev) => [...prev, newPublication]);
+          toast({
+            title: "Success",
+            description: `Publication ${fileName} added successfully.`,
+          });
+        } catch (error) {
+          console.error('Error adding publication:', error);
+          toast({
+            title: "Error",
+            description: `Failed to add publication, ${error.message}`,
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    fileInput.click(); // Open the file dialog
   };
 
   return (
@@ -766,9 +896,19 @@ export function ProfileTabs({ data, isOrganization }) {
         <TabsContent value="publications">
           <Card className="border-none shadow-lg">
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Publications
-              </h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Publications
+                </h3>
+                {isOwnProfile && (
+                <Button
+                  variant="outline"
+                  onClick={handleAddPublication}
+                >
+                  +
+                </Button>
+              )}
+              </div>
               <div className="space-y-4">
                 {isLoadingPubs ? (
                   <p>Loading publications...</p>
@@ -785,8 +925,11 @@ export function ProfileTabs({ data, isOrganization }) {
                             {pub.fileName}
                           </h4>
                           <p className="text-sm text-gray-500">
+                            File Type: {pub.fileType || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-gray-500">
                             Uploaded on:{" "}
-                            {new Date(pub.uploadDate).toLocaleDateString()}
+                            {pub.uploadDate}
                           </p>
                           <p className="text-sm text-gray-500">
                             Size: {pub.fileSize}
@@ -809,13 +952,9 @@ export function ProfileTabs({ data, isOrganization }) {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                const newName = window.prompt(
-                                  "Enter new name:",
-                                  pub.fileName
-                                );
-                                if (newName && newName !== pub.fileName) {
-                                  handleEditPublication(pub.id, newName);
-                                }
+                                setCurrentPublication(pub);
+                                setNewPublicationName(pub.fileName);
+                                setEditModalOpen(true);
                               }}
                               className="text-gray-600 hover:text-gray-900"
                             >
@@ -825,18 +964,23 @@ export function ProfileTabs({ data, isOrganization }) {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                if (
-                                  window.confirm(
-                                    "Are you sure you want to delete this publication?"
-                                  )
-                                ) {
-                                  handleDeletePublication(pub.id);
-                                }
+                                setCurrentPublication(pub);
+                                setDeleteModalOpen(true);
                               }}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                            <button
+                              onClick={() => handleToggleVisibility(pub.id)}
+                              className="text-gray-600 hover:text-gray-900"
+                            >
+                              {pub.isPublic ? (
+                                <Eye className="h-4 w-4" />
+                              ) : (
+                                <EyeOff className="h-4 w-4" />
+                              )}
+                            </button>
                           </>
                         )}
                       </div>
@@ -860,6 +1004,62 @@ export function ProfileTabs({ data, isOrganization }) {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center indigo-600 bg-opacity-50 ">
+          <div className="bg-white p-6 rounded shadow-lg w-96">
+            <h3 className="text-lg font-semibold">Edit Publication Name</h3>
+            <input
+              type="text"
+              value={newPublicationName}
+              onChange={(e) => setNewPublicationName(e.target.value)}
+              className="border p-2 w-full mt-2"
+            />
+            <div className="flex justify-end mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setEditModalOpen(false)}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
+                variant="outline"
+                onClick={() => handleEditPublication(currentPublication.id, newPublicationName, currentPublication.fileType)}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center indigo-600 bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg">
+            <h3 className="text-lg font-semibold">Confirm Deletion</h3>
+            <p>Are you sure you want to delete this publication?</p>
+            <div className="flex justify-end mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalOpen(false)}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeletePublication(currentPublication.id, currentPublication.publicationUrl, currentPublication.fileName)}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

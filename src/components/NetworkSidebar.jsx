@@ -27,7 +27,7 @@ export function NetworkSidebar() {
           connections: data.connectionData.connectionCount,
           groups: (data.connectionData.researchRooms).length || 0,
           conferences: 0,
-          publications: 0,
+          publications: data.connectionData.publicationCount || 0
         })
       } catch (error) {
         console.error('Error fetching network data:', error)

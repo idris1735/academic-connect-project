@@ -19,6 +19,20 @@ const upload = multer({
   }
 });
 
+const upload_publication = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('application/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only document files are allowed'), false);
+    }
+  }
+});
+
 router.get('/individual', profileService.getProfileIndividual);
 router.get('/get_profiles', profileService.getProfiles);
 router.get('/activities/:uid', profileService.getProfileActivities);
@@ -30,5 +44,14 @@ router.put('/update-password', profileService.updatePassword);
 router.post('/update-avatar', upload.single('avatar'), profileService.updateAvatar);
 router.delete('/delete-account', profileService.deleteAccount);
 router.put('/update-social-links', profileService.updateSocialLinks);
+
+router.put('/action-publication', profileService.actionPublication);
+router.delete('/action-publication', profileService.actionPublication);
+router.post('/add-publication', upload_publication.single('file'), profileService.addPublication);
+
+router.get('/publications', profileService.getUserPublications);
+router.post('/publications', profileService.getUserPublications);
+
+
 
 module.exports = router;

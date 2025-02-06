@@ -3,6 +3,8 @@ const { getUserNameByUid, getRecentActivity, formatActivityForDisplay } = requir
 const { admin } = require('../config/firebase');
 const path = require('path');
 const fs = require('fs/promises');
+const { v4: uuidv4 } = require('uuid');
+const { FieldValue } = require('firebase-admin/firestore');
 
 exports.getProfileIndividual = async (req, res) => {
   try {
@@ -313,3 +315,140 @@ function isValidUrl(string) {
     return false;
   }
 }
+
+exports.actionPublication = async (req, res) => {
+  const { action } = req.query;
+  console.log('action', action);
+  const { publicationId } = req.body;
+  if (req.method === 'PUT') {
+    if (action === 'edit') {
+      let { publicationName, fileType } = req.body;
+      // Update the publication name
+      try{
+        // get publication file type
+        if (fileType && !publicationName.includes(fileType)) {
+          // Remove the file type from the publication name
+          publicationName = publicationName.replace(`.${fileType}`, '');
+        }
+        await db.collection('publications').doc(publicationId).update({
+          fileName: publicationName
+        });
+      res.status(200).json({ message: 'Publication name updated' });
+      } catch (error) {
+        console.error('Error updating publication name:', error);
+        res.status(500).json({ error: error.message });
+      }
+    } else if (action === 'visibility') {
+      try{
+        await db.collection('publications').doc(publicationId).update({
+          isPublic: req.body.isPublic
+        });
+        res.status(200).json({ message: 'Publication visibility updated' });
+      } catch (error) {
+        console.error('Error updating publication visibility:', error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  } else if (req.method === 'DELETE') {
+    // Delete publication
+    const publicationUrl = req.body.publicationUrl;
+    try {
+
+      
+
+      // Delete from local storage
+      const uploadPath = path.join(process.cwd(), 'public', publicationUrl);
+      const publicationRef = db.collection('publications').doc(publicationId);
+      await fs.unlink(uploadPath);
+      await publicationRef.delete();
+
+      return res.status(200).json({ message: 'Publication deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting publication:', error);
+      return res.status(500).json({ error: 'Failed to delete publication' });
+    }
+  } else {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+
+};
+
+exports.addPublication = async (req, res) => {
+  console.log('req.body', req.body);
+
+
+  const { fileName, fileSize, fileType } = req.body;
+  const file = req.file;
+  const userId = req.user.uid;
+  
+
+  if (!file) {
+    return res.status(400).json({ error: 'No file provided' });
+  }
+  // store to local storage
+  try { 
+    const buffer = file.buffer;
+    const fileExtension = path.extname(file.originalname);
+    const uploadPath = path.join(process.cwd(), 'public', 'uploads', 'publications', `${userId}_${uuidv4()}${fileExtension}`);
+    await fs.mkdir(path.dirname(uploadPath), { recursive: true });
+    await fs.writeFile(uploadPath, buffer);
+    const publicationUrl = path.relative(path.join(process.cwd(), 'public'), uploadPath);
+    
+    
+    const pub_ref = db.collection('publications').doc();
+    const pub_id = pub_ref.id;
+    pub = {
+      id: pub_id,
+      fileName,
+      publicationUrl,
+      fileSize,
+      fileType: fileExtension.replace('.', ''),
+      isPublic: false,
+      uploadDate: admin.firestore.FieldValue.serverTimestamp(),
+      userId: userId
+    }
+
+   
+    await pub_ref.set(pub);
+  
+    res.status(200).json({ message: 'Publication added', pub });
+  } catch (error) {
+    console.error('Error adding publication:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getUserPublications = async (req, res) => {
+  try {
+    const userId = req.body.uid || req.user.uid; // Get user ID from request parameters or authenticated user
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID not found' });
+    }
+
+    const publicationsRef = db.collection('publications').where('userId', '==', userId);
+    const snapshot = await publicationsRef.get();
+
+    if (snapshot.empty) {
+      res.status(200).json([]);
+    }
+
+    let publications;
+    publications = await Promise.all(snapshot.docs.map(async (doc) => {
+      const pub = doc.data();
+      pub.uploadDate = pub.uploadDate.toDate().toISOString();
+      return { id: doc.id, ...pub };
+    }));
+    if (req.method === 'POST') {
+      publications = publications.filter(function (doc) {
+        return doc.isPublic === true; // Return only documents where isPublic is true
+    });
+  }
+    res.status(200).json(publications);
+  } catch (error) {
+    console.error('Error fetching publications:', error);
+    res.status(500).json({ message: 'Failed to fetch publications', error: error.message });
+  }
+};
+

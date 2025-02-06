@@ -135,14 +135,19 @@ exports.getNetworkInfo = async (req, res) => {
     }
     let profileData = profileDoc.data()
 
+    // query publications
+    let publications = await db.collection('publications').where('userId', '==', userID).get()
+    let publicationCount = publications.docs.length
     if (!status) {
       let connections = profileData?.connections?.connected
       let researchRooms = profileData?.messageRooms?.researchRooms
       let connectionCount = profileData?.connectionStats?.totalConnections
+      // let publicationCount = profileData?.publications?.length
       let connectionData = {
         connections,
         connectionCount,
-        researchRooms
+        researchRooms,
+        publicationCount
       }
 
       // data = {
