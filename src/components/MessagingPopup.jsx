@@ -18,11 +18,34 @@ export default function MessagingPopup() {
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/user/current");
+        if (response.ok) {
+          setIsAuthenticated(true);
+          setLoading(false);
+        } else {
+          setIsAuthenticated(false);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
     const fetchConversations = async () => {
-      if (!chatClient?.userID) {
+      if (!chatClient?.userID || !isAuthenticated) {
         setLoading(false);
         return;
       }
@@ -66,19 +89,21 @@ export default function MessagingPopup() {
       }
     };
 
-    fetchConversations();
-
-    // Listen for new messages
-    const handleNewMessage = (event) => {
+    if (isAuthenticated) {
       fetchConversations();
-    };
 
-    chatClient?.on("message.new", handleNewMessage);
+      // Listen for new messages
+      const handleNewMessage = (event) => {
+        fetchConversations();
+      };
 
-    return () => {
-      chatClient?.off("message.new", handleNewMessage);
-    };
-  }, []);
+      chatClient?.on("message.new", handleNewMessage);
+
+      return () => {
+        chatClient?.off("message.new", handleNewMessage);
+      };
+    }
+  }, [isAuthenticated]);
 
   const togglePopup = () => {
     setIsOpen(!isOpen);
@@ -90,6 +115,11 @@ export default function MessagingPopup() {
   const selectConversation = (conversation) => {
     setSelectedChannel(conversation.channel);
   };
+
+  // Don't render anything if not authenticated or still loading
+  if (!isAuthenticated || loading) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-0 right-4 w-80 z-50 hidden md:block">

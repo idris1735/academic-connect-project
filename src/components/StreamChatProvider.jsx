@@ -54,9 +54,37 @@ export const endCall = async (call) => {
 
 export function StreamChatProvider({ children }) {
   const [clientReady, setClientReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // First check if user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/user/current");
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setClientReady(false);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setIsAuthenticated(false);
+        setClientReady(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // Only setup Stream chat if user is authenticated
   useEffect(() => {
     const setupClient = async () => {
+      if (!isAuthenticated) {
+        setClientReady(false);
+        return;
+      }
+
       try {
         // Only setup if not already connected
         if (!chatClient.userID) {
@@ -93,11 +121,21 @@ export function StreamChatProvider({ children }) {
 
     // Cleanup function - don't disconnect, just cleanup event listeners
     return () => {
-      setClientReady(false);
+      if (!isAuthenticated) {
+        setClientReady(false);
+      }
     };
-  }, []);
+  }, [isAuthenticated]);
 
-  if (!clientReady) return null;
+  // Don't render chat provider if not authenticated
+  if (!isAuthenticated) {
+    return children;
+  }
+
+  // Don't render chat functionality until client is ready
+  if (!clientReady) {
+    return children;
+  }
 
   return (
     <Chat client={chatClient} theme="messaging light">
