@@ -4,6 +4,7 @@ import { Users, UserPlus, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
+
 export function NetworkSidebar({ activeTab, onTabChange }) {
   const [networkCounts, setNetworkCounts] = useState({
     connections: 0,

@@ -1,3 +1,4 @@
+const { University } = require('lucide-react');
 const { db } = require('../config/database');
 const { admin } = require('../config/firebase');
 const notificationService = require('./notificationService');
@@ -368,3 +369,108 @@ exports.getMutualConnections = async (req, res) => {
     });
   }
 };
+
+exports.getConnections = async (req, res) => {
+  const userId = req.params.user || req.user.uid;
+
+  try {
+    // Query the profile 
+    const userProfile = await db.collection('profiles').doc(userId).get();
+
+    if (!userProfile.exists) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userConnections = userProfile.data().connections.connected || [];
+
+    // Get the connections names and profile pictures URL from the profile
+    const connections = await Promise.all(
+      userConnections.map(async (connectId) => {
+        const connection = await db.collection('profiles').doc(connectId).get();
+
+        if (!connection.exists) {
+          return null; // Return null for non-existing connections
+        }
+
+        const connectionData = connection.data();
+
+       
+        // Get the connectionDocID from the db collections
+        const connectionDocsSender = await db.collection('connections')
+          .where('senderId', '==', userId)
+          .where('receiverId', '==', connectId)
+          .where('status', '==', 'accepted') // Ensure status is accepted
+          .get();
+
+        // Query for connections where the user is the receiver
+        const connectionDocsReceiver = await db.collection('connections')
+          .where('senderId', '==', connectId)
+          .where('receiverId', '==', userId)
+          .where('status', '==', 'accepted') // Ensure status is accepted
+          .get();
+
+         // Combine results from both queries
+         const connectionDocs = [...connectionDocsSender.docs, ...connectionDocsReceiver.docs];
+         console.log('connections', connectionDocs.length);
+
+         if (connectionDocs.length === 0) {
+          return null; // Return null if no connections found
+        }
+
+        // Assuming there's at least one document that matches the criteria
+        const connectionId = connectionDocs[0].id; // Get the first matching document ID
+
+        return {
+          connectionId,
+          userId: connectId,
+          photoURL: connectionData.photoURL,
+          displayName: connectionData.displayName,
+          role: connectionData.occupation,
+          university: connectionData.institution || ''
+        };
+      })
+    );
+
+    // Filter out any null values (non-existing connections)
+    const validConnections = connections.filter(conn => conn !== null);
+
+
+    // Return the connections in the response
+    return res.status(200).json(validConnections);
+  } catch (error) {
+    console.error("Error fetching connections:", error);
+    return res.status(500).json({ message: 'Error loading connections' });
+  }
+};
+
+exports.removeConnection = async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const { connectionId } = req.body;
+
+    const connectionRef = db.collection('connections').doc(connectionId);
+    // Update the connection status
+    await connectionRef.update({
+      status: 'removed',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // // Update the connections array in the profiles collection TODO: To be uncommented after testing
+    // const currentUserRef = db.collection('profiles').doc(uid);
+    // await currentUserRef.update({
+    //   connections: admin.firestore.FieldValue.arrayRemove(connectionData.receiverId)
+    // });
+
+    // const targetUserRef = db.collection('profiles').doc(connectionData.receiverId);
+    // await targetUserRef.update({
+    //   connections: admin.firestore.FieldValue.arrayRemove(uid)
+
+    // });
+
+    return res.status(200).json({ message: 'Connection removed successfully' });
+
+  } catch (error) {
+    console.error('Error removing connection:', error);
+    return res.status(500).json({ message: 'Failed to remove connection' });
+  }
+}
