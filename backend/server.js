@@ -5,6 +5,7 @@ const session = require('express-session')
 const { auth } = require('./config/firebase')
 const admin = require('./config/firebase')
 const socketService = require('./services/socketService')
+const routes = require('./routes')
 
 const dev = process.env.NODE_ENV !== 'production'
 const app = next({ dev })
@@ -39,6 +40,8 @@ const messageRoutes = require('./routes/messages')
 const workflowRoutes = require('./routes/workflows')
 const connectionRoutes = require('./routes/connections')
 const chatRoutes = require('./routes/chats')
+const termsRoutes = require('./routes/terms')
+const privacyRoutes = require('./routes/privacy')
 // Import middleware
 const checkAuth = require('./middleware/auth')
 const errorHandler = require('./middleware/errorHandler')
@@ -59,6 +62,16 @@ app
     server.use('/api/workflows', checkAuth, workflowRoutes)
     server.use('/api/connections', checkAuth, connectionRoutes)
     server.use('/api/chats', checkAuth, chatRoutes)
+    server.use('/api', routes())
+
+    // Let Next.js handle the terms and privacy pages
+    server.get('/terms', (req, res) => {
+      return app.render(req, res, '/terms')
+    })
+
+    server.get('/privacy', (req, res) => {
+      return app.render(req, res, '/privacy')
+    })
 
     // Handle login route
     server.get('/login', (req, res) => {

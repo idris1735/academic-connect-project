@@ -17,6 +17,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export function ProfileHeader({ data, isOrganization }) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -139,7 +140,7 @@ export function ProfileHeader({ data, isOrganization }) {
     if (isLoading) {
       return (
         <Button disabled className='bg-[#6366F1]'>
-          <Loader2 className='h-4 w-4 animate-spin mr-2' />
+          <LoadingSpinner size='sm' className='mr-2' />
           Connecting...
         </Button>
       )
@@ -182,7 +183,11 @@ export function ProfileHeader({ data, isOrganization }) {
   }
 
   if (!data) {
-    return <div>Loading...</div>
+    return (
+      <div className='flex justify-center items-center min-h-[200px]'>
+        <LoadingSpinner size='lg' />
+      </div>
+    )
   }
 
   const formatMemberSince = (dateString) => {

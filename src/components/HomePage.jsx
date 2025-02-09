@@ -12,30 +12,26 @@ import {
   Search,
   X,
   Menu,
-  Loader2, ExternalLink,
+  Loader2,
+  ExternalLink,
+  Flask,
+  ChartLineUp,
+  Network,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LoadingScreen } from '@/components/ui/loading-spinner'
 
 const HomePage = () => {
   const [showLearnMore, setShowLearnMore] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [isJoinLoading, setIsJoinLoading] = useState(false)
   const [isLoginLoading, setIsLoginLoading] = useState(false)
 
-  // Simulate initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 2000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Handle search with debounce
   useEffect(() => {
     if (!searchQuery) {
       setSearchResults([])
@@ -45,13 +41,17 @@ const HomePage = () => {
     const timer = setTimeout(async () => {
       setIsSearching(true)
       try {
+        const encodedQuery = encodeURIComponent(searchQuery)
         const response = await fetch(
-          `https://api.crossref.org/works?query=${searchQuery}&rows=5`,
+          `https://api.crossref.org/works?query=${encodedQuery}&rows=5`
         )
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`)
         const data = await response.json()
         setSearchResults(data.message.items || [])
       } catch (error) {
         console.error('Search error:', error)
+        setSearchResults([])
       } finally {
         setIsSearching(false)
       }
@@ -103,25 +103,47 @@ const HomePage = () => {
 
   const handleJoinClick = () => {
     setIsJoinLoading(true)
-    // Simulate an async operation
     setTimeout(() => {
       setIsJoinLoading(false)
-      // Add your join logic here
     }, 2000)
   }
 
   const handleLoginClick = () => {
     setIsLoginLoading(true)
-    // Simulate an async operation
     setTimeout(() => {
       setIsLoginLoading(false)
-      // Add your login logic here
     }, 2000)
   }
 
+  const features = [
+    {
+      icon: <Beaker className='w-8 h-8' />,
+      title: 'Access Research',
+      description: 'Over 100 million publications at your fingertips',
+      image: '/feature1.jpg',
+      color: 'from-blue-500/10 to-blue-500/5',
+      hoverColor: 'group-hover:from-blue-600 group-hover:to-indigo-600',
+    },
+    {
+      icon: <Microscope className='w-8 h-8' />,
+      title: 'Track Impact',
+      description: 'Monitor citations and research influence',
+      image: '/feature2.jpg',
+      color: 'from-purple-500/10 to-purple-500/5',
+      hoverColor: 'group-hover:from-purple-600 group-hover:to-pink-600',
+    },
+    {
+      icon: <Satellite className='w-8 h-8' />,
+      title: 'Connect',
+      description: 'Collaborate with Researchers worldwide',
+      image: '/feature3.jpg',
+      color: 'from-indigo-500/10 to-indigo-500/5',
+      hoverColor: 'group-hover:from-indigo-600 group-hover:to-blue-600',
+    },
+  ]
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-indigo-50 to-white text-gray-800'>
-      {/* Enhanced Header with Blur Effect and Hamburger Menu */}
       <header className='fixed top-0 left-0 w-full p-4 bg-white/80 backdrop-blur-xl border-b border-gray-200/20 shadow-sm z-50'>
         <div className='flex justify-between items-center max-w-6xl mx-auto px-4'>
           <h1 className='text-xl sm:text-2xl md:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-indigo-800'>
@@ -135,13 +157,11 @@ const HomePage = () => {
                 onClick={handleLoginClick}
                 disabled={isLoginLoading}
               >
-                {isLoginLoading
-                  ? (
+                {isLoginLoading ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
-                    )
-                  : (
-                      'Log in'
-                    )}
+                ) : (
+                  'Log in'
+                )}
               </Button>
             </Link>
             <Link href='/signup'>
@@ -150,13 +170,11 @@ const HomePage = () => {
                 onClick={handleJoinClick}
                 disabled={isJoinLoading}
               >
-                {isJoinLoading
-                  ? (
+                {isJoinLoading ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
-                    )
-                  : (
-                      'Join for free'
-                    )}
+                ) : (
+                  'Join for free'
+                )}
               </Button>
             </Link>
           </div>
@@ -166,7 +184,6 @@ const HomePage = () => {
             </Button>
           </div>
         </div>
-        {/* Mobile Menu */}
         {isMenuOpen && (
           <div className='sm:hidden absolute top-full left-0 right-0 bg-white shadow-md'>
             <div className='flex flex-col p-4 space-y-2'>
@@ -188,18 +205,17 @@ const HomePage = () => {
         )}
       </header>
 
-      {/* Hero Section with Background Image */}
       <section className='relative min-h-screen flex items-center justify-center pt-16'>
         <Image
           src='/homebanner.jpg'
           alt='Research background'
-          layout='fill'
-          objectFit='cover'
-          quality={100}
+          fill
+          sizes='100vw'
+          priority
+          className='object-cover'
         />
         <div className='absolute inset-0 bg-gradient-to-b from-black/60 to-black/80 z-10' />
 
-        {/* Dark Transparent Card Overlay */}
         <div className='relative z-20 bg-black bg-opacity-50 p-8 rounded-lg max-w-2xl mx-4'>
           <div className='text-center'>
             <h1 className='text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight'>
@@ -230,7 +246,6 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
         <div className='absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20'>
           <div className='w-6 h-10 border-2 border-white/60 rounded-full p-1'>
             <div className='w-1.5 h-1.5 bg-white rounded-full animate-bounce mx-auto' />
@@ -238,50 +253,68 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Rest of the sections with enhanced styling */}
-      <section className='py-16 sm:py-24 bg-white'>
+      <section className='py-24 bg-gradient-to-b from-white to-indigo-50/50'>
         <div className='max-w-6xl mx-auto px-4'>
-          <h2 className='text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-12 text-indigo-800'>
-            Discover Research knowledge and stay connected
-          </h2>
-          <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-8'>
-            {[
-              {
-                icon: <Beaker className='w-8 h-8' />,
-                title: 'Access Research',
-                description: 'Over 100 million publications at your fingertips',
-              },
-              {
-                icon: <Microscope className='w-8 h-8' />,
-                title: 'Track Impact',
-                description: 'Monitor citations and research influence',
-              },
-              {
-                icon: <Satellite className='w-8 h-8' />,
-                title: 'Connect',
-                description: 'Collaborate with Researchers worldwide',
-              },
-            ].map((item, index) => (
-              <Card
-                key={index}
-                className='p-6 hover:shadow-lg transition-shadow'
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className='text-center mb-16'
+          >
+            <h2 className='text-3xl sm:text-4xl font-bold text-gray-900 mb-4'>
+              Why Choose AcademicConnect?
+            </h2>
+            <p className='text-gray-600 max-w-2xl mx-auto'>
+              Experience a new era of academic collaboration with our innovative
+              features
+            </p>
+          </motion.div>
+
+          <div className='grid md:grid-cols-3 gap-8 relative'>
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                className='relative group'
               >
-                <CardContent className='text-center'>
-                  <div className='w-16 h-16 mx-auto mb-4 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600'>
-                    {item.icon}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.color} ${feature.hoverColor} rounded-2xl transform group-hover:scale-[1.02] transition-all duration-500 opacity-50 group-hover:opacity-100`}
+                />
+                <div className='relative bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-500 border border-gray-200/50 group-hover:border-transparent'>
+                  <div className='flex flex-col items-center text-center'>
+                    <div className='mb-4 p-4 bg-gradient-to-br from-indigo-100 to-white rounded-xl text-indigo-600 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 group-hover:shadow-lg'>
+                      {feature.icon}
+                    </div>
+                    <h3 className='text-xl font-bold text-gray-900 mb-2 transform group-hover:translate-y-1 transition-transform duration-500'>
+                      {feature.title}
+                    </h3>
+                    <p className='text-gray-600 mb-6 transform group-hover:translate-y-1 transition-transform duration-500'>
+                      {feature.description}
+                    </p>
+                    <div className='relative w-full h-48 rounded-lg overflow-hidden'>
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        fill
+                        sizes='(max-width: 768px) 100vw, 33vw'
+                        className='object-cover transform group-hover:scale-110 transition-all duration-700'
+                      />
+                      <div className='absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
+                    </div>
                   </div>
-                  <h3 className='text-xl font-bold mb-2 text-indigo-700'>
-                    {item.title}
-                  </h3>
-                  <p className='text-gray-600'>{item.description}</p>
-                </CardContent>
-              </Card>
+                </div>
+              </motion.div>
             ))}
           </div>
+
+          <div className='absolute -z-10 top-1/2 left-0 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob' />
+          <div className='absolute -z-10 top-1/2 right-0 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000' />
+          <div className='absolute -z-10 bottom-0 left-1/2 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000' />
         </div>
       </section>
 
-      {/* Topic Section with animation */}
       <section className='py-16 sm:py-24 bg-gradient-to-br from-indigo-50 to-white'>
         <div className='max-w-6xl mx-auto px-4 text-center'>
           <h3 className='text-2xl sm:text-3xl font-bold mb-12 text-indigo-800'>
@@ -316,39 +349,14 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Enhanced Call to Action with Background Image */}
-      {/* <section className='py-16 sm:py-24 relative overflow-hidden'>
-        <Image
-          src='/researchbanner.jpg'
-          alt='Researchers collaborating'
-          layout='fill'
-          objectFit='cover'
-          objectPosition='top center'
-          quality={100}
-        />
-        <div className='absolute inset-0 bg-indigo-600/70 z-10' />
-        <div className='max-w-4xl mx-auto text-center px-4 relative z-20'>
-          <h2 className='text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-8 leading-tight'>
-            Join 25 million researchers across the globe!
-          </h2>
-          <Button
-            size='lg'
-            className='bg-white text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transform hover:scale-105 transition-all text-sm sm:text-base'
-          >
-            Get Started Now
-          </Button>
-        </div>
-      </section> */}
-
       <section className='py-16 sm:py-24 relative overflow-hidden'>
         <Image
-          src='/researchbanner.jpg'
+          src='/researchers.jpg'
           alt='Researchers collaborating'
-          layout='fill'
-          objectFit='cover'
-          objectPosition='top center'
-          quality={100}
+          fill
+          sizes='100vw'
           priority
+          className='object-cover object-top'
         />
         <div className='absolute inset-0 bg-indigo-600/70 z-10' />
         <div className='max-w-4xl mx-auto text-center px-4 relative z-20 space-y-8'>
@@ -370,13 +378,11 @@ const HomePage = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <div className='absolute left-3 top-1/2 -translate-y-1/2'>
-                {isSearching
-                  ? (
+                {isSearching ? (
                   <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
-                    )
-                  : (
+                ) : (
                   <Search className='h-4 w-4 text-gray-500' />
-                    )}
+                )}
               </div>
             </div>
 
@@ -413,7 +419,7 @@ const HomePage = () => {
                                   : 'Unknown Author'}
                                 {result.published &&
                                   ` • ${new Date(
-                                    result.published['date-parts'][0],
+                                    result.published['date-parts'][0]
                                   ).getFullYear()}`}
                               </p>
                             </div>
@@ -429,7 +435,10 @@ const HomePage = () => {
 
             {searchQuery && isSearching && (
               <Card className='p-4 text-center bg-white/95 backdrop-blur-sm'>
-                <Loader2 className='h-6 w-6 animate-spin mx-auto text-indigo-600' />
+                <LoadingSpinner
+                  size='default'
+                  className='mx-auto text-primary'
+                />
                 <p className='text-sm text-gray-500 mt-2'>
                   Searching publications...
                 </p>
@@ -445,66 +454,6 @@ const HomePage = () => {
           </Button>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className='bg-gray-900 text-white py-12'>
-        <div className='max-w-6xl mx-auto px-4'>
-          <div className='grid sm:grid-cols-2 gap-8'>
-            <div>
-              <h4 className='text-xl font-bold mb-4'>AcademicConnect</h4>
-              <p className='text-gray-400 mb-4'>
-                Connecting researchers worldwide to advance scientific
-                discovery.
-              </p>
-            </div>
-            <div className='grid grid-cols-2 gap-8'>
-              <div>
-                <h5 className='font-semibold mb-4'>Solutions</h5>
-                <ul className='space-y-2 text-gray-400'>
-                  <li>
-                    <a href='#' className='hover:text-white transition-colors'>
-                      For Researchers
-                    </a>
-                  </li>
-                  <li>
-                    <a href='#' className='hover:text-white transition-colors'>
-                      For Institutions
-                    </a>
-                  </li>
-                  <li>
-                    <a href='#' className='hover:text-white transition-colors'>
-                      For Industry
-                    </a>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h5 className='font-semibold mb-4'>Company</h5>
-                <ul className='space-y-2 text-gray-400'>
-                  <li>
-                    <a href='#' className='hover:text-white transition-colors'>
-                      About
-                    </a>
-                  </li>
-                  <li>
-                    <a href='#' className='hover:text-white transition-colors'>
-                      Careers
-                    </a>
-                  </li>
-                  <li>
-                    <a href='#' className='hover:text-white transition-colors'>
-                      Contact
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className='border-t border-gray-800 mt-8 pt-8 text-center text-gray-400'>
-            <p>&copy; 2024 AcademicConnect. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
 
       {showLearnMore && <LearnMoreModal />}
 

@@ -1,11 +1,36 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  distDir: 'out',
+  reactStrictMode: true,
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+    ],
   },
-  swcMinify: true,
+  async rewrites() {
+    return [
+      {
+        source: '/auth/:path*',
+        destination: 'http://localhost:5000/auth/:path*', // Proxy auth requests to backend
+      },
+      {
+        source: '/chats/:path*',
+        destination: 'http://localhost:5000/chats/:path*',
+      },
+      {
+        source: '/user/:path*',
+        destination: 'http://localhost:5000/user/:path*',
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
