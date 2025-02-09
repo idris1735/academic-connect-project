@@ -1,7 +1,17 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, Users2, Briefcase, Image, FileText, Film, X, Paperclip, MessageCircle } from 'lucide-react'
+import {
+  MessageSquare,
+  Users2,
+  Briefcase,
+  Image,
+  FileText,
+  Film,
+  X,
+  Paperclip,
+  MessageCircle,
+} from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function PostCreation({ onPostCreate }) {
@@ -14,22 +24,18 @@ export default function PostCreation({ onPostCreate }) {
   const fileInputRef = useRef(null)
   const [photoURL, setPhotoURL] = useState(null)
 
+  useEffect(() => {
+    const getPhoto = async () => {
+      const response = await fetch('/api/users/photo_url')
+      if (!response.ok) {
+        throw new Error('Failed to load photo, reload the page')
+      }
+      const data = await response.json()
 
- 
+      setPhotoURL(data.photoURL)
+    }
 
-  useEffect( () =>{
-     const getPhoto = async () => {
-       const response = await fetch('/api/users/photo_url')
-       if (!response.ok) {
-         throw new Error('Failed to load photo, reload the page')
-       }
-       const data = await response.json()
-       
-       setPhotoURL(data.photoURL)
-     }
-
-     getPhoto()
-   
+    getPhoto()
   }, [])
 
   const handleSubmit = async (e) => {
@@ -43,7 +49,7 @@ export default function PostCreation({ onPostCreate }) {
       const formData = new FormData()
       formData.append('content', content)
       formData.append('category', category)
-      
+
       if (attachment) {
         console.log('A file was attached.')
         formData.append('attachment', attachment)
@@ -53,20 +59,18 @@ export default function PostCreation({ onPostCreate }) {
         formData.append('discussionName', discussionName)
       }
 
-    
       const response = await fetch('/api/posts/create_post', {
         method: 'POST',
         body: formData,
       })
 
-            // Log the FormData contents
-      console.log('FormData contents:');
+      // Log the FormData contents
+      console.log('FormData contents:')
       for (let [key, value] of formData.entries()) {
         if (value instanceof File) {
-
-          console.log('File objects', key, value.name); // For File objects, log the file name
+          console.log('File objects', key, value.name) // For File objects, log the file name
         } else {
-          console.log(key, value);
+          console.log(key, value)
         }
       }
 
@@ -80,13 +84,11 @@ export default function PostCreation({ onPostCreate }) {
       //   }
       // })
 
-   
-
       const data = await response.json()
 
       if (response.ok) {
         onPostCreate(data.post)
-        
+
         // Reset form
         setContent('')
         setAttachment(null)
@@ -153,33 +155,50 @@ export default function PostCreation({ onPostCreate }) {
 
     if (isImage) {
       return (
-        <div className="relative">
-          <img src={URL.createObjectURL(attachment)} alt="Attachment preview" className="max-w-full h-auto rounded-md" />
-          <button onClick={removeAttachment} className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1">
-            <X className="h-4 w-4" />
+        <div className='relative'>
+          <img
+            src={URL.createObjectURL(attachment)}
+            alt='Attachment preview'
+            className='max-w-full h-auto rounded-md'
+          />
+          <button
+            onClick={removeAttachment}
+            className='absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1'
+          >
+            <X className='h-4 w-4' />
           </button>
         </div>
       )
     } else if (isVideo) {
       return (
-        <div className="relative">
-          <video src={URL.createObjectURL(attachment)} controls className="max-w-full h-auto rounded-md">
+        <div className='relative'>
+          <video
+            src={URL.createObjectURL(attachment)}
+            controls
+            className='max-w-full h-auto rounded-md'
+          >
             Your browser does not support the video tag.
           </video>
-          <button onClick={removeAttachment} className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1">
-            <X className="h-4 w-4" />
+          <button
+            onClick={removeAttachment}
+            className='absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1'
+          >
+            <X className='h-4 w-4' />
           </button>
         </div>
       )
     } else {
       return (
-        <div className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
-          <div className="flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-gray-500" />
-            <span className="text-sm text-gray-700">{attachment.name}</span>
+        <div className='flex items-center justify-between bg-gray-100 p-2 rounded-md'>
+          <div className='flex items-center'>
+            <FileText className='h-5 w-5 mr-2 text-gray-500' />
+            <span className='text-sm text-gray-700'>{attachment.name}</span>
           </div>
-          <button onClick={removeAttachment} className="text-gray-500 hover:text-gray-700">
-            <X className="h-4 w-4" />
+          <button
+            onClick={removeAttachment}
+            className='text-gray-500 hover:text-gray-700'
+          >
+            <X className='h-4 w-4' />
           </button>
         </div>
       )
@@ -216,95 +235,98 @@ export default function PostCreation({ onPostCreate }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div className='bg-white rounded-lg shadow-md p-4 mb-4'>
       <form onSubmit={handleSubmit}>
-        <div className="flex gap-4 mb-4">
-          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-medium">
-          <Avatar>
-            {photoURL ? (
-              <AvatarImage src={`/${photoURL}`} />
-            ) : (
-              <AvatarFallback className="text-4xl font-semibold bg-[#6366F1] text-white">
-                U
-              </AvatarFallback>
-            )}
-          </Avatar>
+        <div className='flex gap-4 mb-4'>
+          <div className='w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-medium'>
+            <Avatar>
+              {photoURL ? (
+                <AvatarImage src={`/${photoURL}`} />
+              ) : (
+                <AvatarFallback className='text-4xl font-semibold bg-[#6366F1] text-white'>
+                  U
+                </AvatarFallback>
+              )}
+            </Avatar>
           </div>
           <textarea
-            placeholder="Start a post"
-            className="flex-grow px-3 py-2 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1] min-h-[100px]"
+            placeholder='Start a post'
+            className='flex-grow px-3 py-2 bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1] min-h-[100px]'
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            aria-label="Post content"
+            aria-label='Post content'
           />
         </div>
 
         {isDiscussionMode && (
-          <div className="mb-4">
+          <div className='mb-4'>
             <input
-              type="text"
-              placeholder="Enter discussion name..."
+              type='text'
+              placeholder='Enter discussion name...'
               value={discussionName}
               onChange={(e) => setDiscussionName(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+              className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]'
             />
           </div>
         )}
 
         {renderAttachmentPreview()}
 
-        <div className="flex justify-between items-center mb-4">
+        <div className='flex justify-between items-center mb-4'>
           <input
-            type="file"
+            type='file'
             ref={fileInputRef}
             onChange={handleFileChange}
-            className="hidden"
-            id="file-upload"
-            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+            className='hidden'
+            id='file-upload'
+            accept='image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'
           />
           <label
-            htmlFor="file-upload"
-            className="cursor-pointer flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+            htmlFor='file-upload'
+            className='cursor-pointer flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md'
           >
-            <Paperclip className="h-4 w-4" />
+            <Paperclip className='h-4 w-4' />
             Attach File
           </label>
           <select
-            className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+            className='px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#6366F1]'
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            aria-label="Post category"
+            aria-label='Post category'
           >
-            <option value="research">Research</option>
-            <option value="publication">Publication</option>
+            <option value='research'>Research</option>
+            <option value='publication'>Publication</option>
           </select>
         </div>
 
-        {error && <p className="text-red-500 mb-2">{error}</p>}
+        {error && <p className='text-red-500 mb-2'>{error}</p>}
 
-        <div className="flex justify-between">
-          <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]">
-            <MessageSquare className="h-4 w-4" />
+        <div className='flex justify-between'>
+          <button
+            type='submit'
+            className='flex items-center gap-2 px-4 py-2 bg-[#6366F1] text-white rounded-md hover:bg-[#5457E5]'
+          >
+            <MessageSquare className='h-4 w-4' />
             Post
           </button>
           <button
-            type="button"
+            type='button'
             onClick={handleImageClick}
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+            className='flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md'
           >
-            <Image className="h-4 w-4" />
+            <Image className='h-4 w-4' />
             Image
           </button>
           <button
-            type="button"
+            type='button'
             onClick={handleVideoClick}
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+            className='flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md'
           >
-            <Film className="h-4 w-4" />
+            <Film className='h-4 w-4' />
             Video
           </button>
           <button
-            type="button"
+            type='button'
             onClick={toggleDiscussionMode}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${
               isDiscussionMode
@@ -312,7 +334,7 @@ export default function PostCreation({ onPostCreate }) {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <MessageCircle className="h-4 w-4" />
+            <MessageCircle className='h-4 w-4' />
             Discussion
           </button>
         </div>

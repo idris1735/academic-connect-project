@@ -11,7 +11,9 @@ import {
   Image as ImageIcon,
   Send,
   Download,
-  X, FileIcon, PlayCircle
+  X,
+  FileIcon,
+  PlayCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import PropTypes from 'prop-types'
@@ -41,36 +43,35 @@ const formatTimeAgo = (timestamp) => {
   return `${years}y ago`
 }
 
-
 // Skeleton loading component
 const PostSkeleton = () => (
-  <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-    <div className="p-4">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-        <div className="flex-1 space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+  <div className='bg-white rounded-lg shadow-md overflow-hidden animate-pulse'>
+    <div className='p-4'>
+      <div className='flex items-center gap-4 mb-4'>
+        <div className='w-12 h-12 bg-gray-200 rounded-full'></div>
+        <div className='flex-1 space-y-2'>
+          <div className='h-4 bg-gray-200 rounded w-1/4'></div>
+          <div className='h-3 bg-gray-200 rounded w-1/3'></div>
+          <div className='h-3 bg-gray-200 rounded w-1/2'></div>
         </div>
       </div>
-      <div className="space-y-3">
-        <div className="h-4 bg-gray-200 rounded w-full"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-        <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+      <div className='space-y-3'>
+        <div className='h-4 bg-gray-200 rounded w-full'></div>
+        <div className='h-4 bg-gray-200 rounded w-5/6'></div>
+        <div className='h-4 bg-gray-200 rounded w-4/6'></div>
       </div>
     </div>
-    <div className="border-t px-4 py-2 flex justify-between">
-      <div className="h-8 bg-gray-200 rounded w-20"></div>
-      <div className="h-8 bg-gray-200 rounded w-20"></div>
-      <div className="h-8 bg-gray-200 rounded w-20"></div>
+    <div className='border-t px-4 py-2 flex justify-between'>
+      <div className='h-8 bg-gray-200 rounded w-20'></div>
+      <div className='h-8 bg-gray-200 rounded w-20'></div>
+      <div className='h-8 bg-gray-200 rounded w-20'></div>
     </div>
   </div>
 )
 
 // Move PostSkeletons before the main Post component
 const PostSkeletons = ({ count = 3 }) => (
-  <div className="space-y-4">
+  <div className='space-y-4'>
     {Array.from({ length: count }).map((_, index) => (
       <PostSkeleton key={`skeleton-${index}`} />
     ))}
@@ -89,10 +90,14 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
   }
 
   // Use a better placeholder image from a reliable CDN
-  const avatarSrc = post.avatar || 'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
+  const avatarSrc =
+    post.avatar ||
+    'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
 
   // Format time in a consistent way
-  const formattedTime = post.timeStamp ? formatTimeAgo(post.timeStamp) : 'recently'
+  const formattedTime = post.timeStamp
+    ? formatTimeAgo(post.timeStamp)
+    : 'recently'
 
   // Add console log to debug post data
   console.log('Post data:', post)
@@ -149,134 +154,134 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
   }
 
   const handleDownload = (url) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = ''; // You can specify a filename here if desired
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '' // You can specify a filename here if desired
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const renderAttachment = () => {
-    if (!post.attachment) return null;
+    if (!post.attachment) return null
 
     switch (true) {
       case post.attachment.fileType == 'images':
         return (
-          <div className="mb-4 relative">
-            <div className="aspect-w-16 aspect-h-9">
-            
-           
+          <div className='mb-4 relative'>
+            <div className='aspect-w-16 aspect-h-9'>
               <img
                 src={post.attachment.url}
-                alt="Post attachment"
-                className="rounded-lg object-cover"
-                loading="lazy"
+                alt='Post attachment'
+                className='rounded-lg object-cover'
+                loading='lazy'
               />
             </div>
           </div>
-              )
+        )
       case post.attachment.fileType == 'videos':
         return (
-          <div className="mb-4">
-            <video
-              controls
-              className="rounded-lg max-h-96 w-auto mx-auto"
-            >
-              <source src={post.attachment.url} type="video/mp4" />
+          <div className='mb-4'>
+            <video controls className='rounded-lg max-h-96 w-auto mx-auto'>
+              <source src={post.attachment.url} type='video/mp4' />
               Your browser does not support the video tag.
             </video>
           </div>
-            )
+        )
       case post.attachment.fileType == 'applications':
         return (
-          <div className="mb-4 flex items-center gap-2 p-4 bg-gray-50 rounded-lg">
-            <FileText className="h-6 w-6 text-gray-500" />
+          <div className='mb-4 flex items-center gap-2 p-4 bg-gray-50 rounded-lg'>
+            <FileText className='h-6 w-6 text-gray-500' />
             <a
               href={post.attachment.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-600 hover:underline"
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-indigo-600 hover:underline'
             >
               {post.attachment.name || 'View Document'}
             </a>
           </div>
-          )
+        )
       default:
-        return <p>Unsupported file type</p>;
+        return <p>Unsupported file type</p>
     }
   }
-
 
   const handleShare = () => {
     setShowShareModal(true)
   }
 
   const copyToClipboard = () => {
-    const shareableLink = window.location.href; // Customize this to the specific post URL if needed
-    navigator.clipboard.writeText(shareableLink)
+    const shareableLink = window.location.href // Customize this to the specific post URL if needed
+    navigator.clipboard
+      .writeText(shareableLink)
       .then(() => {
-        alert('Post link copied to clipboard!');
-        setShowShareModal(false); // Close the modal after copying
+        alert('Post link copied to clipboard!')
+        setShowShareModal(false) // Close the modal after copying
       })
-      .catch((error) => console.error('Error copying to clipboard:', error));
+      .catch((error) => console.error('Error copying to clipboard:', error))
   }
 
   const handleJoinDiscussion = async (roomId) => {
-    
     try {
       const response = await fetch(`/api/messages/rooms/join-room`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          roomId
+          roomId,
         }),
-      });
+      })
 
-      const info = await response.json();
-      console.log(info);
+      const info = await response.json()
+      console.log(info)
 
       if (response.ok) {
-        router.push(`/messages?id=${roomId}&type=RR`); 
+        router.push(`/messages?id=${roomId}&type=RR`)
       } else {
-        throw new Error(info.message || "Failed to create room");
+        throw new Error(info.message || 'Failed to create room')
       }
     } catch (error) {
-      console.error("Error creating room:", error);
+      console.error('Error creating room:', error)
     }
-  
-  };
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative">
+    <div className='bg-white rounded-lg shadow-md overflow-hidden'>
+      <div className='p-4'>
+        <div className='flex items-center gap-4 mb-4'>
+          <div className='relative'>
             <img
               src={`/${post.photoURL}` || avatarSrc}
               alt={post.userInfo?.author || 'User'}
-              className="w-12 h-12 rounded-full bg-indigo-100"
+              className='w-12 h-12 rounded-full bg-indigo-100'
               onError={(e) => {
-                e.target.src = 'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
+                e.target.src =
+                  'https://ui-avatars.com/api/?name=User&background=6366F1&color=fff'
               }}
             />
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-lg">{post.userInfo?.author || 'Loading...'}</h3>
-              <span className="text-sm text-gray-500">{post.connectionDegree || ''}</span>
+          <div className='flex-1'>
+            <div className='flex items-center gap-2'>
+              <h3 className='font-bold text-lg'>
+                {post.userInfo?.author || 'Loading...'}
+              </h3>
+              <span className='text-sm text-gray-500'>
+                {post.connectionDegree || ''}
+              </span>
               {post.category && (
-                <span className="text-sm text-indigo-600">• {post.category}</span>
+                <span className='text-sm text-indigo-600'>
+                  • {post.category}
+                </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-gray-500">
+            <div className='flex items-center gap-2'>
+              <p className='text-sm text-gray-500'>
                 {post.userInfo.connectionType === 'self' ? 'Your post' : ''}
               </p>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className='text-sm text-gray-500'>
               {post.authorLocation || 'Loading...'} • {formattedTime}
             </p>
           </div>
@@ -307,20 +312,20 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
         </button>
 
         {post.discussion && post.discussion.id && (
-          <button 
-            className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
+          <button
+            className='flex items-center gap-2 text-gray-500 hover:text-indigo-500'
             onClick={() => handleJoinDiscussion(post.discussion.id)}
           >
             <MessageCircle className='h-5 w-5' />
             <span>Join Discussion</span>
           </button>
         )}
-        
-        <button 
-          className="flex items-center gap-2 text-gray-500 hover:text-indigo-500"
+
+        <button
+          className='flex items-center gap-2 text-gray-500 hover:text-indigo-500'
           onClick={handleShare}
         >
-          <Share2 className="h-5 w-5" />
+          <Share2 className='h-5 w-5' />
           <span>Share</span>
         </button>
       </div>
@@ -329,11 +334,14 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
       {isCommenting && (
         <div className='border-t bg-gray-50'>
           {/* Comment Form */}
-          <form onSubmit={submitComment} className='p-4 flex gap-3 sticky top-0 bg-gray-50 z-10'>
+          <form
+            onSubmit={submitComment}
+            className='p-4 flex gap-3 sticky top-0 bg-gray-50 z-10'
+          >
             <img
               src={`/${post.photoURL}` || avatarSrc}
-              alt="Your avatar"
-              className="w-8 h-8 rounded-full"
+              alt='Your avatar'
+              className='w-8 h-8 rounded-full'
             />
             <div className='flex-1'>
               <input
@@ -344,7 +352,7 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
                 className='w-full px-4 py-2 bg-white border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500'
               />
             </div>
-            <button 
+            <button
               type='submit'
               className='p-2 text-indigo-600 hover:bg-indigo-50 rounded-full'
               disabled={!comment.trim()}
@@ -354,52 +362,56 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
           </form>
 
           {/* Comments List with fixed height and scroll */}
-          <div className="px-4 pb-4 space-y-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {post.comments && post.comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <img
-                  src={`/${comment.photoURL}` || avatarSrc}
-                  alt={comment.author}
-                  className="w-8 h-8 rounded-full"
-                />
-                <div className="flex-1">
-                  <div className="bg-white rounded-2xl px-4 py-2">
-                    <p className="font-semibold text-sm">{comment.author}</p>
-                    <p className="text-sm">{comment.content}</p>
-                  </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                    <span>{formatTimeAgo(comment.timestamp)}</span>
-                    <button className="hover:text-gray-700">Like</button>
-                    <button className="hover:text-gray-700">Reply</button>
+          <div
+            className='px-4 pb-4 space-y-4'
+            style={{ maxHeight: '300px', overflowY: 'auto' }}
+          >
+            {post.comments &&
+              post.comments.map((comment) => (
+                <div key={comment.id} className='flex gap-3'>
+                  <img
+                    src={`/${comment.photoURL}` || avatarSrc}
+                    alt={comment.author}
+                    className='w-8 h-8 rounded-full'
+                  />
+                  <div className='flex-1'>
+                    <div className='bg-white rounded-2xl px-4 py-2'>
+                      <p className='font-semibold text-sm'>{comment.author}</p>
+                      <p className='text-sm'>{comment.content}</p>
+                    </div>
+                    <div className='flex items-center gap-4 mt-1 text-xs text-gray-500'>
+                      <span>{formatTimeAgo(comment.timestamp)}</span>
+                      <button className='hover:text-gray-700'>Like</button>
+                      <button className='hover:text-gray-700'>Reply</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg">
-            <h2 className="text-lg font-bold mb-4">Share this post</h2>
-            <p className="mb-4">Copy the link below:</p>
+        <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50'>
+          <div className='bg-white rounded-lg p-6 shadow-lg'>
+            <h2 className='text-lg font-bold mb-4'>Share this post</h2>
+            <p className='mb-4'>Copy the link below:</p>
             <input
-              type="text"
+              type='text'
               readOnly
               value={window.location.href} // Customize this to the specific post URL if needed
-              className="border rounded-md p-2 w-full"
+              className='border rounded-md p-2 w-full'
             />
             <button
               onClick={copyToClipboard}
-              className="mt-4 bg-indigo-600 text-white rounded-md px-4 py-2"
+              className='mt-4 bg-indigo-600 text-white rounded-md px-4 py-2'
             >
               Copy Link
             </button>
             <button
               onClick={() => setShowShareModal(false)}
-              className="mt-2 text-gray-500"
+              className='mt-2 text-gray-500'
             >
               Cancel
             </button>
@@ -440,8 +452,7 @@ Post.propTypes = {
   onLike: PropTypes.func.isRequired,
   onComment: PropTypes.func.isRequired,
   onJoinDiscussion: PropTypes.func,
-  isLoading: PropTypes.bool
+  isLoading: PropTypes.bool,
 }
 
 export default Post
-
