@@ -17,4 +17,9 @@ router.get('/pending', connectionService.getPendingRequests);
 // Get mutual connections
 router.get('/mutual/:userId', connectionService.getMutualConnections);
 
+// Get connections
+router.get('/connections', connectionService.getConnections);
+
+router.post('/remove_connection', connectionService.removeConnection);
+
 module.exports = router;

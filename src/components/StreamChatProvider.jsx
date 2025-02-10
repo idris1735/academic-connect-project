@@ -110,7 +110,7 @@ export function StreamChatProvider({ children }) {
               videoClient.connectUser(user, data.token),
             ])
           } catch (error) {
-            console.error('Chat setup error:', error)
+            console.log('Chat setup error:', error)
           }
         }
         setClientReady(true)

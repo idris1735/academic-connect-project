@@ -20,7 +20,7 @@ export default function MessagingPopup() {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
-
+  
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
@@ -29,6 +29,11 @@ export default function MessagingPopup() {
         if (response.ok) {
           setIsAuthenticated(true);
           setLoading(false);
+        } else if (response.status === 401) {
+          // If 401, wait and retry indefinitely
+          setTimeout(() => {
+            checkAuth(); // Retry the authentication check
+          }, 1000); // Wait for 1 second before retrying
         } else {
           setIsAuthenticated(false);
           setLoading(false);
@@ -40,7 +45,7 @@ export default function MessagingPopup() {
       }
     };
 
-    checkAuth();
+    checkAuth(); // Start the authentication check
   }, []);
 
   useEffect(() => {

@@ -3,56 +3,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserMinus, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast"; // Import toast for notifications
 
-// Dummy data for testing
-const dummyConnections = [
-  {
-    connectionId: "1",
-    userId: "user1",
-    displayName: "Dr. Sarah Johnson",
-    role: "Associate Professor",
-    university: "Stanford University",
-    photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-  },
-  {
-    connectionId: "2",
-    userId: "user2",
-    displayName: "Prof. Michael Chen",
-    role: "Research Director",
-    university: "MIT",
-    photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-  },
-  {
-    connectionId: "3",
-    userId: "user3",
-    displayName: "Dr. Emily Williams",
-    role: "Assistant Professor",
-    university: "Harvard University",
-    photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
-  },
-  {
-    connectionId: "4",
-    userId: "user4",
-    displayName: "Prof. David Brown",
-    role: "Department Head",
-    university: "UC Berkeley",
-    photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-  },
-];
 
 export function ManageConnections() {
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Simulate API call with dummy data
     const fetchConnections = async () => {
       try {
         // Simulate network delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setConnections(dummyConnections);
+        const response = await fetch('/api/connections/connections')
+        if (!response.ok) {
+          throw new Error("Failed to load connections");
+        }
+        const data = await response.json();
+        setConnections(data);
       } catch (error) {
-        console.error("Error loading connections:", error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -63,13 +38,29 @@ export function ManageConnections() {
 
   const handleRemoveConnection = async (connectionId, userId) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setConnections((prev) =>
-        prev.filter((conn) => conn.connectionId !== connectionId)
-      );
+      // Simulate API call to remove connection
+      await fetch('/api/connections/remove_connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ connectionId }),    //TODO: To be tested with a proper user
+      });
+    setConnections((prev) =>
+      prev.filter((conn) => conn.connectionId !== connectionId)
+    );
+    toast({
+      title: "Succcess",
+      description: 'Connection removed successfully',
+    });
     } catch (error) {
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
       console.error("Error removing connection:", error);
+      return;
     }
   };
 

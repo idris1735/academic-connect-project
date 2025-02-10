@@ -97,29 +97,6 @@ exports.sendConnectionRequest = async (req, res) => {
   //   }
   // }
   
-  exports.removeConnection = async (req, res) => {
-    try {
-      const uid = req.user.uid;
-      const { connectionId } = req.body;
-  
-      const connectionRef = db.collection('connections').doc(uid).collection('connected').doc(connectionId);
-      if (await connectionRef.get()) {
-        await connectionRef.delete();
-      }
-
-      const sec_connectionRef = db.collection('connections').doc(connectionId).collection('connected').doc(uid);
-      if (await sec_connectionRef.get()) {
-        await sec_connectionRef.delete();
-      }
-  
-      return res.status(200).json({ message: 'Connection removed successfully' });
-    } catch (error) {
-
-      console.error('Error removing connection:', error);
-
-      return res.status(500).json({ message: 'Failed to remove connection' });
-    }
-}
 
 exports.getNetworkInfo = async (req, res) => {
   try {
