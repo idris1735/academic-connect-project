@@ -4,6 +4,7 @@ import { StreamChatProvider } from '@/components/StreamChatProvider'
 import MessagingPopup from '@/components/MessagingPopup'
 import { Toaster } from '@/components/ui/toaster'
 import ClientLayout from '@/components/ClientLayout'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,11 +17,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang='en'>
       <body className={inter.className}>
-        <StreamChatProvider>
-          <ClientLayout>{children}</ClientLayout>
-          <MessagingPopup />
-          <Toaster />
-        </StreamChatProvider>
+        <ErrorBoundary>
+          <StreamChatProvider>
+            <ClientLayout>{children}</ClientLayout>
+            <MessagingPopup />
+            <Toaster />
+          </StreamChatProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
