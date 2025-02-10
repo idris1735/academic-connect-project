@@ -1,47 +1,151 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { institutionTypes, nigerianInstitutions } from '@/data/institutions'
-import { Button } from '@/components/ui/button'
+import { useState, useMemo } from 'react'
+import { motion } from 'framer-motion'
+import {
+  Loader2,
+  Building2,
+  Upload,
+  School,
+  Info,
+  HelpCircle,
+} from 'lucide-react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Card, CardHeader, CardContent, CardFooter } from '../ui/card'
+import { Progress } from '../ui/progress'
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useToast } from '@/components/ui/use-toast'
-import { getUniqueStates } from '@/lib/utils/formHelpers'
-import { useSignupStore } from '@/lib/store/signupStore'
-import { Loader2 } from 'lucide-react'
-import { accessCodeService } from '@/lib/services/accessCodeService'
+} from '../ui/select'
+import { useToast } from '../ui/use-toast'
+import { useSignupStore } from '../../lib/store/signupStore'
+import { BackButton } from '../ui/back-button'
+import { institutionTypes, nigerianInstitutions } from '../../data/institutions'
+import { getUniqueStates } from '../../lib/utils/formHelpers'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog'
 
-export default function InstitutionForm() {
+const commonDepartments = [
+  // Faculty of Engineering
+  { code: 'CSE', name: 'Computer Science & Engineering' },
+  { code: 'EEE', name: 'Electrical & Electronic Engineering' },
+  { code: 'MCE', name: 'Mechanical Engineering' },
+  { code: 'CVE', name: 'Civil Engineering' },
+  { code: 'CHE', name: 'Chemical Engineering' },
+  { code: 'PME', name: 'Petroleum Engineering' },
+  { code: 'BME', name: 'Biomedical Engineering' },
+  { code: 'AEE', name: 'Agricultural Engineering' },
+
+  // Faculty of Sciences
+  { code: 'PHY', name: 'Physics' },
+  { code: 'CHM', name: 'Chemistry' },
+  { code: 'MTH', name: 'Mathematics' },
+  { code: 'BIO', name: 'Biological Sciences' },
+  { code: 'BCH', name: 'Biochemistry' },
+  { code: 'MCB', name: 'Microbiology' },
+  { code: 'STA', name: 'Statistics' },
+  { code: 'GEO', name: 'Geology' },
+
+  // Faculty of Medicine
+  { code: 'MED', name: 'Medicine & Surgery' },
+  { code: 'DNS', name: 'Dentistry' },
+  { code: 'PHA', name: 'Pharmacy' },
+  { code: 'NUR', name: 'Nursing Science' },
+  { code: 'PHY', name: 'Physiotherapy' },
+  { code: 'RAD', name: 'Radiography' },
+
+  // Faculty of Arts
+  { code: 'ENG', name: 'English Language & Literature' },
+  { code: 'HIS', name: 'History & International Studies' },
+  { code: 'LIN', name: 'Linguistics & African Languages' },
+  { code: 'PHL', name: 'Philosophy' },
+  { code: 'REL', name: 'Religious Studies' },
+  { code: 'THR', name: 'Theatre Arts' },
+
+  // Faculty of Social Sciences
+  { code: 'ECO', name: 'Economics' },
+  { code: 'SOC', name: 'Sociology' },
+  { code: 'PSY', name: 'Psychology' },
+  { code: 'POS', name: 'Political Science' },
+  { code: 'MAS', name: 'Mass Communication' },
+  { code: 'GEO', name: 'Geography' },
+
+  // Faculty of Management Sciences
+  { code: 'ACC', name: 'Accounting' },
+  { code: 'BUS', name: 'Business Administration' },
+  { code: 'BNF', name: 'Banking & Finance' },
+  { code: 'MKT', name: 'Marketing' },
+  { code: 'HRM', name: 'Human Resource Management' },
+
+  // Faculty of Education
+  { code: 'EDU', name: 'Education Administration' },
+  { code: 'GES', name: 'Guidance & Counselling' },
+  { code: 'EDE', name: 'Early Childhood Education' },
+  { code: 'SED', name: 'Special Education' },
+
+  // Faculty of Environmental Sciences
+  { code: 'ARC', name: 'Architecture' },
+  { code: 'BLD', name: 'Building Technology' },
+  { code: 'QSV', name: 'Quantity Surveying' },
+  { code: 'URP', name: 'Urban & Regional Planning' },
+
+  // Faculty of Agriculture
+  { code: 'AGR', name: 'Agricultural Science' },
+  { code: 'AGE', name: 'Agricultural Economics' },
+  { code: 'FST', name: 'Food Science & Technology' },
+  { code: 'AGX', name: 'Agricultural Extension' },
+]
+
+const validateInstitutionalEmail = (email, institution) => {
+  if (!email) return false
+
+  // Get institution domain from selected institution
+  const selectedInstitution = nigerianInstitutions.find(
+    (inst) => inst.abbreviation === institution
+  )
+
+  if (!selectedInstitution?.emailDomain) return false
+
+  // Check if email ends with the institution's domain
+  const emailDomain = email.split('@')[1]
+  return (
+    emailDomain?.toLowerCase() === selectedInstitution.emailDomain.toLowerCase()
+  )
+}
+
+export function InstitutionForm() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
   const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const { setStep, updateFormData, subOption } = useSignupStore((state) => ({
-    setStep: state.setStep,
-    updateFormData: state.updateFormData,
-    subOption: state.subOption,
-  }))
+
+  const { setStep, updateFormData, subOption } = useSignupStore()
 
   const [formData, setFormData] = useState({
-    // Basic Institution Info
     institutionType: '',
     state: '',
     institution: '',
-
-    // Staff Fields
     staffName: '',
     staffEmail: '',
     department: '',
     position: '',
     staffId: '',
     accessCode: '',
-
-    // Admin Fields
     adminName: '',
     officialEmail: '',
     institutionLogo: null,
@@ -49,6 +153,8 @@ export default function InstitutionForm() {
     website: '',
     adminAccessCode: '',
   })
+
+  const [emailError, setEmailError] = useState('')
 
   // Filter institutions based on type and state
   const filteredInstitutions = useMemo(() => {
@@ -73,440 +179,620 @@ export default function InstitutionForm() {
     return selectedInstitution?.departments || []
   }, [formData.institution])
 
-  const validateEmail = (email, type) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return 'Please enter a valid email address'
-    }
-
-    const institution = nigerianInstitutions.find(
-      (inst) => inst.abbreviation === formData.institution
-    )
-
-    if (!institution?.domains?.some((domain) => email.endsWith(domain))) {
-      return `Please use an official ${
-        institution?.name || 'institution'
-      } email address`
-    }
-
-    return null
-  }
-
-  const validateAccessCode = async () => {
-    const code =
-      subOption === 'Admin' ? formData.adminAccessCode : formData.accessCode
-    if (!code) return 'Access code is required'
-
-    try {
-      const result = await accessCodeService.validateCode(
-        code,
-        formData.institutionType,
-        subOption.toLowerCase(),
-        formData.institution
-      )
-
-      if (!result.valid) {
-        return result.message || 'Invalid access code'
-      }
-
-      return null
-    } catch (error) {
-      return 'Error validating access code'
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+
+    if (subOption === 'Staff' && emailError) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please use your institutional email address',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsLoading(true)
 
     try {
-      // Basic validation
-      if (
-        !formData.institutionType ||
-        !formData.state ||
-        !formData.institution
-      ) {
-        throw new Error('Please select your institution details')
+      // Simulate form submission with progress
+      for (let i = 0; i <= 100; i += 20) {
+        setProgress(i)
+        await new Promise((resolve) => setTimeout(resolve, 100))
       }
 
-      // Validate based on subOption
-      if (subOption === 'Admin') {
-        if (
-          !formData.adminName ||
-          !formData.officialEmail ||
-          !formData.adminAccessCode
-        ) {
-          throw new Error('Please fill in all administrator details')
-        }
-
-        const emailError = validateEmail(formData.officialEmail, 'admin')
-        if (emailError) throw new Error(emailError)
-      } else {
-        if (
-          !formData.staffName ||
-          !formData.staffEmail ||
-          !formData.department ||
-          !formData.accessCode
-        ) {
-          throw new Error('Please fill in all staff details')
-        }
-
-        const emailError = validateEmail(formData.staffEmail, 'staff')
-        if (emailError) throw new Error(emailError)
-      }
-
-      // Validate access code
-      const accessCodeError = await validateAccessCode()
-      if (accessCodeError) throw new Error(accessCodeError)
-
-      // Update global state
       updateFormData(formData)
-
-      // Move to next step
       setStep(4)
+
+      toast({
+        title: 'Success',
+        description: 'Your information has been saved successfully',
+      })
     } catch (error) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: 'Failed to save your information. Please try again.',
         variant: 'destructive',
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+      setProgress(0)
     }
   }
 
-  // Add this function to show demo codes
-  const showDemoCodes = () => {
-    toast({
-      title: 'Demo Access Codes 🔑',
-      description: (
-        <div className='mt-2 space-y-2'>
-          <p className='font-semibold'>For Testing Purposes:</p>
-          <div className='text-sm space-y-1'>
-            <p>🏛️ Universities:</p>
-            <p className='pl-2'>
-              Admin:{' '}
-              <code className='bg-muted px-1 rounded'>INST-ADMIN-2024</code>
-            </p>
-            <p className='pl-2'>
-              Staff:{' '}
-              <code className='bg-muted px-1 rounded'>INST-STAFF-2024</code>
-            </p>
-            <p className='pl-2 text-xs text-muted-foreground'>
-              Email format: staff@unilag.edu.ng, admin@ui.edu.ng
-            </p>
-          </div>
-          <div className='text-sm space-y-1'>
-            <p>🎓 Institution-Specific:</p>
-            <p className='pl-2'>
-              UNILAG Admin:{' '}
-              <code className='bg-muted px-1 rounded'>UNILAG-ADMIN-24</code>
-            </p>
-            <p className='pl-2'>
-              UI Staff:{' '}
-              <code className='bg-muted px-1 rounded'>UI-STAFF-24</code>
-            </p>
-          </div>
-          <p className='text-xs text-muted-foreground mt-2'>
-            Click to copy any code
-          </p>
-        </div>
-      ),
-      duration: 10000, // Show for 10 seconds
-    })
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFormData((prev) => ({ ...prev, institutionLogo: file }))
+    }
   }
 
-  // Add this useEffect to show the toast when component mounts
-  useEffect(() => {
-    showDemoCodes()
-  }, [])
+  const handleEmailChange = (e) => {
+    const email = e.target.value
+    setFormData((prev) => ({
+      ...prev,
+      staffEmail: email,
+    }))
 
-  return (
-    <form className='space-y-6' onSubmit={handleSubmit}>
-      <div className='space-y-4'>
-        <div className='flex justify-between items-center'>
-          <h2 className='text-lg font-semibold'>
-            {subOption === 'Admin'
-              ? 'Institution Administrator Setup'
-              : 'Staff Registration'}
-          </h2>
+    // Clear error when empty
+    if (!email) {
+      setEmailError('')
+      return
+    }
+
+    // Get selected institution's domain
+    const selectedInstitution = nigerianInstitutions.find(
+      (inst) => inst.abbreviation === formData.institution
+    )
+
+    if (!selectedInstitution?.emailDomain) {
+      setEmailError('Please select an institution first')
+      return
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address')
+      return
+    }
+
+    // Get domain from email
+    const emailDomain = email.split('@')[1]?.toLowerCase()
+    const institutionDomain = selectedInstitution.emailDomain.toLowerCase()
+
+    // Check if email matches institution domain
+    if (!emailDomain?.endsWith(institutionDomain)) {
+      setEmailError(`Email must be from ${institutionDomain}`)
+      return
+    }
+
+    // Clear error if all validations pass
+    setEmailError('')
+  }
+
+  const InfoModal = ({ title, children, trigger }) => (
+    <Dialog>
+      <DialogTrigger asChild>
+        {trigger || (
           <Button
-            type='button'
             variant='ghost'
             size='sm'
-            onClick={showDemoCodes}
-            className='text-muted-foreground hover:text-primary'
+            className='group flex items-center gap-1 px-2 py-1 hover:bg-indigo-50 rounded-md transition-colors'
           >
-            Show Demo Codes
+            <Info className='h-4 w-4 text-indigo-600' />
+            <span className='text-xs text-indigo-600 group-hover:underline'>
+              Help
+            </span>
           </Button>
-        </div>
-        <p className='text-sm text-muted-foreground'>
-          {subOption === 'Admin'
-            ? 'Set up your institution administrator account'
-            : 'Register as a staff member of your institution'}
-        </p>
-      </div>
+        )}
+      </DialogTrigger>
+      <DialogContent className='sm:max-w-[425px]'>
+        <DialogHeader>
+          <DialogTitle className='flex items-center gap-2 text-indigo-600'>
+            <Info className='h-5 w-5' />
+            {title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className='bg-indigo-50/50 rounded-lg'>{children}</div>
+      </DialogContent>
+    </Dialog>
+  )
 
-      {/* Institution Selection Section */}
-      <div className='space-y-4'>
-        <h3 className='text-sm font-medium'>Institution Details</h3>
-
-        <Select
-          value={formData.institutionType}
-          onValueChange={(value) => {
-            setFormData((prev) => ({
-              ...prev,
-              institutionType: value,
-              institution: '',
-              department: '',
-            }))
-          }}
+  // Add this new component for field tooltips
+  const FieldTooltip = ({ content }) => (
+    <TooltipProvider>
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-5 w-5 p-0 hover:bg-indigo-50 rounded-full'
+          >
+            <HelpCircle className='h-4 w-4 text-indigo-400 hover:text-indigo-600' />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent
+          side='right'
+          className='bg-indigo-600 text-white border-indigo-600'
         >
-          <SelectTrigger>
-            <SelectValue placeholder='Select Institution Type' />
-          </SelectTrigger>
-          <SelectContent className='max-h-[200px] overflow-y-auto'>
-            {institutionTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <p className='text-sm'>{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
 
-        <Select
-          value={formData.state}
-          onValueChange={(value) => {
-            setFormData((prev) => ({
-              ...prev,
-              state: value,
-              institution: '',
-              department: '',
-            }))
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder='Select State' />
-          </SelectTrigger>
-          <SelectContent className='max-h-[200px] overflow-y-auto'>
-            <SelectItem key='all-states' value='all'>
-              All States
-            </SelectItem>
-            {getUniqueStates().map((state) => (
-              <SelectItem key={state} value={state}>
-                {state}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className='w-full max-w-md mx-auto p-6'
+    >
+      <Card className='relative overflow-hidden border-none shadow-lg'>
+        {isLoading && (
+          <Progress
+            value={progress}
+            className='absolute top-0 left-0 right-0 h-1 rounded-none bg-indigo-100'
+          />
+        )}
 
-        <Select
-          value={formData.institution}
-          onValueChange={(value) => {
-            setFormData((prev) => ({
-              ...prev,
-              institution: value,
-              department: '',
-            }))
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder='Select an Institution' />
-          </SelectTrigger>
-          <SelectContent className='max-h-[200px] overflow-y-auto'>
-            {filteredInstitutions.length > 0 ? (
-              filteredInstitutions.map((inst) => (
-                <SelectItem key={inst.abbreviation} value={inst.abbreviation}>
-                  {inst.name}
-                </SelectItem>
-              ))
+        <CardHeader className='space-y-6 pb-2 pt-8'>
+          <BackButton onClick={() => setStep(2)} disabled={isLoading} />
+
+          <div className='mx-auto w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center transition-transform hover:scale-105'>
+            {subOption === 'Admin' ? (
+              <Building2 className='h-8 w-8 text-indigo-600' />
             ) : (
-              <SelectItem key='no-institutions' value='none' disabled>
-                No institutions found
-              </SelectItem>
+              <School className='h-8 w-8 text-indigo-600' />
             )}
-          </SelectContent>
-        </Select>
-      </div>
+          </div>
 
-      {/* Admin/Staff Specific Fields */}
-      {formData.institution && (
-        <div className='space-y-4'>
-          <h3 className='text-sm font-medium'>
-            {subOption === 'Admin' ? 'Administrator Details' : 'Staff Details'}
-          </h3>
+          <div className='space-y-2 text-center'>
+            <h2 className='text-2xl font-bold tracking-tight text-gray-900'>
+              {subOption === 'Admin'
+                ? 'Institution Setup'
+                : 'Staff Registration'}
+            </h2>
+            <p className='text-sm text-gray-500'>
+              {subOption === 'Admin'
+                ? 'Set up your institution profile'
+                : 'Complete your staff registration'}
+            </p>
+          </div>
+        </CardHeader>
 
-          {subOption === 'Admin' ? (
-            // Admin Fields
-            <>
-              <div className='space-y-2'>
-                <Label htmlFor='adminName'>Full Name</Label>
-                <Input
-                  id='adminName'
-                  value={formData.adminName}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      adminName: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter your full name'
-                />
+        <CardContent className='px-8 pb-8 pt-4'>
+          <form onSubmit={handleSubmit} className='space-y-6'>
+            {/* Institution Selection Section */}
+            <div className='space-y-4'>
+              <div className='flex items-center justify-between'>
+                <h3 className='text-sm font-semibold text-gray-900'>
+                  Institution Details
+                </h3>
+                <InfoModal title='Institution Selection Guide'>
+                  <div className='space-y-4 p-6 text-sm text-gray-600'>
+                    <p className='font-medium text-indigo-600'>
+                      Follow these steps to find your institution:
+                    </p>
+                    <ol className='list-decimal pl-4 space-y-3'>
+                      <li className='pl-2'>
+                        <span className='font-medium'>
+                          Select institution type
+                        </span>
+                        <p className='text-gray-500 mt-1'>
+                          Choose from University, College, or other categories
+                        </p>
+                      </li>
+                      <li className='pl-2'>
+                        <span className='font-medium'>Choose your state</span>
+                        <p className='text-gray-500 mt-1'>
+                          Select your state or view all institutions
+                        </p>
+                      </li>
+                      <li className='pl-2'>
+                        <span className='font-medium'>
+                          Find your institution
+                        </span>
+                        <p className='text-gray-500 mt-1'>
+                          Select from the filtered list of institutions
+                        </p>
+                      </li>
+                    </ol>
+                    <div className='mt-6 p-3 bg-amber-50 rounded-md border border-amber-200'>
+                      <p className='text-amber-700 text-xs'>
+                        Can't find your institution? Use the "Request
+                        Institution Registration" option below.
+                      </p>
+                    </div>
+                  </div>
+                </InfoModal>
               </div>
 
-              <div className='space-y-2'>
-                <Label htmlFor='officialEmail'>Official Email</Label>
-                <Input
-                  id='officialEmail'
-                  type='email'
-                  value={formData.officialEmail}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      officialEmail: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter your institutional email'
-                />
-              </div>
+              <div className='space-y-4'>
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <Label htmlFor='institutionType'>Institution Type</Label>
+                    <FieldTooltip content='Select the category that best describes your institution' />
+                  </div>
+                  <Select
+                    value={formData.institutionType}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        institutionType: value,
+                        institution: '',
+                        department: '',
+                      }))
+                    }
+                  >
+                    <SelectTrigger className='h-12 border-2 focus:border-indigo-600'>
+                      <SelectValue placeholder='Select Institution Type' />
+                    </SelectTrigger>
+                    <SelectContent className='max-h-[300px] overflow-y-auto'>
+                      {institutionTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className='space-y-2'>
-                <Label htmlFor='adminAccessCode'>
-                  Administrator Access Code
-                </Label>
-                <Input
-                  id='adminAccessCode'
-                  value={formData.adminAccessCode}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      adminAccessCode: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter administrator access code'
-                />
-              </div>
-            </>
-          ) : (
-            // Staff Fields
-            <>
-              <div className='space-y-2'>
-                <Label htmlFor='staffName'>Full Name</Label>
-                <Input
-                  id='staffName'
-                  value={formData.staffName}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      staffName: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter your full name'
-                />
-              </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='state'>State</Label>
+                  <Select
+                    value={formData.state}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        state: value,
+                        institution: '',
+                        department: '',
+                      }))
+                    }
+                  >
+                    <SelectTrigger className='h-12 border-2 focus:border-indigo-600'>
+                      <SelectValue placeholder='Select State' />
+                    </SelectTrigger>
+                    <SelectContent className='max-h-[300px] overflow-y-auto'>
+                      <SelectItem value='all'>All States</SelectItem>
+                      {getUniqueStates().map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className='space-y-2'>
-                <Label htmlFor='staffEmail'>Institutional Email</Label>
-                <Input
-                  id='staffEmail'
-                  type='email'
-                  value={formData.staffEmail}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      staffEmail: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter your institutional email'
-                />
+                <div className='space-y-2'>
+                  <Label htmlFor='institution'>Institution</Label>
+                  <Select
+                    value={formData.institution}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        institution: value,
+                        department: '',
+                      }))
+                    }
+                  >
+                    <SelectTrigger className='h-12 border-2 focus:border-indigo-600'>
+                      <SelectValue placeholder='Select an Institution' />
+                    </SelectTrigger>
+                    <SelectContent className='max-h-[300px] overflow-y-auto'>
+                      {filteredInstitutions.map((inst) => (
+                        <SelectItem
+                          key={inst.abbreviation}
+                          value={inst.abbreviation}
+                        >
+                          {inst.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+            </div>
 
-              <Select
-                value={formData.department}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, department: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select Department' />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.code} value={dept.code}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {formData.institution && (
+              <div className='space-y-6'>
+                <div className='flex items-center justify-between'>
+                  <h3 className='text-sm font-semibold text-gray-900'>
+                    {subOption === 'Admin'
+                      ? 'Administrator Details'
+                      : 'Staff Details'}
+                  </h3>
+                  <InfoModal
+                    title={`${
+                      subOption === 'Admin' ? 'Administrator' : 'Staff'
+                    } Registration Guide`}
+                    trigger={
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='group flex items-center gap-1 px-2 py-1 hover:bg-indigo-50 rounded-md transition-colors'
+                      >
+                        <Info className='h-4 w-4 text-indigo-600' />
+                        <span className='text-xs text-indigo-600 group-hover:underline'>
+                          View Requirements
+                        </span>
+                      </Button>
+                    }
+                  >
+                    <div className='space-y-4 p-4 text-sm text-gray-600'>
+                      {subOption === 'Admin' ? (
+                        <>
+                          <p>As an administrator, you will:</p>
+                          <ul className='list-disc pl-4 space-y-2'>
+                            <li>Manage your institution's profile</li>
+                            <li>Add and verify staff members</li>
+                            <li>Control access permissions</li>
+                            <li>Manage institutional resources</li>
+                          </ul>
+                          <p className='mt-4 text-xs text-gray-500'>
+                            Make sure you have the administrator access code
+                            from your institution.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p>As a staff member, you will need:</p>
+                          <ul className='list-disc pl-4 space-y-2'>
+                            <li>Your institutional email address</li>
+                            <li>Valid staff ID</li>
+                            <li>Department information</li>
+                            <li>Staff access code from your administrator</li>
+                          </ul>
+                          <p className='mt-4 text-xs text-gray-500'>
+                            Contact your institution's administrator if you need
+                            an access code.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </InfoModal>
+                </div>
 
-              <div className='space-y-2'>
-                <Label htmlFor='position'>Position</Label>
-                <Input
-                  id='position'
-                  value={formData.position}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      position: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter your position'
-                />
+                {subOption === 'Admin' ? (
+                  // Admin Fields with tooltips
+                  <>
+                    <div className='space-y-2'>
+                      <Label htmlFor='adminName'>Full Name</Label>
+                      <Input
+                        id='adminName'
+                        value={formData.adminName}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            adminName: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., Prof. John A. Smith'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='officialEmail'>Official Email</Label>
+                      <Input
+                        id='officialEmail'
+                        type='email'
+                        value={formData.officialEmail}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            officialEmail: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., john.smith@unilag.edu.ng'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='institutionLogo'>Institution Logo</Label>
+                      <div className='relative'>
+                        <Input
+                          id='institutionLogo'
+                          type='file'
+                          onChange={handleFileChange}
+                          accept='image/*'
+                          className='h-12 text-base border-2 border-dashed focus:border-indigo-600 transition-colors'
+                        />
+                        <Upload className='absolute right-3 top-3 h-5 w-5 text-gray-400' />
+                      </div>
+                    </div>
+
+                    <div className='space-y-2'>
+                      <div className='flex items-center justify-between'>
+                        <Label htmlFor='adminAccessCode'>Access Code</Label>
+                        <FieldTooltip content='Enter the administrator verification code provided by the system' />
+                      </div>
+                      <Input
+                        id='adminAccessCode'
+                        value={formData.adminAccessCode}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            adminAccessCode: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., ADMIN-2024-XXXX'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+                  </>
+                ) : (
+                  // Staff Fields with tooltips
+                  <>
+                    <div className='space-y-2'>
+                      <Label htmlFor='staffName'>Full Name</Label>
+                      <Input
+                        id='staffName'
+                        value={formData.staffName}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            staffName: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., Dr. Sarah Johnson'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='staffEmail'>
+                        Institutional Email
+                        {emailError && (
+                          <span className='text-xs text-red-500 ml-2'>
+                            {emailError}
+                          </span>
+                        )}
+                      </Label>
+                      <Input
+                        id='staffEmail'
+                        type='email'
+                        value={formData.staffEmail}
+                        onChange={handleEmailChange}
+                        placeholder={`e.g., staff@${formData.institution?.toLowerCase()}.edu.ng`}
+                        className={`h-12 text-base border-2 transition-colors ${
+                          emailError
+                            ? 'border-red-300 focus:border-red-500'
+                            : 'focus:border-indigo-600'
+                        }`}
+                      />
+                      {emailError && (
+                        <p className='text-xs text-red-500 mt-1'>
+                          {emailError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='department'>Department</Label>
+                      <Select
+                        value={formData.department}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            department: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className='h-12 border-2 focus:border-indigo-600'>
+                          <SelectValue placeholder='Select your department' />
+                        </SelectTrigger>
+                        <SelectContent
+                          className='max-h-[280px] overflow-y-auto'
+                          position='popper'
+                          sideOffset={5}
+                        >
+                          <div className='p-2'>
+                            <div className='grid grid-cols-1 gap-1'>
+                              {commonDepartments.map((dept) => (
+                                <SelectItem
+                                  key={dept.code}
+                                  value={dept.code}
+                                  className='py-2.5 px-3 rounded-md cursor-pointer hover:bg-indigo-50 focus:bg-indigo-50 transition-colors'
+                                >
+                                  <div className='flex flex-col'>
+                                    <span className='font-medium text-gray-900'>
+                                      {dept.name}
+                                    </span>
+                                    <span className='text-xs text-gray-500'>
+                                      {dept.code}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </div>
+                          </div>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='position'>Position</Label>
+                      <Input
+                        id='position'
+                        value={formData.position}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            position: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., Associate Professor of Computer Science'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+
+                    <div className='space-y-2'>
+                      <Label htmlFor='staffId'>Staff ID</Label>
+                      <Input
+                        id='staffId'
+                        value={formData.staffId}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            staffId: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., UNILAG/STAFF/2023/001'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+
+                    <div className='space-y-2'>
+                      <div className='flex items-center justify-between'>
+                        <Label htmlFor='accessCode'>Access Code</Label>
+                        <FieldTooltip content='Enter the staff access code provided by your administrator' />
+                      </div>
+                      <Input
+                        id='accessCode'
+                        value={formData.accessCode}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            accessCode: e.target.value,
+                          }))
+                        }
+                        placeholder='e.g., STAFF-2024-XXXX'
+                        className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                      />
+                    </div>
+                  </>
+                )}
               </div>
+            )}
+          </form>
+        </CardContent>
 
-              <div className='space-y-2'>
-                <Label htmlFor='staffId'>Staff ID</Label>
-                <Input
-                  id='staffId'
-                  value={formData.staffId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      staffId: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter your staff ID'
-                />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='accessCode'>Access Code</Label>
-                <Input
-                  id='accessCode'
-                  value={formData.accessCode}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      accessCode: e.target.value,
-                    }))
-                  }
-                  placeholder='Enter staff access code'
-                />
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      <div className='flex gap-4 pt-4'>
-        <Button
-          type='button'
-          variant='outline'
-          onClick={() => setStep((prev) => prev - 1)}
-        >
-          Back
-        </Button>
-        <Button type='submit' disabled={loading} className='flex-1'>
-          {loading ? (
-            <>
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              Submitting...
-            </>
-          ) : (
-            'Continue'
-          )}
-        </Button>
-      </div>
-    </form>
+        <CardFooter className='flex flex-col gap-4 px-8 pb-8'>
+          <Button
+            onClick={handleSubmit}
+            className='w-full h-12 bg-transparent border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm hover:shadow-indigo-100'
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className='mr-2 h-5 w-5 animate-spin' />
+                Processing...
+              </>
+            ) : (
+              'Continue'
+            )}
+          </Button>
+          <p className='text-xs text-center text-gray-500'>
+            Your information helps us verify your institutional affiliation
+          </p>
+        </CardFooter>
+      </Card>
+    </motion.div>
   )
 }
+
+export default InstitutionForm

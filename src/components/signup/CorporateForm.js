@@ -3,24 +3,46 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Textarea } from '../ui/textarea'
+import { Card, CardHeader, CardContent, CardFooter } from '../ui/card'
+import { Progress } from '../ui/progress'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/components/ui/use-toast'
-import { useSignupStore } from '@/lib/store/signupStore'
+} from '../ui/select'
+import { useToast } from '../ui/use-toast'
+import { useSignupStore } from '../../lib/store/signupStore'
+import { BackButton } from '../ui/back-button'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_FILE_TYPES = ['.pdf', '.doc', '.docx', '.jpg', '.png']
+
+// Add organization types
+const organizationTypes = [
+  { id: 'government', label: 'Government Agency' },
+  { id: 'private', label: 'Private Company' },
+  { id: 'ngo', label: 'Non-Governmental Organization' },
+  { id: 'research', label: 'Research Institute' },
+  { id: 'other', label: 'Other' },
+]
+
+// Add industry types
+const industryTypes = [
+  { id: 'technology', label: 'Technology' },
+  { id: 'healthcare', label: 'Healthcare' },
+  { id: 'education', label: 'Education' },
+  { id: 'finance', label: 'Finance' },
+  { id: 'manufacturing', label: 'Manufacturing' },
+  { id: 'energy', label: 'Energy' },
+  { id: 'agriculture', label: 'Agriculture' },
+  { id: 'other', label: 'Other' },
+]
 
 export function CorporateForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -245,24 +267,17 @@ export function CorporateForm() {
           />
         )}
 
-        <CardHeader>
-          <Button
-            variant='ghost'
-            className='absolute left-2 top-2'
-            onClick={() => setStep(2)}
-            disabled={isLoading}
-          >
-            <ArrowLeft className='h-4 w-4' />
-            <span className='sr-only'>Go back</span>
-          </Button>
+        <CardHeader className='space-y-6'>
+          <BackButton onClick={() => setStep(2)} disabled={isLoading} />
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className='space-y-2'
+            className='space-y-2 pt-4'
           >
             <h2 className='text-2xl font-bold tracking-tight'>
               {subOption === 'Admin'
-                ? 'Corporate/Government Admin Registration'
+                ? 'Corporate Setup'
                 : 'Employee Registration'}
             </h2>
             <p className='text-sm text-muted-foreground'>
@@ -291,15 +306,17 @@ export function CorporateForm() {
             <div className='space-y-2'>
               <Label htmlFor='organizationType'>Organization Type</Label>
               <Select
-                onValueChange={handleSelectChange('organizationType')}
                 value={form.organizationType}
+                onValueChange={(value) =>
+                  setForm((prev) => ({ ...prev, organizationType: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder='Select organization type' />
                 </SelectTrigger>
                 <SelectContent>
                   {organizationTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
+                    <SelectItem key={type.id} value={type.id}>
                       {type.label}
                     </SelectItem>
                   ))}
@@ -310,15 +327,23 @@ export function CorporateForm() {
             {/* Industry */}
             <div className='space-y-2'>
               <Label htmlFor='industry'>Industry</Label>
-              <Input
-                id='industry'
-                name='industry'
+              <Select
                 value={form.industry}
-                onChange={handleInputChange}
-                placeholder='Enter industry or sector'
-                required
-                disabled={isLoading}
-              />
+                onValueChange={(value) =>
+                  setForm((prev) => ({ ...prev, industry: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select industry' />
+                </SelectTrigger>
+                <SelectContent>
+                  {industryTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Admin-Specific Fields */}

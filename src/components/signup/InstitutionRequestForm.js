@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useToast } from '@/components/ui/use-toast'
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { useToast } from '../ui/use-toast'
+import { Card, CardHeader, CardContent, CardTitle } from '../ui/card'
 
 export function InstitutionRequestForm() {
   const [formData, setFormData] = useState({

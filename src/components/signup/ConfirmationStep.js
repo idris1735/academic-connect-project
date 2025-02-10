@@ -1,167 +1,66 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Loader2 } from 'lucide-react'
-import { useSignupStore } from '@/lib/store/signupStore'
-import { nigerianInstitutions } from '@/data/institutions'
-import { useToast } from '@/components/ui/use-toast'
-import { authApi } from '@/lib/api/auth'
+import { Card, CardHeader, CardContent, CardFooter } from '../ui/card'
+import { Button } from '../ui/button'
+import { BackButton } from '../ui/back-button'
+import { CheckCircle2, Loader2, FileText, Building2, User2 } from 'lucide-react'
+import { useSignupStore } from '../../lib/store/signupStore'
+import { useToast } from '../ui/use-toast'
 
-const ConfirmationStep = ({ formData = {}, onBack }) => {
-  const router = useRouter()
+export function ConfirmationStep() {
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const { userType, subOption, resetStore } = useSignupStore()
+  const { formData, userType, subOption, setStep } = useSignupStore()
 
-  const handleConfirm = async () => {
-    setLoading(true)
+  const handleSubmit = async () => {
+    setIsLoading(true)
     try {
-      const signupData = {
-        ...formData,
-        userType,
-        subOption,
-        password: formData.password || formData.confirmPassword, // Ensure password is included
-      }
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      console.log('Submitting signup data:', signupData) // Debug log
+      toast({
+        title: 'Registration Successful',
+        description: 'Your account has been created successfully.',
+      })
 
-      const response = await authApi.signup(signupData)
-
-      if (response.user) {
-        toast({
-          title: 'Success!',
-          description: 'Account created successfully.',
-        })
-        resetStore()
-        router.push('/feeds')
-      } else {
-        throw new Error('No user data received')
-      }
+      // Redirect to dashboard or login
     } catch (error) {
-      console.error('Confirmation error:', error)
       toast({
         title: 'Error',
-        description:
-          error.message || 'Failed to create account. Please try again.',
+        description: 'Failed to complete registration. Please try again.',
         variant: 'destructive',
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const renderSummary = () => {
+  const getIcon = () => {
     switch (userType) {
       case 'individual':
-        return (
-          <div className='space-y-2'>
-            <p>Full Name: {formData?.fullName || 'Not provided'}</p>
-            <p>Email: {formData?.email || 'Not provided'}</p>
-            {formData?.occupation && <p>Occupation: {formData.occupation}</p>}
-            {formData?.researchInterests && (
-              <p>Research Interests: {formData.researchInterests}</p>
-            )}
-            {formData?.researchWorks && (
-              <p>
-                Research Works:{' '}
-                {Array.isArray(formData.researchWorks)
-                  ? formData.researchWorks.length
-                  : 0}{' '}
-                files uploaded
-              </p>
-            )}
-          </div>
-        )
-
+        return User2
       case 'corporate':
-        return (
-          <div className='space-y-2'>
-            <p>
-              Organization Name: {formData?.organizationName || 'Not provided'}
-            </p>
-            <p>
-              Organization Type: {formData?.organizationType || 'Not provided'}
-            </p>
-            <p>Industry: {formData?.industry || 'Not provided'}</p>
-            {subOption === 'Admin' ? (
-              <>
-                <p>Admin Name: {formData?.adminName || 'Not provided'}</p>
-                <p>
-                  Official Email: {formData?.officialEmail || 'Not provided'}
-                </p>
-                {formData?.logo && <p>Logo: Uploaded</p>}
-                {formData?.address && <p>Address: {formData.address}</p>}
-                {formData?.website && <p>Website: {formData.website}</p>}
-              </>
-            ) : (
-              <>
-                <p>Employee Name: {formData?.employeeName || 'Not provided'}</p>
-                <p>
-                  Employee Email: {formData?.employeeEmail || 'Not provided'}
-                </p>
-                <p>Job Title: {formData?.jobTitle || 'Not provided'}</p>
-                {formData?.department && (
-                  <p>Department: {formData.department}</p>
-                )}
-                <p>Access Code: {formData?.accessCode || 'Not provided'}</p>
-              </>
-            )}
-          </div>
-        )
-
       case 'institution':
-        return (
-          <div className='space-y-2'>
-            <p>
-              Institution Name:{' '}
-              {formData?.institution
-                ? nigerianInstitutions.find(
-                    (inst) => inst.abbreviation === formData.institution
-                  )?.name
-                : 'Not provided'}
-            </p>
-            <p>
-              Institution Type: {formData?.institutionType || 'Not provided'}
-            </p>
-            <p>
-              State:{' '}
-              {formData?.state === 'all'
-                ? 'All States'
-                : formData?.state || 'Not provided'}
-            </p>
-            {subOption === 'Admin' ? (
-              <>
-                <p>Admin Name: {formData?.adminName || 'Not provided'}</p>
-                <p>
-                  Official Email: {formData?.officialEmail || 'Not provided'}
-                </p>
-                <p>
-                  Administrator Access Code:{' '}
-                  {formData?.adminAccessCode || 'Not provided'}
-                </p>
-                {formData?.institutionLogo && <p>Logo: Uploaded</p>}
-                {formData?.address && <p>Address: {formData.address}</p>}
-                {formData?.website && <p>Website: {formData.website}</p>}
-              </>
-            ) : (
-              <>
-                <p>Staff Name: {formData?.staffName || 'Not provided'}</p>
-                <p>Staff Email: {formData?.staffEmail || 'Not provided'}</p>
-                <p>Department: {formData?.department || 'Not provided'}</p>
-                <p>Position: {formData?.position || 'Not provided'}</p>
-                <p>Staff ID: {formData?.staffId || 'Not provided'}</p>
-                <p>Access Code: {formData?.accessCode || 'Not provided'}</p>
-              </>
-            )}
-          </div>
-        )
-
+        return Building2
       default:
-        return <p>No summary available</p>
+        return CheckCircle2
+    }
+  }
+
+  const Icon = getIcon()
+
+  const formatRole = (subOption) => {
+    switch (subOption) {
+      case 'Admin':
+        return 'Administrator'
+      case 'Staff':
+        return 'Staff Member'
+      case 'Employee':
+        return 'Team Member'
+      default:
+        return subOption
     }
   }
 
@@ -171,51 +70,139 @@ const ConfirmationStep = ({ formData = {}, onBack }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className='w-full max-w-md mx-auto'
+      className='w-full max-w-md mx-auto p-6'
     >
-      <Card className='relative overflow-hidden'>
-        <CardHeader>
-          <Button
-            variant='ghost'
-            className='absolute left-2 top-2'
-            onClick={onBack}
-            disabled={loading}
-          >
-            <ArrowLeft className='h-4 w-4' />
-            <span className='sr-only'>Go back</span>
-          </Button>
-          <CardTitle>Confirm Your Details</CardTitle>
-          <p className='text-sm text-muted-foreground'>
-            Please review the information below before proceeding.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className='mt-4'>
-            <h3 className='font-semibold'>
-              {userType === 'individual'
-                ? 'Personal Information'
-                : userType === 'corporate'
-                ? `Organization ${subOption} Details`
-                : `Institution ${subOption} Details`}
-            </h3>
-            {renderSummary()}
+      <Card className='relative overflow-hidden border-none shadow-lg'>
+        <CardHeader className='space-y-6 pb-2 pt-8'>
+          <BackButton onClick={() => setStep(3)} disabled={isLoading} />
+
+          <div className='mx-auto w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center transition-transform hover:scale-105'>
+            <Icon className='h-8 w-8 text-indigo-600' />
           </div>
-          <div className='flex justify-between pt-4'>
-            <Button variant='outline' onClick={onBack} disabled={loading}>
-              Edit
-            </Button>
-            <Button onClick={handleConfirm} disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Creating Account...
-                </>
-              ) : (
-                'Confirm & Create Account'
-              )}
-            </Button>
+
+          <div className='space-y-2 text-center'>
+            <h2 className='text-2xl font-bold tracking-tight text-gray-900'>
+              Confirm Your Details
+            </h2>
+            <p className='text-sm text-gray-500'>
+              Please review your information before completing registration
+            </p>
+          </div>
+        </CardHeader>
+
+        <CardContent className='px-8 pb-8 pt-4'>
+          <div className='space-y-6'>
+            {/* Account Type */}
+            <div className='bg-gray-50 p-4 rounded-lg'>
+              <h3 className='font-semibold text-gray-900 mb-2'>Account Type</h3>
+              <div className='space-y-1'>
+                <p className='text-sm'>
+                  <span className='font-medium text-gray-700'>TYPE: </span>
+                  <span className='text-gray-900 font-semibold'>
+                    {userType.charAt(0).toUpperCase() + userType.slice(1)}
+                  </span>
+                </p>
+                {subOption && (
+                  <p className='text-sm'>
+                    <span className='font-medium text-gray-700'>Role: </span>
+                    <span className='text-gray-900 font-semibold'>
+                      {formatRole(subOption)}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <div className='space-y-4'>
+              <h3 className='font-semibold text-gray-900 mb-2'>
+                Basic Information
+              </h3>
+              <div className='grid gap-4'>
+                {Object.entries(formData)
+                  .filter(
+                    ([key, value]) =>
+                      !['researchWorks', 'logo', 'password'].includes(key) &&
+                      value
+                  )
+                  .map(([key, value]) => (
+                    <div
+                      key={key}
+                      className='flex justify-between items-center'
+                    >
+                      <p className='text-sm font-medium text-gray-700 capitalize'>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </p>
+                      <p className='text-sm font-semibold text-gray-900'>
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Uploaded Files */}
+            {(formData.researchWorks?.length > 0 || formData.logo) && (
+              <div className='space-y-4'>
+                <h3 className='font-semibold text-gray-900 mb-2'>
+                  Uploaded Files
+                </h3>
+                <div className='space-y-2 bg-gray-50 p-4 rounded-lg'>
+                  {formData.researchWorks?.map((file, index) => (
+                    <div
+                      key={index}
+                      className='flex items-center justify-between'
+                    >
+                      <div className='flex items-center space-x-2'>
+                        <FileText className='h-4 w-4 text-indigo-600' />
+                        <span className='text-sm font-medium text-gray-700'>
+                          Research Work {index + 1}:
+                        </span>
+                      </div>
+                      <span className='text-sm font-semibold text-gray-900'>
+                        {file.name}
+                      </span>
+                    </div>
+                  ))}
+                  {formData.logo && (
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center space-x-2'>
+                        <FileText className='h-4 w-4 text-indigo-600' />
+                        <span className='text-sm font-medium text-gray-700'>
+                          Organization Logo:
+                        </span>
+                      </div>
+                      <span className='text-sm font-semibold text-gray-900'>
+                        {formData.logo.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
+
+        <CardFooter className='flex flex-col gap-4 px-8 pb-8'>
+          <Button
+            onClick={handleSubmit}
+            className='w-full h-12 bg-transparent border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm hover:shadow-indigo-100'
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className='mr-2 h-5 w-5 animate-spin' />
+                Completing Registration...
+              </>
+            ) : (
+              'Complete Registration'
+            )}
+          </Button>
+          <p className='text-xs text-center text-gray-500'>
+            By completing registration, you agree to our Terms of Service and
+            Privacy Policy
+          </p>
+        </CardFooter>
       </Card>
     </motion.div>
   )

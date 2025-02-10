@@ -2,57 +2,55 @@
 
 import { motion } from 'framer-motion'
 import { CheckCircle2, Circle } from 'lucide-react'
-import { useSignupStore } from '@/lib/store/signupStore'
+import { useSignupStore } from '../../lib/store/signupStore'
 
 export function ProgressSteps() {
-  const { step, userType, subOption } = useSignupStore((state) => ({
-    step: state.step,
-    userType: state.userType,
-    subOption: state.subOption,
-  }))
+  const { step, userType, subOption } = useSignupStore()
 
-  // Dynamic steps based on user type and sub-option
-  const getSteps = () => {
-    const baseSteps = [
-      { id: 1, name: 'User Type' },
-      { id: 2, name: 'Email Verification' },
-    ]
-
-    // Add specific form step based on user type
-    if (userType === 'individual') {
-      baseSteps.push({ id: 3, name: 'Individual Details' })
-    } else if (userType === 'corporate') {
-      baseSteps.push({
-        id: 3,
-        name:
-          subOption === 'Admin' ? 'Organization Setup' : 'Organization Access',
-      })
-    } else if (userType === 'institution') {
-      baseSteps.push({
-        id: 3,
-        name:
-          subOption === 'Admin' ? 'Institution Setup' : 'Institution Access',
-      })
-    } else {
-      baseSteps.push({ id: 3, name: 'Account Details' })
+  const getStepTitle = (stepNumber) => {
+    switch (stepNumber) {
+      case 1:
+        return 'Account Type'
+      case 2:
+        return 'Email Verification'
+      case 3:
+        if (userType === 'individual') return 'Personal Details'
+        return subOption === 'Admin' ? 'Organization Setup' : 'Member Details'
+      case 4:
+        return 'Confirmation'
+      default:
+        return `Step ${stepNumber}`
     }
-
-    // Add confirmation step
-    baseSteps.push({ id: 4, name: 'Confirmation' })
-
-    return baseSteps
   }
 
-  const steps = getSteps()
+  const getStepDescription = (stepNumber) => {
+    switch (stepNumber) {
+      case 1:
+        return 'Choose your role'
+      case 2:
+        return 'Verify your email'
+      case 3:
+        if (userType === 'individual') return 'Complete your profile'
+        return subOption === 'Admin'
+          ? 'Setup organization'
+          : 'Complete your details'
+      case 4:
+        return 'Review and finish'
+      default:
+        return ''
+    }
+  }
+
+  const steps = [1, 2, 3, 4]
   const progress = ((step - 1) / (steps.length - 1)) * 100
 
   return (
-    <div className='w-full max-w-4xl mx-auto mb-8 px-4'>
+    <div className='w-full max-w-4xl mx-auto px-4 py-8'>
       <div className='relative'>
         {/* Progress Bar */}
-        <div className='absolute top-5 left-0 w-full h-0.5 bg-muted'>
+        <div className='absolute top-[1.625rem] left-0 w-full h-1 bg-gray-100 rounded-full'>
           <motion.div
-            className='absolute top-0 left-0 h-full bg-primary'
+            className='absolute top-0 left-0 h-full bg-indigo-600 rounded-full'
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -63,38 +61,54 @@ export function ProgressSteps() {
         <div className='relative flex justify-between'>
           {steps.map((s) => (
             <div
-              key={s.id}
+              key={s}
               className={`flex flex-col items-center ${
-                s.id <= step ? 'text-primary' : 'text-muted-foreground'
+                s <= step ? 'cursor-default' : 'cursor-not-allowed opacity-60'
               }`}
             >
               <motion.div
                 initial={false}
                 animate={{
-                  scale: s.id === step ? 1.2 : 1,
+                  scale: s === step ? 1.2 : 1,
                   transition: { type: 'spring', stiffness: 500, damping: 30 },
                 }}
                 className={`
-                  relative z-10 flex items-center justify-center w-10 h-10 rounded-full 
+                  relative z-10 flex items-center justify-center w-13 h-13 rounded-full 
+                  bg-white border-2 transition-all duration-200
                   ${
-                    s.id < step
-                      ? 'bg-primary text-primary-foreground'
-                      : s.id === step
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                    s < step
+                      ? 'border-indigo-600 text-indigo-600'
+                      : s === step
+                      ? 'border-indigo-600 text-indigo-600 shadow-md'
+                      : 'border-gray-200 text-gray-400'
                   }
-                  transition-colors duration-200
                 `}
               >
-                {s.id < step ? (
-                  <CheckCircle2 className='w-6 h-6' />
+                {s < step ? (
+                  <CheckCircle2 className='w-6 h-6 fill-current' />
                 ) : (
-                  <Circle className='w-6 h-6' />
+                  <div className='flex flex-col items-center justify-center'>
+                    <Circle className='w-6 h-6' />
+                    <div className='absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white border-2 border-current rounded-full' />
+                  </div>
                 )}
               </motion.div>
-              <div className='mt-2 text-sm font-medium text-center'>
-                <span className='hidden sm:block'>{s.name}</span>
-                <span className='sm:hidden'>{s.id}</span>
+
+              <div className='mt-4 space-y-1 text-center'>
+                <p
+                  className={`text-sm font-semibold ${
+                    s <= step ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  {getStepTitle(s)}
+                </p>
+                <p
+                  className={`text-xs ${
+                    s <= step ? 'text-gray-600' : 'text-gray-400'
+                  }`}
+                >
+                  {getStepDescription(s)}
+                </p>
               </div>
             </div>
           ))}

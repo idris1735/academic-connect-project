@@ -15,7 +15,7 @@ export default function IndividualProfilePreview() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const endpoint = pid 
+        const endpoint = pid
           ? `/api/profile/individual?pid=${pid}`
           : '/api/profile/individual'
 
@@ -39,17 +39,17 @@ export default function IndividualProfilePreview() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className='min-h-screen bg-gray-100'>
         <NavComponent />
-        <div className="text-red-500">Error: {error}</div>
+        <div className='text-red-500'>Error: {error}</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className='min-h-screen bg-gray-100'>
       <NavComponent />
-      <div className="container mx-auto px-4 py-8">
+      <div className='container mx-auto px-4 py-8'>
         <IndividualProfilePage data={profileData} />
       </div>
     </div>
