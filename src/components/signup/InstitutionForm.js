@@ -43,73 +43,73 @@ import {
 
 const commonDepartments = [
   // Faculty of Engineering
-  { code: 'CSE', name: 'Computer Science & Engineering' },
-  { code: 'EEE', name: 'Electrical & Electronic Engineering' },
-  { code: 'MCE', name: 'Mechanical Engineering' },
-  { code: 'CVE', name: 'Civil Engineering' },
-  { code: 'CHE', name: 'Chemical Engineering' },
-  { code: 'PME', name: 'Petroleum Engineering' },
-  { code: 'BME', name: 'Biomedical Engineering' },
-  { code: 'AEE', name: 'Agricultural Engineering' },
+  { id: 'CSE', code: 'CSE', name: 'Computer Science & Engineering' },
+  { id: 'EEE', code: 'EEE', name: 'Electrical & Electronic Engineering' },
+  { id: 'MCE', code: 'MCE', name: 'Mechanical Engineering' },
+  { id: 'CVE', code: 'CVE', name: 'Civil Engineering' },
+  { id: 'CHE', code: 'CHE', name: 'Chemical Engineering' },
+  { id: 'PME', code: 'PME', name: 'Petroleum Engineering' },
+  { id: 'BME', code: 'BME', name: 'Biomedical Engineering' },
+  { id: 'AEE', code: 'AEE', name: 'Agricultural Engineering' },
 
   // Faculty of Sciences
-  { code: 'PHY', name: 'Physics' },
-  { code: 'CHM', name: 'Chemistry' },
-  { code: 'MTH', name: 'Mathematics' },
-  { code: 'BIO', name: 'Biological Sciences' },
-  { code: 'BCH', name: 'Biochemistry' },
-  { code: 'MCB', name: 'Microbiology' },
-  { code: 'STA', name: 'Statistics' },
-  { code: 'GEO', name: 'Geology' },
+  { id: 'PHY_SCI', code: 'PHY', name: 'Physics' },
+  { id: 'CHM', code: 'CHM', name: 'Chemistry' },
+  { id: 'MTH', code: 'MTH', name: 'Mathematics' },
+  { id: 'BIO', code: 'BIO', name: 'Biological Sciences' },
+  { id: 'BCH', code: 'BCH', name: 'Biochemistry' },
+  { id: 'MCB', code: 'MCB', name: 'Microbiology' },
+  { id: 'STA', code: 'STA', name: 'Statistics' },
+  { id: 'GEO_SCI', code: 'GEO', name: 'Geology' },
 
   // Faculty of Medicine
-  { code: 'MED', name: 'Medicine & Surgery' },
-  { code: 'DNS', name: 'Dentistry' },
-  { code: 'PHA', name: 'Pharmacy' },
-  { code: 'NUR', name: 'Nursing Science' },
-  { code: 'PHY', name: 'Physiotherapy' },
-  { code: 'RAD', name: 'Radiography' },
+  { id: 'MED', code: 'MED', name: 'Medicine & Surgery' },
+  { id: 'DNS', code: 'DNS', name: 'Dentistry' },
+  { id: 'PHA', code: 'PHA', name: 'Pharmacy' },
+  { id: 'NUR', code: 'NUR', name: 'Nursing Science' },
+  { id: 'PHY_MED', code: 'PHY', name: 'Physiotherapy' },
+  { id: 'RAD', code: 'RAD', name: 'Radiography' },
 
   // Faculty of Arts
-  { code: 'ENG', name: 'English Language & Literature' },
-  { code: 'HIS', name: 'History & International Studies' },
-  { code: 'LIN', name: 'Linguistics & African Languages' },
-  { code: 'PHL', name: 'Philosophy' },
-  { code: 'REL', name: 'Religious Studies' },
-  { code: 'THR', name: 'Theatre Arts' },
+  { id: 'ENG_ART', code: 'ENG', name: 'English Language & Literature' },
+  { id: 'HIS', code: 'HIS', name: 'History & International Studies' },
+  { id: 'LIN', code: 'LIN', name: 'Linguistics & African Languages' },
+  { id: 'PHL', code: 'PHL', name: 'Philosophy' },
+  { id: 'REL', code: 'REL', name: 'Religious Studies' },
+  { id: 'THR', code: 'THR', name: 'Theatre Arts' },
 
   // Faculty of Social Sciences
-  { code: 'ECO', name: 'Economics' },
-  { code: 'SOC', name: 'Sociology' },
-  { code: 'PSY', name: 'Psychology' },
-  { code: 'POS', name: 'Political Science' },
-  { code: 'MAS', name: 'Mass Communication' },
-  { code: 'GEO', name: 'Geography' },
+  { id: 'ECO', code: 'ECO', name: 'Economics' },
+  { id: 'SOC', code: 'SOC', name: 'Sociology' },
+  { id: 'PSY', code: 'PSY', name: 'Psychology' },
+  { id: 'POS', code: 'POS', name: 'Political Science' },
+  { id: 'MAS', code: 'MAS', name: 'Mass Communication' },
+  { id: 'GEO_SOC', code: 'GEO', name: 'Geography' },
 
   // Faculty of Management Sciences
-  { code: 'ACC', name: 'Accounting' },
-  { code: 'BUS', name: 'Business Administration' },
-  { code: 'BNF', name: 'Banking & Finance' },
-  { code: 'MKT', name: 'Marketing' },
-  { code: 'HRM', name: 'Human Resource Management' },
+  { id: 'ACC', code: 'ACC', name: 'Accounting' },
+  { id: 'BUS', code: 'BUS', name: 'Business Administration' },
+  { id: 'BNF', code: 'BNF', name: 'Banking & Finance' },
+  { id: 'MKT', code: 'MKT', name: 'Marketing' },
+  { id: 'HRM', code: 'HRM', name: 'Human Resource Management' },
 
   // Faculty of Education
-  { code: 'EDU', name: 'Education Administration' },
-  { code: 'GES', name: 'Guidance & Counselling' },
-  { code: 'EDE', name: 'Early Childhood Education' },
-  { code: 'SED', name: 'Special Education' },
+  { id: 'EDU', code: 'EDU', name: 'Education Administration' },
+  { id: 'GES', code: 'GES', name: 'Guidance & Counselling' },
+  { id: 'EDE', code: 'EDE', name: 'Early Childhood Education' },
+  { id: 'SED', code: 'SED', name: 'Special Education' },
 
   // Faculty of Environmental Sciences
-  { code: 'ARC', name: 'Architecture' },
-  { code: 'BLD', name: 'Building Technology' },
-  { code: 'QSV', name: 'Quantity Surveying' },
-  { code: 'URP', name: 'Urban & Regional Planning' },
+  { id: 'ARC', code: 'ARC', name: 'Architecture' },
+  { id: 'BLD', code: 'BLD', name: 'Building Technology' },
+  { id: 'QSV', code: 'QSV', name: 'Quantity Surveying' },
+  { id: 'URP', code: 'URP', name: 'Urban & Regional Planning' },
 
   // Faculty of Agriculture
-  { code: 'AGR', name: 'Agricultural Science' },
-  { code: 'AGE', name: 'Agricultural Economics' },
-  { code: 'FST', name: 'Food Science & Technology' },
-  { code: 'AGX', name: 'Agricultural Extension' },
+  { id: 'AGR', code: 'AGR', name: 'Agricultural Science' },
+  { id: 'AGE', code: 'AGE', name: 'Agricultural Economics' },
+  { id: 'FST', code: 'FST', name: 'Food Science & Technology' },
+  { id: 'AGX', code: 'AGX', name: 'Agricultural Extension' },
 ]
 
 const validateInstitutionalEmail = (email, institution) => {
@@ -694,7 +694,7 @@ export function InstitutionForm() {
                             <div className='grid grid-cols-1 gap-1'>
                               {commonDepartments.map((dept) => (
                                 <SelectItem
-                                  key={dept.code}
+                                  key={dept.id}
                                   value={dept.code}
                                   className='py-2.5 px-3 rounded-md cursor-pointer hover:bg-indigo-50 focus:bg-indigo-50 transition-colors'
                                 >
