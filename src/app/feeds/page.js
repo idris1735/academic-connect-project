@@ -16,7 +16,7 @@ import Post from '@/components/Post'
 import RightSidebar from '../../components/RightSidebar'
 import SearchBar from '../../components/SearchBar'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { toast } from '@/components/ui/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function FeedsPage() {
   const dispatch = useDispatch()
@@ -33,6 +33,7 @@ export default function FeedsPage() {
   const [hasReachedBottom, setHasReachedBottom] = useState(false)
   const [isLoadingNew, setIsLoadingNew] = useState(false)
   const [noPostsFound, setNoPostsFound] = useState(false)
+  const { toast } = useToast()
 
   // Initial load of posts
   useEffect(() => {

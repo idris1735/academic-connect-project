@@ -37,7 +37,7 @@ export default function NotificationsSidebar({ activeFilter, setActiveFilter }) 
       icon: Briefcase,
       count: notifications?.filter(n => 
         !n.read && 
-        (n.type === 'WORKFLOW_ASSIGNMENT' || n.type === 'RESEARCH_ROOM_INVITE')
+        (n.type === 'WORKFLOW_ASSIGNMENT' || n.type === 'ROOM_INVITATION')
       ).length || 0
     }
   ]

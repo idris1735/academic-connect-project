@@ -99,7 +99,6 @@ const workflowSlice = createSlice({
       state.currentWorkflow = action.payload;
     },
     updateFromWebsocket: (state, action) => {
-      console.log('Received websocket update:', action.payload);
       const { workflow, changeType, type } = action.payload;
       
       // Don't skip task updates even if workflow ID matches
@@ -112,7 +111,6 @@ const workflowSlice = createSlice({
       const updateWorkflowAndTasks = (updatedWorkflow) => {
         const index = state.workflows.findIndex(w => w.id === updatedWorkflow.id);
         if (index !== -1) {
-          console.log('Updating workflow in list:', updatedWorkflow);
           // Ensure we preserve task status
           const updatedTasks = updatedWorkflow.tasks?.map(newTask => {
             const existingTask = state.workflows[index].tasks?.find(t => t.id === newTask.id);
@@ -129,7 +127,6 @@ const workflowSlice = createSlice({
         }
 
         if (state.currentWorkflow?.id === updatedWorkflow.id) {
-          console.log('Updating current workflow:', updatedWorkflow);
           // Apply the same task status preservation for currentWorkflow
           const updatedTasks = updatedWorkflow.tasks?.map(newTask => {
             const existingTask = state.currentWorkflow.tasks?.find(t => t.id === newTask.id);
@@ -155,23 +152,20 @@ const workflowSlice = createSlice({
           break;
 
         case 'modified':
-          console.log('Modifying workflow:', workflow);
           updateWorkflowAndTasks(workflow);
           break;
 
         case 'task_added':
-          console.log('Task added to workflow:', workflow);
           updateWorkflowAndTasks(workflow);
           break;
 
         case 'task_updated':
-          console.log('Task updated in workflow:', workflow);
           updateWorkflowAndTasks(workflow);
           // Don't update lastUpdatedId for task updates
           return;
 
         default:
-          console.log('Unknown change type:', changeType);
+           return;
       }
 
       // Only update lastUpdatedId for non-task updates

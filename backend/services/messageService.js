@@ -2,6 +2,8 @@ const { db } = require('../config/database');
 const { FieldValue } = require('firebase-admin/firestore');
 const { getUserNameByUid } = require('../utils/user');
 const { createChannel, getChannel, addMembersToChannel } = require('../services/chatService'); // Import chat service
+const { ConeIcon } = require('lucide-react');
+const admin = require('firebase-admin');
 
 
 
@@ -11,16 +13,19 @@ const getUserRoleInRoom = async (userId, roomRefId) => {
   const userProfileDoc = await db.collection('profiles').doc(userId).get();
   
   if (!userProfileDoc.exists) {
-    throw new Error('User profile not found');
+    // throw new Error('User profile not found');
+    return 'member';
+
   }
 
   const userProfile = userProfileDoc.data();
   
   // Access the rooms collection in the user's profile
-  const roomsCollection = userProfile.messageRooms?.researchRooms|| []; // Assuming rooms is an array of room objects
-
+  const roomsCollection = userProfile.messageRooms?.researchRooms || []; // Assuming rooms is an array of room objects
+  
   // Find the specific room document where roomId matches roomRefId
-  const roomDoc = roomsCollection.find(room => room.roomId === roomRefId);
+  const roomDoc = roomsCollection.find(room => room.room === roomRefId);
+  
 
   // Return the role if the room document is found, otherwise return 'member'
   return roomDoc ? roomDoc.role : 'member';
@@ -346,7 +351,10 @@ exports.getUserRooms = async (req, res) => {
       if (roomData.roomType === 'DM') {
         const otherParticipant = participantDetails.find(p => p.uid !== userId);
         displayName = otherParticipant?.name || 'Unknown User';
+        active = otherParticipant?.name ? true : false;
       }
+
+     
 
       return {
         id: doc.id,
@@ -369,7 +377,8 @@ exports.getUserRooms = async (req, res) => {
         avatar: roomData.avatar,
         description: roomData.description,
         resources: roomData.resources || [],
-        schedule: roomData.schedule || []
+        schedule: roomData.schedule || [],
+        inviteLink: roomData.inviteLink || ''
       };
     }));
 
@@ -399,7 +408,9 @@ exports.getUserRooms = async (req, res) => {
       }
     };
 
-    console.log(response)
+    console.log('response', rooms[0].members)
+    console.log('response', rooms[1].members)
+    console.log('response', rooms[2].members)
     return res.status(200).json(response);
 
   } catch (error) {
@@ -543,6 +554,216 @@ exports.joinRoom = async (req, res) => {
   } catch (error) {
     console.error('Error joining discussion:', error);
     return { success: false, error: 'Failed to join discussion' };
+  }
+};
+
+exports.updateRoomDetails = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.uid;
+    const { name, description, isPublic, inviteLink } = req.body;
+
+    // Get room reference
+    const roomRef = db.collection('messageRooms').doc(roomId);
+    const roomDoc = await roomRef.get();
+
+    if (!roomDoc.exists) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    const roomData = roomDoc.data();
+
+    // Check if user has permission to edit (admin or creator)
+    const userRole = await getUserRoleInRoom(userId, roomId);
+    if (!['admin', 'channel_moderator'].includes(userRole)) {
+      return res.status(403).json({ message: 'Not authorized to edit room details' });
+    }
+
+    if (inviteLink) {
+      await roomRef.update(inviteLink)
+      return res.status(200).json({
+        message: 'Room details updated successfully',
+      });
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...(name && { name }),
+      ...(description && { description }),
+      ...(typeof isPublic !== 'undefined' && { 
+        'settings.isPublic': isPublic 
+      }),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedBy: userId
+    };
+
+   
+
+    await roomRef.update(updateData);
+
+    // Get updated room data
+    const updatedRoom = {
+      ...roomData,
+      ...updateData,
+      id: roomId
+    };
+
+    return res.status(200).json({
+      message: 'Room details updated successfully',
+      room: updatedRoom
+    });
+
+  } catch (error) {
+    console.error('Error updating room details:', error);
+    return res.status(500).json({
+      message: 'Failed to update room details',
+      error: error.message
+    });
+  }
+};
+
+exports.updateRoomSettings = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.uid;
+    const {
+      fileSharingEnabled,
+      messageRetention,
+      readReceipts,
+      typingIndicators,
+      notificationSettings,
+      canParticipantsAdd,
+      canParticipantsRemove,
+      disableInviteLinks,
+      disableInvitations
+    } = req.body;
+
+    // Get room reference
+    const roomRef = db.collection('messageRooms').doc(roomId);
+    const roomDoc = await roomRef.get();
+
+    if (!roomDoc.exists) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    // Check if user has permission to edit settings
+    const userRole = await getUserRoleInRoom(userId, roomId);
+    if (!['admin', 'channel_moderator'].includes(userRole)) {
+      return res.status(403).json({ message: 'Not authorized to edit room settings' });
+    }
+
+    // Prepare settings update
+    const updateData = {
+      ...(typeof fileSharingEnabled !== 'undefined' && { 
+        fileSharingEnabled 
+      }),
+      ...(messageRetention && { 
+        messageRetention 
+      }),
+      ...(typeof readReceipts !== 'undefined' && { 
+        'features.readReceipts': readReceipts 
+      }),
+      ...(typeof typingIndicators !== 'undefined' && { 
+        'features.typingIndicators': typingIndicators 
+      }),
+      ...(notificationSettings && { 
+        notificationSettings 
+      }),
+      ...(typeof canParticipantsAdd !== 'undefined' && { 
+        'settings.canParticipantsAdd': canParticipantsAdd 
+      }),
+      ...(typeof canParticipantsRemove !== 'undefined' && { 
+        'settings.canParticipantsRemove': canParticipantsRemove 
+      }),
+      ...(typeof disableInviteLinks !== 'undefined' && {
+        'settings.disableInviteLinks': disableInviteLinks
+        }),
+      ...(typeof disableInvitations !== 'undefined' && {
+        'settings.disableInvitations': disableInvitations
+      }),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedBy: userId
+    };
+
+    await roomRef.update(updateData);
+
+    return res.status(200).json({
+      message: 'Room settings updated successfully',
+      settings: updateData
+    });
+
+  } catch (error) {
+    console.error('Error updating room settings:', error);
+    return res.status(500).json({
+      message: 'Failed to update room settings',
+      error: error.message
+    });
+  }
+};
+
+exports.updateMemberRole = async (req, res) => {
+  try {
+    const { roomId, memberId } = req.params;
+    const userId = req.user.uid;
+    const { newRole } = req.body;
+
+    // Validate role
+    const validRoles = ['channel_member', 'channel_moderator', 'admin'];
+    if (!validRoles.includes(newRole)) {
+      return res.status(400).json({ 
+        message: 'Invalid role. Must be one of: ' + validRoles.join(', ') 
+      });
+    }
+
+    // Get room reference
+    const roomRef = db.collection('messageRooms').doc(roomId);
+    const roomDoc = await roomRef.get();
+
+    if (!roomDoc.exists) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    // Check if user has permission to change roles
+    const userRole = await getUserRoleInRoom(userId, roomId);
+    if (!['admin', 'channel_moderator'].includes(userRole)) {
+      return res.status(403).json({ message: 'Not authorized to change member roles' });
+    }
+
+    // Update member's role in the room
+    const memberProfileRef = db.collection('profiles').doc(memberId);
+    const memberProfile = await memberProfileRef.get();
+
+    if (!memberProfile.exists) {
+      return res.status(404).json({ message: 'Member profile not found' });
+    }
+
+    // Update the role in the user's profile
+    await memberProfileRef.update({
+      'messageRooms.researchRooms': admin.firestore.FieldValue.arrayRemove({
+        room: roomId,
+        role: await getUserRoleInRoom(memberId, roomId)
+      })
+    });
+
+    await memberProfileRef.update({
+      'messageRooms.researchRooms': admin.firestore.FieldValue.arrayUnion({
+        room: roomId,
+        role: newRole
+      })
+    });
+
+    return res.status(200).json({
+      message: 'Member role updated successfully',
+      memberId,
+      newRole
+    });
+
+  } catch (error) {
+    console.error('Error updating member role:', error);
+    return res.status(500).json({
+      message: 'Failed to update member role',
+      error: error.message
+    });
   }
 };
 

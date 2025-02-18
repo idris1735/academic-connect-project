@@ -421,12 +421,13 @@ exports.getConnections = async (req, res) => {
         const connectionId = connectionDocs[0].id; // Get the first matching document ID
 
         return {
+          ...connectionData,
           connectionId,
           userId: connectId,
           photoURL: connectionData.photoURL,
           displayName: connectionData.displayName,
           role: connectionData.occupation,
-          university: connectionData.institution || ''
+          university: connectionData.institution || '',
         };
       })
     );

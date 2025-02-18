@@ -32,6 +32,7 @@ import {
   MonitorOff,
   MonitorUp,
   PhoneOff,
+  Trash2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -74,6 +75,11 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
+import axios from 'axios';
+import { cn } from "@/lib/utils";
 
 function IncomingCallOverlay({ caller, isVideoCall, onAccept, onDecline }) {
   return (
@@ -318,6 +324,168 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [callConfig, setCallConfig] = useState(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [sentInvitations, setSentInvitations] = useState([]);
+  const [isLoadingSentInvitations, setIsLoadingSentInvitations] = useState(false);
+  const [isUserSelected, setIsUserSelected] = useState(false);
+
+  // Mock data - replace with actual data fetching logic
+  const mockRoom = {
+    id: "1",
+    name: "AI Research Group",
+    createdAt: "2023-01-01",
+    description: "A group dedicated to discussing the latest in AI research.",
+    isPublic: true,
+    inviteLink: "https://example.com/invite/ai-research",
+    joinSettings: "approval",
+    messageRetention: 30,
+    fileSharingEnabled: true,
+    notificationSettings: {
+      mentions: true,
+      allMessages: false,
+    },
+    features: {
+      readReceipts: true,
+      typingIndicators: true,
+    },
+    integrations: ["github", "slack"],
+  }
+
+  const mockMembers = [
+    {
+      id: "1",
+      name: "Alice Johnson",
+      email: "alice@example.com",
+      role: "moderator",
+      avatarUrl: "/placeholder.svg?height=40&width=40",
+    },
+    {
+      id: "2",
+      name: "Bob Smith",
+      email: "bob@example.com",
+      role: "member",
+      avatarUrl: "/placeholder.svg?height=40&width=40",
+    },
+    // Add more mock members as needed
+  ]
+
+  const regenerateInviteLink = async () => {
+    // Implement logic to regenerate invite link
+    try{
+      const oldLink = room.inviteLink || '';
+      const newInviteLink = `https://example.com/invite/${Math.random().toString(36).substring(7)}`
+      room.inviteLink = newInviteLink
+      const response = await axios.put(`/api/messages/rooms/${room.id}`, { inviteLink: newInviteLink})
+      toast({
+        title: "Success",
+        description: "Invite Link updated successfully",
+      });
+    } catch (err) {
+      room.inviteLink = oldLink
+      console.error("Error regenerating invite link:", err);
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to regenerate invite link",
+        variant: "destructive",
+      });
+    }
+    
+  }
+  const changeRoomInviteLinkSettings = async (checked) => {
+    try {
+      room.settings.disableInviteLinks = checked
+      const response = await axios.put(`/api/messages/rooms/${room.id}/settings`, { disableInviteLinks: checked });
+    } catch (error) {
+      console.error("Error updating invite link settings:", error);
+      room.settings.disableInviteLinks = !checked
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update invite link settings",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const handleDeleteRoom = () => {
+    // Implement room deletion logic here
+    console.log("Deleting room:", room.id)
+    setIsConfirmingDelete(false)
+  }
+
+  const handleUpdateRoom = async (updatedData) => {
+    try {
+      const response = await axios.put(`/api/messages/rooms/${room.id}`, updatedData);
+      
+      room.description = updatedData.description;
+      room.settings.isPublic = updatedData.isPublic;
+      room.name = updatedData.name;
+
+      setIsEditingRoom(false);
+      toast({
+        title: "Success",
+        description: "Room details updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating room:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update room",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateSettings = async (settings) => {
+    try {
+      const response = await axios.put(`/api/messages/rooms/${room.id}/settings`, settings);
+      
+      setRoom(prev => ({
+        ...prev,
+        ...response.data.settings
+      }));
+
+      toast({
+        title: "Success",
+        description: "Room settings updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateMemberRole = async (memberId, newRole) => {
+    try {
+      await axios.put(`/api/messages/rooms/${room.id}/members/${memberId}/role`, {
+        newRole
+      });
+      
+      setMembers(prev => prev.map(member => 
+        member.id === memberId 
+          ? { ...member, role: newRole }
+          : member
+      ));
+
+      toast({
+        title: "Success",
+        description: "Member role updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update member role",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const [isEditingRoom, setIsEditingRoom] = useState(false)
 
   // Initialize call configuration when needed
   useEffect(() => {
@@ -341,41 +509,29 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     }
   }, [inCall, roomUrl]);
 
-  // Add this effect to fetch available users
+  // Modify the useEffect for fetching users to include debouncing and loading state
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Replace this with your actual API call
-        const mockUsers = [
-          {
-            id: "user1",
-            name: "Alice Johnson",
-            role: "Researcher",
-            avatar: "/avatars/alice.jpg",
-            department: "Computer Science",
-          },
-          {
-            id: "user2",
-            name: "Bob Wilson",
-            role: "Professor",
-            avatar: "/avatars/bob.jpg",
-            department: "Physics",
-          },
-          {
-            id: "user3",
-            name: "Carol Martinez",
-            role: "Student",
-            avatar: "/avatars/carol.jpg",
-            department: "Mathematics",
-          },
-        ];
-
+        setIsLoadingUsers(true);
+        const connectionsResponse = await axios.get('/api/connections/connections');
+        const currentConnections = connectionsResponse.data;
+  
         // Filter out users who are already members
-        const filteredUsers = mockUsers.filter(
-          (user) => !members.some((member) => member.id === user.id)
+        const filteredUsers = currentConnections.filter(
+          (user) => !members.some((member) => member.id === user.userId)
         );
 
-        setAvailableUsers(filteredUsers);
+        // Format the users data
+        const formattedUsers = filteredUsers.map(user => ({
+          id: user.userId,
+          name: user.displayName,
+          role: user.occupation,
+          avatar: user.photoURL,
+          department: user.university || user.occupation
+        }));
+
+        setAvailableUsers(formattedUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
         toast({
@@ -383,6 +539,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
           description: "Failed to load available users",
           variant: "destructive",
         });
+      } finally {
+        setIsLoadingUsers(false);
       }
     };
 
@@ -390,6 +548,23 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
       fetchUsers();
     }
   }, [isInvitingMember, members]);
+
+  // Add this effect to handle search filtering
+  useEffect(() => {
+    const filterUsers = () => {
+      const filtered = availableUsers.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          user.department.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    };
+
+    // Debounce the search to avoid too many re-renders
+    const debounceTimeout = setTimeout(filterUsers, 300);
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery, availableUsers]);
 
   const startCall = useCallback(
     async (isVideo) => {
@@ -695,16 +870,70 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     []
   );
 
+  
+
+  const fetchRoomEvents = async () => {
+    try {
+      const response = await axios.get(`/api/events/room/${room.id}`);
+      // Format the dates for each event before setting state
+      const formattedEvents = response.data.events.map(event => ({
+        ...event,
+      }));
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to load events",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // const formatFirestoreTimestamp = (timestamp) => {
+  //   if (!timestamp) return 'Invalid date';
+  
+  //   // Convert Firestore Timestamp to JavaScript Date
+  //   const date = new Date(timestamp);
+  //   if (isNaN(date.getTime())) return 'Invaliddd date';
+  
+  //   // Extract components and pad with leading zeros where needed
+  //   const day = String(date.getDate()).padStart(2, '0');
+  //   const month = String(date.getMonth() + 1).padStart(2, '0'); // +1 because months are 0-indexed
+  //   const year = String(date.getFullYear()).slice(-2); // Get last 2 digits of year
+  
+  //   return `${day}/${month}/${year}`;
+  // };
+
+  const createNewEvent = async (eventData) => {
+    try {
+      const response = await axios.post(`/api/events/room/${room.id}`, eventData);
+      setEvents(prev => [...prev, response.data.event]);
+      setIsCreatingEvent(false);
+      toast({
+        title: "Success",
+        description: "Event created successfully",
+      });
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to create event",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     if (room?.id) {
-      setMembers(mockData.members);
-      setEvents(mockData.events);
+      fetchRoomEvents();
+      setMembers(room.members);
     }
-  }, [room?.id, mockData]);
+  }, [room?.id]);
+  
 
-  const handleCreateEvent = useCallback(async () => {
+  const handleCreateEvent = async () => {
     try {
-      // Validate form
       if (!eventDetails.title || !eventDetails.time) {
         toast({
           title: "Validation Error",
@@ -713,92 +942,53 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         });
         return;
       }
-
-      // Create new event
-      const newEvent = {
-        id: Date.now(),
-        ...eventDetails,
-        attendees: members.map((m) => m.name),
-      };
-
-      setEvents((prev) => [...prev, newEvent]);
-      setIsCreatingEvent(false);
+      await createNewEvent(eventDetails);
       setEventDetails({
         title: "",
         description: "",
         date: new Date(),
         time: "",
       });
-
-      toast({
-        title: "Event Created",
-        description: "New event has been scheduled successfully",
-      });
     } catch (error) {
-      console.error("Error creating event:", error);
+      console.error('Error in handleCreateEvent:', error);
       toast({
         title: "Error",
         description: "Failed to create event",
         variant: "destructive",
       });
     }
-  }, [eventDetails, members, toast]);
+  };
 
-  const handleUpdateSettings = useCallback(
-    (key, value) => {
-      setSettings((prev) => ({
-        ...prev,
-        [key]: value,
-      }));
-
-      toast({
-        title: "Settings Updated",
-        description: "Your preferences have been saved",
-      });
-    },
-    [toast]
-  );
-
-  const handleInviteMember = useCallback(async () => {
+  const handleInviteMember = async () => {
     try {
       if (!selectedUser) {
         toast({
-          title: "Validation Error",
+          title: "Error",
           description: "Please select a user to invite",
           variant: "destructive",
         });
         return;
       }
 
-      // Add the selected user as a new member
-      const newMember = {
-        id: selectedUser.id,
-        name: selectedUser.name,
-        role: "Member",
-        avatar: selectedUser.avatar,
-        status: "pending",
-      };
+      const response = await axios.post(`/api/invitations/send/${room.id}`, {
+        userId: selectedUser.id
+      });
 
-      setMembers((prev) => [...prev, newMember]);
       setIsInvitingMember(false);
       setSelectedUser(null);
-
-      // Send invitation through your backend
-      // await sendInvitation(room.id, selectedUser.id);
-
       toast({
-        title: "Invitation Sent",
+        title: "Success",
         description: `Invitation sent to ${selectedUser.name}`,
       });
     } catch (error) {
       console.error("Error inviting member:", error);
       toast({
         title: "Error",
-        description: "Failed to send invitation",
+        description: error.response?.data?.message || "Failed to send invitation",
         variant: "destructive",
       });
     }
-  }, [selectedUser, toast]);
+  };
 
   const handleRemoveMember = useCallback(
     async (memberId) => {
@@ -812,7 +1002,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         console.error("Error removing member:", error);
         toast({
           title: "Error",
-          description: "Failed to remove member",
+          description: error.response?.data?.message || "Failed to remove member",
           variant: "destructive",
         });
       }
@@ -820,27 +1010,83 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     [toast]
   );
 
-  const handleDeleteRoom = useCallback(async () => {
+  const fetchSentInvitations = async () => {
     try {
-      // Simulate API call to delete room
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast({
-        title: "Room Deleted",
-        description: "The room has been permanently deleted",
-      });
-
-      // Navigate away or handle room deletion
-      // You might want to add a callback prop to handle this
+      setIsLoadingSentInvitations(true);
+      const response = await axios.get(`/api/invitations/room/${room.id}`);
+      setSentInvitations(response.data.invitations || []);
     } catch (error) {
-      console.error("Error deleting room:", error);
+      console.error('Error fetching sent invitations:', error);
+      setSentInvitations([]);
       toast({
         title: "Error",
-        description: "Failed to delete room",
+        description: error.response?.data?.message || "Failed to fetch invitations",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSentInvitations(false);
+    }
+  };
+
+  const handleResendInvitation = async (invitationId) => {
+    try {
+      await axios.post(`/api/invitations/resend/${invitationId}`);
+      toast({
+        title: "Success",
+        description: "Invitation resent successfully",
+      });
+      fetchSentInvitations(); // Refresh the list
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to resend invitation",
         variant: "destructive",
       });
     }
-  }, [toast]);
+  };
+
+  const handleCancelInvitation = async (invitationId) => {
+    try {
+      await axios.delete(`/api/invitations/${invitationId}`);
+      setSentInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+      toast({
+        title: "Success",
+        description: "Invitation cancelled successfully",
+      });
+    } catch (error) {
+      console.error('Error cancelling invitation:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to cancel invitation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteInvitation = async (invitationId) => {
+    try {
+      await axios.delete(`/api/invitations/delete/${invitationId}`);
+      setSentInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+      toast({
+        title: "Success",
+        description: "Invitation deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete invitation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (room?.id) {
+      fetchSentInvitations();
+    }
+  }, [room?.id]);
 
   return (
     <div className="p-4 bg-white h-full">
@@ -1094,9 +1340,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                           {event.description}
                         </p>
                         <div className="mt-2 flex items-center gap-4">
-                          <span className="text-sm">
-                            {new Date(event.date).toLocaleDateString()}
-                          </span>
+                          <span className="text-sm">{new Date(event.date).toLocaleDateString()}</span>
                           <span className="text-sm">{event.time}</span>
                         </div>
                         <div className="mt-2 flex items-center gap-2">
@@ -1117,9 +1361,16 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Room Members</CardTitle>
-                <Dialog
+                 <Dialog
                   open={isInvitingMember}
-                  onOpenChange={setIsInvitingMember}
+                  onOpenChange={(open) => {
+                    setIsInvitingMember(open);
+                    if (!open) {
+                      setSelectedUser(null);
+                      setIsUserSelected(false);
+                      setSearchQuery('');
+                    }
+                  }}
                 >
                   <DialogTrigger asChild>
                     <Button variant="outline">
@@ -1138,40 +1389,52 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                        <CommandEmpty>No users found.</CommandEmpty>
                         <CommandGroup>
-                          {availableUsers
-                            .filter(
-                              (user) =>
-                                user.name
-                                  .toLowerCase()
-                                  .includes(searchQuery.toLowerCase()) ||
-                                user.department
-                                  .toLowerCase()
-                                  .includes(searchQuery.toLowerCase())
-                            )
-                            .map((user) => (
+                          {isLoadingUsers ? (
+                            <div className="p-4 text-center text-sm text-gray-500">
+                              Loading users...
+                            </div>
+                          ) : filteredUsers.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-gray-500">
+                              {searchQuery.trim() ? 'No users found' : 'Start typing to search users'}
+                            </div>
+                          ) : (
+                            filteredUsers.map((user) => (
                               <CommandItem
                                 key={user.id}
-                                onSelect={() => setSelectedUser(user)}
-                                className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100"
+                                onSelect={() => {
+                                  setIsUserSelected(true);
+                                  setSelectedUser(user);
+                                }}
+                                className={`flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100 ${
+                                  selectedUser?.id === user.id ? 'bg-gray-100' : ''
+                                }`}
                               >
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage src={user.avatar} />
-                                  <AvatarFallback>
-                                    {user.name.charAt(0)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {user.name}
-                                  </span>
-                                  <span className="text-sm text-gray-500">
-                                    {user.department} • {user.role}
-                                  </span>
+                                <div 
+                                  onClick={() => {
+                                    setIsUserSelected(true);
+                                    setSelectedUser(user);
+                                  }}
+                                  className="flex items-center gap-2 w-full"
+                                >
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.avatar} />
+                                    <AvatarFallback>
+                                      {user.name.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {user.name}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      {user.department} • {user.role}
+                                    </span>
+                                  </div>
                                 </div>
                               </CommandItem>
-                            ))}
+                            ))
+                          )}
                         </CommandGroup>
                       </Command>
                       {selectedUser && (
@@ -1196,18 +1459,21 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                     <Button
                       onClick={handleInviteMember}
                       className="w-full"
-                      disabled={!selectedUser}
+                      disabled={!isUserSelected || !selectedUser}
                     >
-                      Send Invitation
+                      {isUserSelected && selectedUser 
+                        ? `Invite ${selectedUser.name}` 
+                        : 'Select a user'}
                     </Button>
                   </DialogContent>
                 </Dialog>
+                
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {members.map((member) => (
                     <div
-                      key={member.id}
+                      key={member.uid}
                       className="flex items-center justify-between p-4 rounded-lg border"
                     >
                       <div className="flex items-center space-x-4">
@@ -1243,93 +1509,433 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                     </div>
                   ))}
                 </div>
+
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="settings" className="flex-1 p-4 m-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Room Management</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="border-b pb-6">
-                  <h3 className="font-semibold mb-2">Room Information</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    View and manage room details
-                  </p>
-                  <div className="space-y-2">
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="members">Members</TabsTrigger>
+                <TabsTrigger value="permissions">Permissions</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="general" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Room Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Room Name:</span>
-                      <span className="text-sm text-gray-500">
-                        {room?.name}
-                      </span>
+                      <span className="text-sm text-gray-500">{room.name}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Created:</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(room?.createdAt).toLocaleDateString()}
-                      </span>
+                      <span className="text-sm text-gray-500">{new Date(room.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Members:</span>
-                      <span className="text-sm text-gray-500">
-                        {members.length}
-                      </span>
+                      <span className="text-sm text-gray-500">{members.length}</span>
                     </div>
-                  </div>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Description:</span>
+                      <span className="text-sm text-gray-500">{room.description}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Visibility:</span>
+                      <span className="text-sm text-gray-500">{room.settings.isPublic ? "Public" : "Private"}</span>
+                    </div>
+                    <Button variant="outline" className="w-full mt-4" onClick={() => setIsEditingRoom(true)}>
+                      Edit Room Details
+                    </Button>
+                  </CardContent>
+                </Card>
 
-                <div className="border-b pb-6">
-                  <h3 className="text-red-600 font-semibold mb-2">
-                    Danger Zone
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    These actions are permanent and cannot be undone
-                  </p>
-                  <Dialog
-                    open={isConfirmingDelete}
-                    onOpenChange={setIsConfirmingDelete}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="destructive" className="w-full">
-                        Delete Room
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle className="text-red-600">
-                          Delete Room
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="py-4">
-                        <p className="text-sm text-gray-500 mb-4">
-                          Are you sure you want to delete this room? This action
-                          cannot be undone and all data will be permanently
-                          lost.
-                        </p>
-                        <div className="space-y-2">
-                          <Button
-                            variant="destructive"
-                            className="w-full"
-                            onClick={handleDeleteRoom}
-                          >
-                            Yes, Delete Room
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => setIsConfirmingDelete(false)}
-                          >
-                            Cancel
-                          </Button>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Invite Link</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Input value={room.inviteLink} readOnly />
+                      <Button onClick={regenerateInviteLink}>Regenerate</Button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="disable-invite-links"
+                        checked={room.settings.disableInviteLinks}
+                        onCheckedChange={(checked) =>
+                          
+                           changeRoomInviteLinkSettings(checked)
+                        }
+                      />
+                      <Label htmlFor="disable-invite-links">Disable all invite links</Label>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Join Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={room.joinSettings} onValueChange={(value) => setRoom({ ...room, joinSettings: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select join setting" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Anyone can join</SelectItem>
+                        <SelectItem value="approval">Require approval for all joins</SelectItem>
+                        <SelectItem value="invite">Invite only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="members" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Member Management</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+                      {members.map((member) => (
+                        <div key={member.uid} className="flex items-center justify-between py-2">
+                          <div className="flex items-center space-x-4">
+                            <Avatar>
+                              <AvatarImage src={member.avatarUrl} alt={member.name} />
+                              <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{member.name}</p>
+                              <p className="text-xs text-gray-500">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={member.role}
+                              onChange={(e) => handleUpdateMemberRole(member.id, e.target.value)}
+                              className="text-sm border rounded px-2 py-1"
+                            >
+                              <option value="member">Member</option>
+                              <option value="channel_moderator">Room Moderator</option>
+                            </select>
+                            { member.role !== 'channel_moderator' && (
+                            <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(member.id)}>
+                              Remove
+                            </Button>
+                            )}
+                          </div>
                         </div>
+                      ))}
+                    </ScrollArea>
+                  </CardContent>
+               
+                  <CardContent>
+                  <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+                    <div className="mt-8 border-t pt-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Sent Invitations</h3>
+                        {isLoadingSentInvitations && (
+                          <div className="text-sm text-gray-500">Loading...</div>
+                      )}
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardContent>
-            </Card>
+                      {!sentInvitations || sentInvitations.length === 0 ? (
+                        <div className="text-center py-6 text-gray-500">
+                          No pending invitations
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                      <Switch
+                        id="disable-invitations"
+                        checked={room.enable_invitations || false}
+                        onCheckedChange={(checked) =>
+                          setRoom({ ...room, inviteLink: checked ? "" : "https://example.com/invite/new-link" })
+                        }
+                      />
+                      <Label htmlFor="disable-invite-links">Disable all invitations</Label>
+                    </div>
+                          {Array.isArray(sentInvitations) && sentInvitations.map((invitation) => (
+                            <div
+                              key={invitation.id}
+                              className="flex items-center justify-between p-4 rounded-lg border bg-gray-50"
+                            >
+                              <div className="flex items-center space-x-4">
+                                <Avatar>
+                                  <AvatarImage src={invitation.userAvatar} />
+                                  <AvatarFallback>
+                                    {invitation.userName?.[0]}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <h4 className="font-semibold">{invitation.userName}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm text-gray-500">
+                                      Sent {new Date(invitation.createdAt).toLocaleDateString()}
+                                    </p>
+                                    <span className={cn(
+                                      "px-2 py-0.5 text-xs rounded-full",
+                                      invitation.status === 'pending' && "bg-yellow-100 text-yellow-700",
+                                      invitation.status === 'accepted' && "bg-green-100 text-green-700",
+                                      invitation.status === 'rejected' && "bg-red-100 text-red-700",
+                                      invitation.status === 'cancelled' && "bg-gray-100 text-gray-700"
+                                    )}>
+                                      {invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {invitation.status === 'pending' && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleResendInvitation(invitation.id)}
+                                    >
+                                      Resend
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 hover:text-red-600"
+                                      onClick={() => handleCancelInvitation(invitation.id)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </>
+                                )}
+                                {invitation.status === 'cancelled' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleResendInvitation(invitation.id)}
+                                  >
+                                    Send Again
+                                  </Button>
+                                )}
+                                {invitation.status !== 'pending' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-600"
+                                  onClick={() => handleDeleteInvitation(invitation.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                  
+                  </CardContent>
+                  
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="permissions" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Permissions and Features</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="file-sharing">File Sharing</Label>
+                      <Switch
+                        id="file-sharing"
+                        checked={room.fileSharingEnabled}
+                        onCheckedChange={(checked) => setRoom({ ...room, fileSharingEnabled: checked })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="message-retention">Message Retention (days)</Label>
+                      <Slider
+                        id="message-retention"
+                        value={[room.messageRetention]}
+                        onValueChange={(value) => setRoom({ ...room, messageRetention: value[0] })}
+                        max={365}
+                        step={1}
+                      />
+                      <p className="text-sm text-gray-500">Messages are kept for {room.messageRetention} days</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="read-receipts">Read Receipts</Label>
+                      <Switch
+                        id="read-receipts"
+                        checked={room.features?.readReceipts || true}
+                        onCheckedChange={(checked) =>
+                          setRoom({
+                            ...room,
+                            features: { ...room.features, readReceipts: checked },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="typing-indicators">Typing Indicators</Label>
+                      <Switch
+                        id="typing-indicators"
+                        checked={room.features?.typingIndicators || true}
+                        onCheckedChange={(checked) =>
+                          setRoom({
+                            ...room,
+                            features: { ...room.features, typingIndicators: checked },
+                          })
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="advanced" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notification Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notify-mentions"
+                        checked={room.notificationSettings?.mentions || true}
+                        onCheckedChange={(checked) =>
+                          setRoom({
+                            ...room,
+                            notificationSettings: { ...room.notificationSettings, mentions: checked },
+                          })
+                        }
+                      />
+                      <Label htmlFor="notify-mentions">Notify on mentions</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notify-all-messages"
+                        checked={room.notificationSettings?.allMessages || true}
+                        onCheckedChange={(checked) =>
+                          setRoom({
+                            ...room,
+                            notificationSettings: { ...room.notificationSettings, allMessages: checked },
+                          })
+                        }
+                      />
+                      <Label htmlFor="notify-all-messages">Notify for all messages</Label>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Integrations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {["github", "slack", "trello", "google-drive"].map((integration) => (
+                      <div key={integration} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`integration-${integration}`}
+                          checked={room.integrations?.includes(integration) || true}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setRoom({ ...room, integrations: [...room.integrations, integration] })
+                            } else {
+                              setRoom({ ...room, integrations: room.integrations.filter((i) => i !== integration) })
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`integration-${integration}`}>
+                          {integration.charAt(0).toUpperCase() + integration.slice(1)}
+                        </Label>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-red-600">Danger Zone</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-500 mb-4">These actions are permanent and cannot be undone</p>
+                    <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          Delete Room
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="text-red-600">Delete Room</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <p className="text-sm text-gray-500 mb-4">
+                            Are you sure you want to delete this room? This action cannot be undone and all data will be
+                            permanently lost.
+                          </p>
+                          <div className="space-y-2">
+                            <Button variant="destructive" className="w-full" onClick={handleDeleteRoom}>
+                              Yes, Delete Room
+                            </Button>
+                            <Button variant="outline" className="w-full" onClick={() => setIsConfirmingDelete(false)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Edit Room Dialog */}
+              <Dialog open={isEditingRoom} onOpenChange={setIsEditingRoom}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Room Details</DialogTitle>
+                  </DialogHeader>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      const formData = new FormData(e.currentTarget)
+                      handleUpdateRoom({
+                        name: formData.get("name"),
+                        description: formData.get("description"),
+                        isPublic: formData.get("isPublic") === "on",
+                      })
+                    }}
+                  >
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Room Name</Label>
+                        <Input id="name" name="name" defaultValue={room.name || ''} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Input id="description" name="description" defaultValue={room.description || ''} />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch id="isPublic" name="isPublic" defaultChecked={room.settings.isPublic || true} />
+                        <Label htmlFor="isPublic">Public Room</Label>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="submit">Save Changes</Button>
+                      <Button type="button" variant="outline" onClick={() => setIsEditingRoom(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </DailyProvider>

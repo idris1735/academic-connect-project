@@ -266,8 +266,9 @@ function MessagesContent() {
           }
           console.log('GOt room data\n\n\n')
           const data = await response.json();
-          console.log(data)
+          console.log('data.rooms', data.rooms)
           setSelectedItem(data.rooms);
+          
           setActiveView(type === "DM" ? "messages" : "research");
         } catch (error) {
           toast({
