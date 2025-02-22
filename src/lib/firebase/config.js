@@ -1,14 +1,6 @@
-const { getAuth } = require('firebase/auth')
-const { initializeApp, getApps } = require('firebase/app')
-const admin = require('firebase-admin')
-
-// Only initialize admin if it hasn't been initialized
-if (!admin.apps.length) {
-  const serviceAccount = require('../../test.json')
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  })
-}
+import { getAuth } from 'firebase/auth'
+import { initializeApp, getApps } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyB0xMcnwwj7qlZAzDL-UbH8pLBctXVwUcU',
@@ -29,5 +21,6 @@ if (!getApps().length) {
 }
 
 const auth = getAuth(app)
+const db = getFirestore(app)
 
-module.exports = { admin, auth }
+export { auth, db }

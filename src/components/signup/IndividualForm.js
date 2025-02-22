@@ -82,11 +82,16 @@ export function IndividualForm() {
   }))
 
   const [form, setForm] = useState({
-    fullName: formData?.fullName || '',
+    firstName: formData?.firstName || '',
+    lastName: formData?.lastName || '',
+    email: formData?.email || '',
     password: formData?.password || '',
+    gender: formData?.gender || 'prefer_not_to_say',
+    dateOfBirth: formData?.dateOfBirth || '',
+    phoneNumber: formData?.phoneNumber || '',
     occupation: formData?.occupation || '',
-    occupationCategory: formData?.occupationCategory || '',
     researchInterests: formData?.researchInterests || '',
+    skills: formData?.skills || [],
     researchWorks: formData?.researchWorks || [],
   })
 
@@ -168,10 +173,39 @@ export function IndividualForm() {
   }
 
   const validateForm = () => {
-    if (!form.fullName.trim()) {
+    if (!form.firstName.trim()) {
       toast({
         title: 'Error',
-        description: 'Please enter your full name',
+        description: 'Please enter your first name',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!form.lastName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your last name',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (!form.email.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your email',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(form.email)) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid email address',
         variant: 'destructive',
       })
       return false
@@ -181,33 +215,6 @@ export function IndividualForm() {
       toast({
         title: 'Error',
         description: 'Password must be at least 8 characters long',
-        variant: 'destructive',
-      })
-      return false
-    }
-
-    if (!form.occupation.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter your occupation',
-        variant: 'destructive',
-      })
-      return false
-    }
-
-    if (!form.researchInterests.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please describe your research interests',
-        variant: 'destructive',
-      })
-      return false
-    }
-
-    if (form.researchWorks.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Please upload at least one research work',
         variant: 'destructive',
       })
       return false
@@ -247,21 +254,26 @@ export function IndividualForm() {
 
     setIsLoading(true)
     try {
-      // Simulate form submission with progress
-      for (let i = 0; i <= 100; i += 20) {
-        setProgress(i)
-        await new Promise((resolve) => setTimeout(resolve, 100))
-      }
-
-      // Update global state
-      updateFormData(form)
+      // Update global state with form data
+      updateFormData({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+        gender: form.gender,
+        dateOfBirth: form.dateOfBirth,
+        phoneNumber: form.phoneNumber,
+        occupation: form.occupation,
+        researchInterests: form.researchInterests,
+        skills: form.skills,
+      })
 
       toast({
         title: 'Success',
         description: 'Your information has been saved successfully',
       })
 
-      // Move to next step
+      // Move to confirmation step
       setStep(4)
     } catch (error) {
       toast({
@@ -311,22 +323,50 @@ export function IndividualForm() {
 
         <CardContent className='px-8 pb-8 pt-4'>
           <form onSubmit={handleSubmit} className='space-y-6'>
-            {/* Full Name */}
+            {/* First Name */}
             <div className='space-y-2'>
-              <Label htmlFor='fullName'>Full Name</Label>
+              <Label htmlFor='firstName'>First Name</Label>
               <Input
-                id='fullName'
-                name='fullName'
-                value={form.fullName}
+                id='firstName'
+                name='firstName'
+                value={form.firstName}
                 onChange={handleInputChange}
-                placeholder='Enter your full name'
-                className='h-12 text-base border-2 focus:border-indigo-600 transition-colors'
+                placeholder='Enter your first name'
+                className='h-12'
                 required
-                disabled={isLoading}
               />
             </div>
 
-            {/* Password with strength indicator */}
+            {/* Last Name */}
+            <div className='space-y-2'>
+              <Label htmlFor='lastName'>Last Name</Label>
+              <Input
+                id='lastName'
+                name='lastName'
+                value={form.lastName}
+                onChange={handleInputChange}
+                placeholder='Enter your last name'
+                className='h-12'
+                required
+              />
+            </div>
+
+            {/* Email */}
+            <div className='space-y-2'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                name='email'
+                type='email'
+                value={form.email}
+                onChange={handleInputChange}
+                placeholder='Enter your email'
+                className='h-12'
+                required
+              />
+            </div>
+
+            {/* Password */}
             <div className='space-y-2'>
               <Label htmlFor='password'>Password</Label>
               <div className='relative'>
@@ -337,14 +377,13 @@ export function IndividualForm() {
                   value={form.password}
                   onChange={handleInputChange}
                   placeholder='Create a secure password'
-                  className='h-12 text-base border-2 focus:border-indigo-600 transition-colors pr-10'
+                  className='h-12 pr-10'
                   required
-                  disabled={isLoading}
                 />
                 <button
                   type='button'
                   onClick={() => setShowPassword(!showPassword)}
-                  className='absolute right-3 top-3 text-gray-400 hover:text-gray-600'
+                  className='absolute right-3 top-3'
                 >
                   {showPassword ? (
                     <EyeOff className='h-5 w-5' />
@@ -378,61 +417,75 @@ export function IndividualForm() {
               )}
             </div>
 
-            {/* Dynamic Occupation Selection */}
+            {/* Gender */}
             <div className='space-y-2'>
-              <Label htmlFor='occupation'>Occupation</Label>
+              <Label htmlFor='gender'>Gender</Label>
               <Select
-                value={customOccupation ? 'custom' : form.occupation}
-                onValueChange={handleOccupationChange}
+                id='gender'
+                name='gender'
+                value={form.gender}
+                onValueChange={(value) =>
+                  setForm((prev) => ({ ...prev, gender: value }))
+                }
+                required
               >
-                <SelectTrigger className='h-12 border-2 focus:border-indigo-600'>
-                  <SelectValue placeholder='Select your occupation' />
+                <SelectTrigger className='h-12'>
+                  <SelectValue placeholder='Select your gender' />
                 </SelectTrigger>
-                <SelectContent className='max-h-[300px] overflow-y-auto'>
-                  <div className='max-h-[300px] overflow-y-auto'>
-                    {occupationCategories.map((category) => (
-                      <div key={category.category}>
-                        <div className='px-2 py-1.5 text-sm font-semibold text-gray-500 bg-gray-50 sticky top-0'>
-                          {category.category}
-                        </div>
-                        {category.options.map((option) => (
-                          <SelectItem
-                            key={option}
-                            value={option}
-                            className='pl-4'
-                          >
-                            {option}
-                          </SelectItem>
-                        ))}
-                        {category ===
-                          occupationCategories[
-                            occupationCategories.length - 1
-                          ] && (
-                          <SelectItem value='custom' className='border-t'>
-                            Enter Custom Occupation
-                          </SelectItem>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <SelectContent>
+                  <SelectItem value='male'>Male</SelectItem>
+                  <SelectItem value='female'>Female</SelectItem>
+                  <SelectItem value='prefer_not_to_say'>
+                    Prefer not to say
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              {customOccupation && (
-                <Input
-                  placeholder='Enter your occupation'
-                  value={form.occupation}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      occupation: e.target.value,
-                    }))
-                  }
-                  className='h-12 text-base border-2 focus:border-indigo-600 transition-colors mt-2'
-                />
-              )}
             </div>
 
-            {/* Research Interests */}
+            {/* Date of Birth */}
+            <div className='space-y-2'>
+              <Label htmlFor='dateOfBirth'>Date of Birth</Label>
+              <Input
+                id='dateOfBirth'
+                name='dateOfBirth'
+                type='date'
+                value={form.dateOfBirth}
+                onChange={handleInputChange}
+                placeholder='Enter your date of birth'
+                className='h-12'
+                required
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div className='space-y-2'>
+              <Label htmlFor='phoneNumber'>Phone Number</Label>
+              <Input
+                id='phoneNumber'
+                name='phoneNumber'
+                type='tel'
+                value={form.phoneNumber}
+                onChange={handleInputChange}
+                placeholder='Enter your phone number'
+                className='h-12'
+                required
+              />
+            </div>
+
+            {/* Basic occupation and research interests */}
+            <div className='space-y-2'>
+              <Label htmlFor='occupation'>Occupation</Label>
+              <Input
+                id='occupation'
+                name='occupation'
+                value={form.occupation}
+                onChange={handleInputChange}
+                placeholder='Enter your occupation'
+                className='h-12'
+                required
+              />
+            </div>
+
             <div className='space-y-2'>
               <Label htmlFor='researchInterests'>Research Interests</Label>
               <Textarea
@@ -440,71 +493,31 @@ export function IndividualForm() {
                 name='researchInterests'
                 value={form.researchInterests}
                 onChange={handleInputChange}
-                placeholder='Describe your research interests and areas of expertise'
-                className='min-h-[120px] text-base border-2 focus:border-indigo-600 transition-colors'
+                placeholder='Describe your research interests'
+                className='min-h-[100px]'
                 required
-                disabled={isLoading}
               />
             </div>
 
-            {/* Enhanced File Upload */}
+            {/* Skills */}
             <div className='space-y-2'>
-              <Label htmlFor='researchWorks'>Research Works</Label>
-              <div className='space-y-4'>
-                <div className='relative'>
-                  <Input
-                    id='researchWorks'
-                    name='researchWorks'
-                    type='file'
-                    onChange={handleFileChange}
-                    accept={ALLOWED_FILE_TYPES.join(',')}
-                    multiple
-                    className='h-12 text-base border-2 border-dashed focus:border-indigo-600 transition-colors'
-                    disabled={isLoading}
-                  />
-                  <Upload className='absolute right-3 top-3 h-5 w-5 text-gray-400' />
-                </div>
-
-                <AnimatePresence>
-                  {uploadedFiles.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className='space-y-2'
-                    >
-                      {uploadedFiles.map((file, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          className='flex items-center justify-between p-2 bg-gray-50 rounded-lg'
-                        >
-                          <div className='flex items-center space-x-2'>
-                            <FileText className='h-4 w-4 text-indigo-600' />
-                            <span className='text-sm text-gray-600 truncate max-w-[200px]'>
-                              {file.name}
-                            </span>
-                          </div>
-                          <button
-                            type='button'
-                            onClick={() => removeFile(index)}
-                            className='text-gray-400 hover:text-red-500 transition-colors'
-                          >
-                            <X className='h-4 w-4' />
-                          </button>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <p className='text-xs text-gray-500 flex items-center gap-1'>
-                  <Plus className='h-3 w-3' />
-                  Add your research papers or publications (PDF, DOC, DOCX)
-                </p>
-              </div>
+              <Label htmlFor='skills'>Skills</Label>
+              <Textarea
+                id='skills'
+                name='skills'
+                value={form.skills.join('\n')}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    skills: e.target.value
+                      .split('\n')
+                      .map((skill) => skill.trim()),
+                  }))
+                }
+                placeholder='Enter your skills (one per line)'
+                className='min-h-[100px]'
+                required
+              />
             </div>
           </form>
         </CardContent>

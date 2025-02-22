@@ -5,9 +5,15 @@ export const useSignupStore = create(
   persist(
     (set) => ({
       step: 1,
-      userType: null,
+      userType: '',
       subOption: null,
-      formData: {},
+      formData: {
+        fullName: '',
+        email: '',
+        password: '',
+        occupation: '',
+        researchInterests: '',
+      },
       setStep: (step) => set({ step }),
       setUserType: (type) => set({ userType: type }),
       setSubOption: (option) => set({ subOption: option }),
@@ -15,10 +21,10 @@ export const useSignupStore = create(
         set((state) => ({
           formData: { ...state.formData, ...data },
         })),
-      resetStore: () =>
+      resetForm: () =>
         set({
           step: 1,
-          userType: null,
+          userType: '',
           subOption: null,
           formData: {},
         }),

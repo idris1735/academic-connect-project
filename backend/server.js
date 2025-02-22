@@ -42,6 +42,7 @@ const connectionRoutes = require('./routes/connections')
 const chatRoutes = require('./routes/chats')
 const termsRoutes = require('./routes/terms')
 const privacyRoutes = require('./routes/privacy')
+const debugRoutes = require('./routes/debug')
 // Import middleware
 const checkAuth = require('./middleware/auth')
 const errorHandler = require('./middleware/errorHandler')
@@ -101,6 +102,11 @@ app
 
     // Export for use in other services
     exports.socketServer = socketService
+
+    // Add debug routes
+    if (process.env.NODE_ENV !== 'production') {
+      server.use('/debug', debugRoutes)
+    }
   })
   .catch((err) => {
     console.error('Error starting server:', err)

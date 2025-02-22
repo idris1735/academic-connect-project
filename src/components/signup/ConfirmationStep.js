@@ -6,31 +6,64 @@ import { Card, CardHeader, CardContent, CardFooter } from '../ui/card'
 import { Button } from '../ui/button'
 import { BackButton } from '../ui/back-button'
 import { CheckCircle2, Loader2, FileText, Building2, User2 } from 'lucide-react'
-import { useSignupStore } from '../../lib/store/signupStore'
+import { useSignupStore } from '@/lib/store/signupStore'
 import { useToast } from '../ui/use-toast'
+import { authService } from '@/services/authService'
+import { useRouter } from 'next/navigation'
+import { LoadingSpinner } from '../ui/loading-spinner'
 
 export function ConfirmationStep() {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
   const { formData, userType, subOption, setStep } = useSignupStore()
 
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      toast({
-        title: 'Registration Successful',
-        description: 'Your account has been created successfully.',
+      // Debug log
+      console.log('Form Data:', {
+        email: formData.email,
+        fullName: formData.fullName,
+        password: formData.password,
+        fullFormData: formData,
+        userType,
+        subOption,
       })
 
-      // Redirect to dashboard or login
+      // Validate required data before submission
+      if (!formData.email) {
+        throw new Error('Email is required')
+      }
+      if (!formData.fullName) {
+        throw new Error('Full name is required')
+      }
+      if (!formData.password) {
+        throw new Error('Password is required')
+      }
+
+      const result = await authService.signUp(
+        {
+          ...formData,
+          name: formData.fullName,
+        },
+        userType,
+        subOption
+      )
+
+      if (result.success) {
+        toast({
+          title: 'Registration Successful',
+          description: 'Welcome to AcademicConnect',
+        })
+        router.push('/feeds')
+      }
     } catch (error) {
+      console.error('Registration error:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to complete registration. Please try again.',
         variant: 'destructive',
+        title: 'Registration Failed',
+        description: error.message || 'Please try again later',
       })
     } finally {
       setIsLoading(false)
@@ -189,14 +222,7 @@ export function ConfirmationStep() {
             className='w-full h-12 bg-transparent border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm hover:shadow-indigo-100'
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className='mr-2 h-5 w-5 animate-spin' />
-                Completing Registration...
-              </>
-            ) : (
-              'Complete Registration'
-            )}
+            {isLoading ? <LoadingSpinner /> : 'Create Account'}
           </Button>
           <p className='text-xs text-center text-gray-500'>
             By completing registration, you agree to our Terms of Service and

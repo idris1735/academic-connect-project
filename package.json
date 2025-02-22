@@ -61,6 +61,7 @@
     "nigerian-institutions": "^1.0.3",
     "nodemon": "^3.1.9",
     "path": "^0.12.7",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-day-picker": "^9.3.0",
     "react-dom": "^18.2.0",

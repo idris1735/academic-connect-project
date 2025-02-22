@@ -1,16 +1,47 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '../ui/button'
 import { Card, CardHeader, CardContent, CardFooter } from '../ui/card'
 import { Shield, ArrowRight } from 'lucide-react'
 import { BackButton } from '../ui/back-button'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/context/AuthContext'
+import { auth } from '@/lib/firebase/config'
+import { sendEmailVerification } from 'firebase/auth'
+import { LoadingSpinner } from '../ui/loading-spinner'
+import { toast } from '../ui/use-toast'
 
-const VerificationStep = ({ onBack, onComplete }) => {
-  const handleVerify = () => {
-    // Simulate verification logic
-    onComplete()
+export function VerificationStep() {
+  const [sending, setSending] = useState(false)
+  const { user } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    // If user is verified, redirect to feeds
+    if (user?.emailVerified) {
+      router.push('/feeds')
+    }
+  }, [user, router])
+
+  const handleResendVerification = async () => {
+    try {
+      setSending(true)
+      await sendEmailVerification(auth.currentUser)
+      toast({
+        title: 'Verification email sent',
+        description: 'Please check your inbox',
+      })
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      })
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -23,7 +54,7 @@ const VerificationStep = ({ onBack, onComplete }) => {
     >
       <Card className='relative overflow-hidden border-none shadow-lg'>
         <CardHeader className='space-y-6 pb-2 pt-8'>
-          <BackButton onClick={onBack} />
+          <BackButton />
 
           {/* Verification Icon */}
           <div className='mx-auto w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center transition-transform hover:scale-105'>
@@ -53,11 +84,10 @@ const VerificationStep = ({ onBack, onComplete }) => {
 
         <CardFooter className='flex flex-col gap-4 px-8 pb-8'>
           <Button
-            onClick={handleVerify}
+            onClick={handleResendVerification}
             className='w-full h-12 bg-transparent border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm hover:shadow-indigo-100'
           >
-            Complete Verification
-            <ArrowRight className='ml-2 h-5 w-5' />
+            {sending ? <LoadingSpinner /> : 'Resend Verification Email'}
           </Button>
           <p className='text-xs text-center text-gray-500'>
             This helps us maintain a secure research community
@@ -67,5 +97,3 @@ const VerificationStep = ({ onBack, onComplete }) => {
     </motion.div>
   )
 }
-
-export default VerificationStep
