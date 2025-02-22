@@ -25,7 +25,7 @@ export default function MessagingPopup() {
     // Check if user is authenticated
     const checkAuth = async () => {
       try {
-        const response = await fetch("/user/current");
+        const response = await fetch("/api/users/current");
         if (response.ok) {
           setIsAuthenticated(true);
           setLoading(false);

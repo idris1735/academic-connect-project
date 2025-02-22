@@ -14,6 +14,7 @@ const handle = app.getRequestHandler()
 const server = express()
 
 // Middleware
+
 server.use(express.json())
 server.use(cookieParser())
 server.use(
@@ -42,7 +43,9 @@ const connectionRoutes = require('./routes/connections')
 const chatRoutes = require('./routes/chats')
 const termsRoutes = require('./routes/terms')
 const privacyRoutes = require('./routes/privacy')
-const debugRoutes = require('./routes/debug')
+const eventRoutes = require('./routes/events')
+const invitationRoutes = require('./routes/invitation')
+
 // Import middleware
 const checkAuth = require('./middleware/auth')
 const errorHandler = require('./middleware/errorHandler')
@@ -63,6 +66,8 @@ app
     server.use('/api/workflows', checkAuth, workflowRoutes)
     server.use('/api/connections', checkAuth, connectionRoutes)
     server.use('/api/chats', checkAuth, chatRoutes)
+    server.use('/api/events', checkAuth, eventRoutes)
+    server.use('/api/invitations', checkAuth, invitationRoutes)
     server.use('/api', routes())
 
     // Let Next.js handle the terms and privacy pages
@@ -87,6 +92,13 @@ app
     server.get('*', checkAuth, (req, res) => {
       return handle(req, res)
     })
+
+    // server.get('*', (req, res, next) => {
+    //   if (req.url.startsWith('/_next/') || req.url.startsWith('/static/')) {
+    //     return handle(req, res); // Serve Next.js files
+    //   }
+    //   checkAuth(req, res, next); // Auth for other routes
+    // });
 
     // Error handling
     server.use(errorHandler)

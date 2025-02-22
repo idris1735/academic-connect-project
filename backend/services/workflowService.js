@@ -8,7 +8,6 @@ exports.createWorkflow = async (req, res) => {
   try {
     const { name, description } = req.body;
     const creatorId = req.user.uid;
-    console.log('Creating workflow:', { name, creatorId });
 
     if (!name) {
       return res.status(400).json({ 
@@ -30,7 +29,7 @@ exports.createWorkflow = async (req, res) => {
     };
 
     await workflowRef.set(workflowData);
-    console.log('Workflow created:', workflowData);
+
 
     // Get the created workflow with proper timestamps
     const createdWorkflow = await workflowRef.get();
@@ -41,7 +40,6 @@ exports.createWorkflow = async (req, res) => {
       lastUpdate: new Date().toISOString()
     };
 
-    console.log('Returning formatted workflow:', formattedWorkflow);
 
     return res.status(201).json({
       message: 'Workflow created successfully',
@@ -59,8 +57,7 @@ exports.createWorkflow = async (req, res) => {
 exports.getUserWorkflows = async (req, res) => {
   try {
     const userId = req.user.uid;
-
-    console.log('Fetching workflows for user:', userId);
+console.log('Fetching workflows for user:', userId);
 
     const workflowsRef = db.collection('workflows');
     
@@ -68,7 +65,7 @@ exports.getUserWorkflows = async (req, res) => {
       .where('participants', 'array-contains', userId)
       .get();
 
-    console.log('Workflows snapshot:', workflowsSnapshot.empty ? 'empty' : 'has data');
+  
 
     if (workflowsSnapshot.empty) {
       return res.status(200).json({
@@ -86,7 +83,7 @@ exports.getUserWorkflows = async (req, res) => {
       };
     });
 
-    console.log('Processed workflows:', workflows.length);
+   
 
     return res.status(200).json({
       message: 'Workflows retrieved successfully',
@@ -179,7 +176,7 @@ exports.updateTaskStatus = async (req, res) => {
   try {
     const { workflowId, taskId } = req.params;
     const { status } = req.body;
-    console.log('Updating task status:', { workflowId, taskId, status });
+  
 
     if (!['To do', 'In Progress', 'Done'].includes(status)) {
       return res.status(400).json({ 
@@ -195,7 +192,7 @@ exports.updateTaskStatus = async (req, res) => {
     }
 
     const workflowData = workflow.data();
-    console.log('Current workflow data:', workflowData);
+    
 
     const taskIndex = workflowData.tasks.findIndex(task => task.id === taskId);
 
@@ -210,7 +207,7 @@ exports.updateTaskStatus = async (req, res) => {
       lastUpdate: new Date().toISOString()
     };
 
-    console.log('Updated task:', updatedTasks[taskIndex]);
+   
 
     // Force a document update with multiple fields
     const updateData = {
@@ -221,8 +218,7 @@ exports.updateTaskStatus = async (req, res) => {
     };
 
     await workflowRef.update(updateData);
-    console.log('Update operation completed');
-
+   
     // Get the latest data
     const updatedWorkflow = await workflowRef.get();
     const updatedWorkflowData = {
@@ -231,7 +227,7 @@ exports.updateTaskStatus = async (req, res) => {
       createdAt: updatedWorkflow.data().createdAt.toDate().toISOString(),
       lastUpdate: new Date().toISOString()
     };
-    console.log('Final workflow data:', updatedWorkflowData);
+   
 
     const eventData = {
       type: 'WORKFLOW_UPDATED',
@@ -330,13 +326,13 @@ exports.subscribeToWorkflowEvents = (req, res) => {
 
   // Set up Firestore listener for the user's workflows
   const userId = req.user.uid;
-  console.log('Setting up SSE connection for user:', userId);
+  
 
   const unsubscribe = db.collection('workflows')
     .where('participants', 'array-contains', userId)
     .onSnapshot(snapshot => {
       snapshot.docChanges().forEach(change => {
-        console.log('Document change detected:', change.type, change.doc.id);
+
         
         if (change.type === 'added' || change.type === 'modified') {
           const workflow = { id: change.doc.id, ...change.doc.data() };
@@ -369,8 +365,7 @@ exports.subscribeToWorkflowEvents = (req, res) => {
             changeType,
             workflow
           };
-          console.log('Sending event data:', eventData);
-
+          
           res.write(`data: ${JSON.stringify(eventData)}\n\n`);
         }
 

@@ -1,45 +1,46 @@
 import { NextResponse } from 'next/server'
 
-export function middleware(request) {
-  const authCookie = request.cookies.get('session')
-  const { pathname } = request.nextUrl
+export const config = {
+  runtime: 'nodejs', // Force Node.js runtime for middleware
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}
 
-  // Public paths that don't require authentication
-  const publicPaths = ['/login', '/signup', '/verify-email']
+const PUBLIC_ROUTES = [
+  '/login',
+  '/signup',
+  '/',
+  '/static',
+  '/api/auth',
+  '/google-login',
+  '/placeholder.svg',
+  '/favicon.ico',
+]
 
-  // If the path is public, allow access regardless of auth state
-  if (publicPaths.includes(pathname)) {
-    // If user is already authenticated and tries to access login/signup, redirect to feeds
-    if (authCookie) {
-      return NextResponse.redirect(new URL('/feeds', request.url))
-    }
+export async function middleware(request) {
+  const session = request.cookies.get('session')
+
+  // Allow public routes
+  if (
+    PUBLIC_ROUTES.some((route) => request.nextUrl.pathname.startsWith(route))
+  ) {
     return NextResponse.next()
   }
 
-  // For all other paths, check authentication
-  if (!authCookie) {
-    // Remember the page user tried to visit
-    const from = request.nextUrl.pathname + request.nextUrl.search
-    return NextResponse.redirect(
-      new URL(`/login?from=${encodeURIComponent(from)}`, request.url)
-    )
+  // Protect API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    if (!session) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+    // Session verification will happen in the API routes
+    return NextResponse.next()
   }
 
-  // User is authenticated, allow access
-  return NextResponse.next()
-}
+  // Protect other routes with redirect
+  if (!session) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('from', request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 
-// Add matcher configuration
-export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
-  ],
+  return NextResponse.next()
 }

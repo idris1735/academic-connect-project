@@ -28,11 +28,11 @@ router.post(
   upload.single("attachment"),
   postService.createPost
 );
-router.get("/get_posts", postService.getPosts);
-router.get("/get_posts_by_uid", postService.getPostsByUid);
-router.post("/:postId/like", postService.likePost);
-router.post("/:postId/comment", postService.addComment);
-router.post('/:postId/comments/:commentId/like', postService.likeComment);
+router.get("/get_posts", postService.getPosts);// done
+router.get("/get_posts_by_uid", postService.getPostsByUid); // done
+router.post("/:postId/like", postService.likePost); // done
+router.post("/:postId/comment", postService.addComment);  // done
+router.post('/:postId/comments/:commentId/like', postService.likeComment); // done
 router.get('/events', postService.subscribeToPostEvents);
 
 module.exports = router;

@@ -42,7 +42,7 @@ export function ProfileHeader({ data, isOrganization }) {
 
           if (userData.user.uid !== data.uid) {
             const statusResponse = await fetch(
-              `/api/connections/status/${data.uid}`
+              `/api/connections/${data.uid}/status`
             )
             if (statusResponse.ok) {
               const { connected, pendingSent, pendingReceived } =
@@ -78,7 +78,7 @@ export function ProfileHeader({ data, isOrganization }) {
   const handleConnect = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/connections/request/${data.uid}`, {
+      const response = await fetch(`/api/connections/${data.uid}/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })

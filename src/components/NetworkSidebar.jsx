@@ -16,7 +16,7 @@ export function NetworkSidebar({ activeTab, onTabChange }) {
   useEffect(() => {
     const fetchNetworkData = async () => {
       try {
-        const response = await fetch("/api/network/get_network_info");
+        const response = await fetch("/api/network");
         if (!response.ok) {
           throw new Error("Failed to load network details, reload the page");
         }

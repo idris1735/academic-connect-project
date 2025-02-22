@@ -16,4 +16,13 @@ router.post("/rooms/join-room", messageService.joinRoom);
 // Add a post to an existing research room
 router.post("/rooms/add-post", messageService.addPostToRoom);
 
+// Update room details
+router.put("/rooms/:roomId", messageService.updateRoomDetails);
+
+// Update room settings
+router.put("/rooms/:roomId/settings", messageService.updateRoomSettings);
+
+// Update member roles
+router.put("/rooms/:roomId/members/:memberId/role", messageService.updateMemberRole);
+
 module.exports = router;

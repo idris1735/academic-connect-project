@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "nodemon backend/server.js",
+    "start": "next build && next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -31,6 +31,8 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@reduxjs/toolkit": "^2.5.0",
     "@stream-io/video-react-sdk": "^1.8.7",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
@@ -45,6 +47,7 @@
     "express-session": "^1.18.1",
     "firebase": "^11.0.1",
     "firebase-admin": "^13.0.1",
+    "formidable": "^3.5.2",
     "framer-motion": "^11.12.0",
     "fs": "^0.0.1-security",
     "ioredis": "^5.4.2",

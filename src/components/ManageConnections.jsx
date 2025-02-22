@@ -18,12 +18,13 @@ export function ManageConnections() {
     const fetchConnections = async () => {
       try {
         // Simulate network delay
-        const response = await fetch('/api/connections/connections')
+        const response = await fetch('/api/connections')
         if (!response.ok) {
           throw new Error('Failed to load connections')
         }
         const data = await response.json()
-        setConnections(data)
+        console.log('data', data)
+        setConnections(data.validConnections)
       } catch (error) {
         toast({
           title: 'Error',
@@ -41,7 +42,7 @@ export function ManageConnections() {
   const handleRemoveConnection = async (connectionId, userId) => {
     try {
       // Simulate API call to remove connection
-      await fetch('/api/connections/remove_connection', {
+      await fetch('/api/connections/remove', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

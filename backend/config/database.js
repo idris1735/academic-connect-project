@@ -1,4 +1,4 @@
-const { admin } = require('./firebase')
+const { getFirestore } = require('firebase-admin/firestore')
 
 const db = admin.firestore()
 

@@ -65,65 +65,60 @@ export function StreamChatProvider({ children }) {
   useEffect(() => {
     const initChat = async () => {
       try {
-        if (!user) {
-          console.log('No authenticated user')
-          setClientReady(true)
-          return
+        // Only setup if not already connected
+        if (!chatClient.userID) {
+          try {
+            // Fast-fail if no token endpoint
+            const response = await fetch('/api/chats/token', {
+              credentials: 'include',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+              },
+            })
+
+            // Fast path for non-authenticated users
+            if (response.status === 401 || !response.ok) {
+              setClientReady(true)
+              return
+            }
+
+            const data = await response.json()
+            const userResponse = await fetch('/api/users/current', {
+              credentials: 'include',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+              },
+            })
+
+            // Fast path for non-authenticated users
+            if (userResponse.status === 401 || !userResponse.ok) {
+              setClientReady(true)
+              return
+            }
+
+            const userData = await userResponse.json()
+            if (!userData.user?.uid) {
+              setClientReady(true)
+              return
+            }
+
+            const user = {
+              id: userData.user.uid,
+              name: userData.user.displayName || 'Anonymous',
+              image: userData.user.photoURL,
+            }
+
+            // Connect user in parallel
+            await Promise.all([
+              chatClient.connectUser(user, data.token),
+              videoClient.connectUser(user, data.token),
+            ])
+          } catch (error) {
+            console.log('Chat setup error:', error)
+          }
         }
-
-        if (chatClient.userID === user.uid) {
-          console.log('User already connected to Stream')
-          setClientReady(true)
-          return
-        }
-
-        console.log('Fetching chat token...')
-        const response = await fetch('/api/chats/get_token')
-        const data = await response.json()
-
-        console.log('Raw token response:', data)
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to get chat token')
-        }
-
-        if (!data || typeof data !== 'object') {
-          console.error('Invalid response data:', data)
-          throw new Error('Invalid response data')
-        }
-
-        if (!data.token) {
-          console.error('Missing token in response:', data)
-          throw new Error('Token missing in response')
-        }
-
-        if (!data.userData) {
-          console.error('Missing userData in response:', data)
-          throw new Error('User data missing in response')
-        }
-
-        const { token, userData } = data
-
-        console.log('Connecting user with data:', {
-          id: user.uid,
-          userData: userData,
-        })
-
-        // Connect user to Stream
-        await chatClient.connectUser(
-          {
-            id: user.uid,
-            name: userData.displayName || userData.email || 'Anonymous User',
-            image:
-              userData.photoURL ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                userData.displayName || 'A'
-              )}`,
-          },
-          token
-        )
-
-        console.log('Successfully connected to Stream')
         setClientReady(true)
         setError(null)
       } catch (error) {

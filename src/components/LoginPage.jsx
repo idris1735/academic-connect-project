@@ -105,13 +105,12 @@ export default function LoginPage() {
       const idToken = await userCredential.user.getIdToken()
 
       // Then send the token to your backend
-      const res = await fetch('/auth/login', {
+      const res = await fetch('api/auth/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, idToken }),
         credentials: 'include',
       })
 
