@@ -131,7 +131,7 @@ const Post = ({ post, isLoading, onLike, onComment }) => {
     e.preventDefault()
     if (comment.trim()) {
       try {
-        const response = await fetch(`/api/posts/${post.id}/comment`, {
+        const response = await fetch(`/api/posts/${post.id}/comments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

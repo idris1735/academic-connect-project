@@ -4,7 +4,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 export const fetchPosts = createAsyncThunk(
   'feeds/fetchPosts',
   async (page = 1, { dispatch }) => {
-    const response = await fetch(`/api/posts/get_posts?page=${page}&limit=5`)
+    const response = await fetch(`/api/posts?page=${page}&limit=5`)
     if (!response.ok) throw new Error('Failed to fetch posts')
     const data = await response.json()
 

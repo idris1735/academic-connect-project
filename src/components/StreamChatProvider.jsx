@@ -63,7 +63,7 @@ export function StreamChatProvider({ children }) {
         if (!chatClient.userID) {
           try {
             // Fast-fail if no token endpoint
-            const response = await fetch('/api/chats/get_token', {
+            const response = await fetch('/api/chats/token', {
               credentials: 'include',
               headers: {
                 Accept: 'application/json',

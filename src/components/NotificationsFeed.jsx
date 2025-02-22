@@ -135,7 +135,7 @@ export default function NotificationsFeed({ activeFilter }) {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications/mark_all_as_read', {
+      const response = await fetch('/api/notifications/mark-all', {
         method: 'POST',
       })
 

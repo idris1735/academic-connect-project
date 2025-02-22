@@ -193,6 +193,8 @@ exports.getRoomInvitations = async (req, res) => {
       };
     }));
 
+    console.log('invitations', invitations);
+
     return res.status(200).json({
       message: 'Room invitations retrieved successfully',
       invitations: invitations || []

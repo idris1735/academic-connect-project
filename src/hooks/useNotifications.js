@@ -16,7 +16,7 @@ export const useNotifications = () => {
     const fetchNotifications = async () => {
       try {
         // Check if the API endpoint exists first
-        const response = await fetch('/api/notifications/get_notifications');
+        const response = await fetch('/api/notifications');
 
 
         // If the response doesn't exist or isn't ok, don't throw an error

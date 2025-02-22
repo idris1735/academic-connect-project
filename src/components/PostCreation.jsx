@@ -59,7 +59,7 @@ export default function PostCreation({ onPostCreate }) {
         formData.append('discussionName', discussionName)
       }
 
-      const response = await fetch('/api/posts/create_post', {
+      const response = await fetch('/api/posts', {
         method: 'POST',
         body: formData,
       })
@@ -128,7 +128,7 @@ export default function PostCreation({ onPostCreate }) {
       return
     }
 
-    console.log('found attachment:', file.originalname, type)
+    console.log('found attachment:', file.name, type)
     setAttachment(file)
     setError('')
   }
@@ -209,6 +209,7 @@ export default function PostCreation({ onPostCreate }) {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
+    console.log('file typeeeee', file)
     input.onchange = (e) => {
       const file = e.target.files[0]
       handleFileUpload(file, 'image')

@@ -4,24 +4,24 @@ const invitationService = require('../services/invitationService');
 
 
 // Send room invitation
-router.post('/send/:roomId', invitationService.sendInvitation);
+router.post('/send/:roomId', invitationService.sendInvitation);  // done
 
 // Get invitations for a user
-router.get('/received', invitationService.getReceivedInvitations);
+router.get('/received', invitationService.getReceivedInvitations);  // done
 
 // Accept/reject invitation
-router.post('/respond/:invitationId', invitationService.respondToInvitation);
+router.post('/respond/:invitationId', invitationService.respondToInvitation);  // done//    
 
 // Get pending invitations for a room
-router.get('/room/:roomId', invitationService.getRoomInvitations);
+router.get('/room/:roomId', invitationService.getRoomInvitations);  // done 
 
 // Cancel invitation
-router.delete('/:invitationId', invitationService.cancelInvitation);
+router.delete('/:invitationId', invitationService.cancelInvitation);    // done
 
 // Resend invitation
-router.post('/resend/:invitationId', invitationService.resendInvitation);
+router.post('/resend/:invitationId', invitationService.resendInvitation);  // done
 
 // Add this new route
-router.delete('/delete/:invitationId', invitationService.deleteInvitation);
+router.delete('/delete/:invitationId', invitationService.deleteInvitation);  // done
 
 module.exports = router;

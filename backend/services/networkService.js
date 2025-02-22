@@ -135,20 +135,6 @@ exports.getNetworkInfo = async (req, res) => {
       return res.status(200).json({ connectionData });
     }
 
-    // if (status === 'connected') {
-    //   connectionsRef = db.collection('connections').doc(uid).collection('connected');
-    // } else if (status === 'sent') {
-    //   connectionsRef = db.collection('connections').doc(uid).collection('connection_requests')
-    //     .where('status', '==', 'sent');
-    // } else if (status === 'received') {
-    //   connectionsRef = db.collection('connections').doc(uid).collection('connection_requests')
-    //     .where('status', '==', 'received');
-    // } else if (status === 'rejected') {
-    //   connectionsRef = db.collection('connections').doc(uid).collection('connection_requests')
-    //     .where('status', '==', 'rejected');
-    // }
-
-
   
     
     // return res.status(200).json({ connections: connections.docs.map(doc => doc.data()) });

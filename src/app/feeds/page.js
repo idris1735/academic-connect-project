@@ -41,7 +41,7 @@ export default function FeedsPage() {
       try {
         setIsLoading(true)
         const response = await fetch(
-          `/api/posts/get_posts?page=1&limit=${POSTS_PER_PAGE}`
+          `/api/posts?page=1&limit=${POSTS_PER_PAGE}`
         )
 
         if (!response.ok) {
@@ -84,7 +84,7 @@ export default function FeedsPage() {
       setIsLoading(true)
       const nextPage = page + 1
       const response = await fetch(
-        `/api/posts/get_posts?page=${nextPage}&limit=${POSTS_PER_PAGE}`
+        `/api/posts?page=${nextPage}&limit=${POSTS_PER_PAGE}`
       )
       const data = await response.json()
 
@@ -144,7 +144,7 @@ export default function FeedsPage() {
       setIsLoadingNew(true)
       setNoPostsFound(false) // Reset the no posts state
       const response = await fetch(
-        `/api/posts/get_posts?page=1&limit=${POSTS_PER_PAGE}`
+        `/api/posts?page=1&limit=${POSTS_PER_PAGE}`
       )
       const data = await response.json()
 

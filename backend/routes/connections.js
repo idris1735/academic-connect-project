@@ -3,23 +3,23 @@ const router = express.Router();
 const connectionService = require('../services/connectionService');
 
 // Send connection request
-router.post('/request/:userId', connectionService.connectWithUser);
+router.post('/request/:userId', connectionService.connectWithUser);   // done
 
 // Accept/Reject connection request
-router.post('/respond', connectionService.respondToRequest);
+router.post('/respond', connectionService.respondToRequest);   // done
 
 // Get connection status
-router.get('/status/:userId', connectionService.getConnectionStatus);
+router.get('/status/:userId', connectionService.getConnectionStatus);     //done
 
 // Get pending requests
-router.get('/pending', connectionService.getPendingRequests);
+router.get('/pending', connectionService.getPendingRequests);   // done
 
 // Get mutual connections
-router.get('/mutual/:userId', connectionService.getMutualConnections);
+router.get('/mutual/:userId', connectionService.getMutualConnections);   // done
 
 // Get connections
-router.get('/connections', connectionService.getConnections);
+router.get('/connections', connectionService.getConnections);   // done
 
-router.post('/remove_connection', connectionService.removeConnection);
+router.post('/remove_connection', connectionService.removeConnection);    //done
 
 module.exports = router;

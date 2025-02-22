@@ -109,7 +109,7 @@ export default function NavComponent() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetchWithErrorHandling('/api/profile/get_profiles')
+        const response = await fetchWithErrorHandling('/api/profile')
         if (response) {
           setUsers(response.profileList)
           console.log(response.profileList)

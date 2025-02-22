@@ -407,10 +407,38 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     }
   }
 
-  const handleDeleteRoom = () => {
+  const handleUpdateJoinSettings = async (value) => {
+    try {
+      const old_joinSettings = room.joinSettings
+      const response = await axios.put(`/api/messages/rooms/${room.id}/settings`, { joinSettings: value });
+      room.settings.joinSettings = value
+    } catch (error) {
+      room.joinSettings = old_joinSettings
+      console.error("Error updating join settings:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update join settings",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const handleDeleteRoom = async () => {
     // Implement room deletion logic here
-    console.log("Deleting room:", room.id)
-    setIsConfirmingDelete(false)
+    try {
+      const response = await axios.delete(`/api/messages/rooms/${room.id}`);
+      toast({
+        title: "Success",
+        description: "Room deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete room",
+        variant: "destructive",
+      });
+    }
   }
 
   const handleUpdateRoom = async (updatedData) => {
@@ -436,28 +464,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     }
   };
 
-  const handleUpdateSettings = async (settings) => {
-    try {
-      const response = await axios.put(`/api/messages/rooms/${room.id}/settings`, settings);
-      
-      setRoom(prev => ({
-        ...prev,
-        ...response.data.settings
-      }));
-
-      toast({
-        title: "Success",
-        description: "Room settings updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating settings:", error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update settings",
-        variant: "destructive",
-      });
-    }
-  };
+ 
 
   const handleUpdateMemberRole = async (memberId, newRole) => {
     try {
@@ -514,8 +521,8 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     const fetchUsers = async () => {
       try {
         setIsLoadingUsers(true);
-        const connectionsResponse = await axios.get('/api/connections/connections');
-        const currentConnections = connectionsResponse.data;
+        const connectionsResponse = await axios.get('/api/connections');
+        const currentConnections = connectionsResponse.data.validConnections;
   
         // Filter out users who are already members
         const filteredUsers = currentConnections.filter(
@@ -890,21 +897,6 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
     }
   };
 
-  // const formatFirestoreTimestamp = (timestamp) => {
-  //   if (!timestamp) return 'Invalid date';
-  
-  //   // Convert Firestore Timestamp to JavaScript Date
-  //   const date = new Date(timestamp);
-  //   if (isNaN(date.getTime())) return 'Invaliddd date';
-  
-  //   // Extract components and pad with leading zeros where needed
-  //   const day = String(date.getDate()).padStart(2, '0');
-  //   const month = String(date.getMonth() + 1).padStart(2, '0'); // +1 because months are 0-indexed
-  //   const year = String(date.getFullYear()).slice(-2); // Get last 2 digits of year
-  
-  //   return `${day}/${month}/${year}`;
-  // };
-
   const createNewEvent = async (eventData) => {
     try {
       const response = await axios.post(`/api/events/room/${room.id}`, eventData);
@@ -970,7 +962,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
         return;
       }
 
-      const response = await axios.post(`/api/invitations/send/${room.id}`, {
+      const response = await axios.post(`/api/invitations/room/${room.id}/send`, {
         userId: selectedUser.id
       });
 
@@ -1030,7 +1022,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
 
   const handleResendInvitation = async (invitationId) => {
     try {
-      await axios.post(`/api/invitations/resend/${invitationId}`);
+      await axios.post(`/api/invitations/${invitationId}/resend`);
       toast({
         title: "Success",
         description: "Invitation resent successfully",
@@ -1066,7 +1058,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
 
   const handleDeleteInvitation = async (invitationId) => {
     try {
-      await axios.delete(`/api/invitations/delete/${invitationId}`);
+      await axios.delete(`/api/invitations/${invitationId}/delete`);
       setSentInvitations(prev => prev.filter(inv => inv.id !== invitationId));
       toast({
         title: "Success",
@@ -1583,7 +1575,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                     <CardTitle>Join Settings</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Select value={room.joinSettings} onValueChange={(value) => setRoom({ ...room, joinSettings: value })}>
+                    <Select value={room.settings.joinSettings} onValueChange={(value) => handleUpdateJoinSettings( value )}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select join setting" />
                       </SelectTrigger>
@@ -1833,7 +1825,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                   </CardContent>
                 </Card>
 
-                <Card>
+                {/* <Card>
                   <CardHeader>
                     <CardTitle>Integrations</CardTitle>
                   </CardHeader>
@@ -1857,7 +1849,7 @@ export default function ResearchRoom({ room, onToggleSidebar }) {
                       </div>
                     ))}
                   </CardContent>
-                </Card>
+                </Card> */}
 
                 <Card>
                   <CardHeader>

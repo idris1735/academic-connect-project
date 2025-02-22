@@ -52,11 +52,11 @@ const ProfilePost = ({ post, onEdit, onDelete, onLike, onComment }) => {
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar>
-          <AvatarImage className="rounded-full" src={`/${post.photoURL}`} alt={post.author} />
-          <AvatarFallback>{post.author && post.author.length > 0 ? post.author[0] : '?'}</AvatarFallback>
+          <AvatarImage className="rounded-full" src={`/${post.photoURL}`} alt={post.userInfo.author} />
+          <AvatarFallback>{post.userInfo.author && post.userInfo.author.length > 0 ? post.userInfo.author[0] : '?'}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold">{post.author}</h3>
+          <h3 className="text-lg font-semibold">{post.userInfo.author}</h3>
           <p className="text-sm text-gray-500">{post.authorTitle}</p>
           <p className="text-xs text-gray-400">
             {formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}

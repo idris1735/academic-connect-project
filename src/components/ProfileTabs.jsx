@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input"; // Added import statement
 import { Switch } from "@/components/ui/switch"; // Ensure this path is correct
 import { PeerReview } from "@/components/PeerReview"; // Ensure this import is present
 import { useToast } from "@/components/ui/use-toast"; // Import toast for notifications
+import { redirect } from "next/navigation";
 
 const RecentActivities = ({ data }) => {
   const dispatch = useDispatch();
@@ -288,7 +289,7 @@ export function ProfileTabs({ data, isOrganization }) {
             setIsLoadingPosts(true);
             setPage(1);
             const response = await fetch(
-              `/api/posts/get_posts_by_uid?uid=${data.uid}&page=1&limit=${POSTS_PER_PAGE}`
+              `/api/posts/user?uid=${data.uid}&page=1&limit=${POSTS_PER_PAGE}`
             );
             const responseData = await response.json();
 
@@ -346,7 +347,7 @@ export function ProfileTabs({ data, isOrganization }) {
     try {
       setIsLoadingPosts(true);
       const response = await fetch(
-        `/api/posts/get_posts_by_uid?uid=${data.uid}&page=${page}&limit=${POSTS_PER_PAGE}`
+        `/api/posts?uid=${data.uid}&page=${page}&limit=${POSTS_PER_PAGE}`
       );
       const responseData = await response.json();
 
@@ -570,7 +571,7 @@ export function ProfileTabs({ data, isOrganization }) {
     formData.append("avatar", file);
 
     try {
-      const response = await fetch("/api/profile/update-avatar", {
+      const response = await fetch("/api/profile/avatar", {
         method: "POST",
         body: formData,
       });
@@ -605,7 +606,7 @@ export function ProfileTabs({ data, isOrganization }) {
       const publication = publications.find(pub => pub.id === publicationId);
       const newVisibility = !publication.isPublic;
       
-      const response = await fetch(`/api/profile/action-publication?action=visibility`, {
+      const response = await fetch(`/api/profile/publications?action=visibility`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -642,7 +643,7 @@ export function ProfileTabs({ data, isOrganization }) {
   const handleEditPublication = async (publicationId, publicationName, fileType) => {
     console.log('Save publication');
     try {
-      const response = await fetch('/api/profile/action-publication?action=edit', {
+      const response = await fetch('/api/profile/publications?action=edit', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -679,7 +680,7 @@ export function ProfileTabs({ data, isOrganization }) {
 
   const handleDeletePublication = async (publicationId, publicationUrl, publicationName) => {
     try {
-      const response = await fetch(`/api/profile/action-publication`, {
+      const response = await fetch(`/api/profile/publications`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -726,7 +727,7 @@ export function ProfileTabs({ data, isOrganization }) {
           formData.append('fileSize', fileSize);
 
           
-          const response = await fetch('/api/profile/add-publication', {
+          const response = await fetch('/api/profile/publications', {
             method: 'POST',
             body: formData,
           });
@@ -1123,7 +1124,7 @@ const SettingsTab = ({ data }) => {
     formData.append("avatar", file);
 
     try {
-      const response = await fetch("/api/profile/update-avatar", {
+      const response = await fetch("/api/profile/avatar", {
         method: "POST",
         body: formData,
       });
@@ -1140,7 +1141,7 @@ const SettingsTab = ({ data }) => {
       });
 
       // Refresh the page to show new avatar
-      window.location.reload();
+      // window.location.reload();
     } catch (error) {
       toast({
         title: "Error",
@@ -1163,7 +1164,7 @@ const SettingsTab = ({ data }) => {
   const handleProfileUpdate = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/profile/update-profile", {
+      const response = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1202,7 +1203,7 @@ const SettingsTab = ({ data }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/profile/update-password", {
+      const response = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1239,7 +1240,7 @@ const SettingsTab = ({ data }) => {
   const handleNotificationUpdate = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/profile/update-notifications", {
+      const response = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1278,7 +1279,7 @@ const SettingsTab = ({ data }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/profile/delete-account", {
+      const response = await fetch("/api/profile", {
         method: "DELETE",
       });
 
@@ -1290,7 +1291,7 @@ const SettingsTab = ({ data }) => {
       });
 
       // Redirect to login page
-      window.location.href = "/login";
+      redirect("/signup");
     } catch (error) {
       toast({
         title: "Error",
@@ -1313,7 +1314,7 @@ const SettingsTab = ({ data }) => {
         url: socialLinks[platform],
       });
 
-      const response = await fetch("/api/profile/update-social-links", {
+      const response = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

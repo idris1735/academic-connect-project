@@ -4,7 +4,7 @@ import { createSlice, createAsyncThunk, createAction } from '@reduxjs/toolkit';
 export const fetchWorkflows = createAsyncThunk(
   'workflow/fetchWorkflows',
   async () => {
-    const response = await fetch('/api/workflows/get_workflows');
+    const response = await fetch('/api/workflows');
     if (!response.ok) {
       throw new Error('Failed to fetch workflows');
     }
@@ -17,7 +17,7 @@ export const fetchWorkflows = createAsyncThunk(
 export const createWorkflow = createAsyncThunk(
   'workflow/createWorkflow',
   async ({ name }) => {
-    const response = await fetch('/api/workflows/create_workflow', {
+    const response = await fetch('/api/workflows', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
